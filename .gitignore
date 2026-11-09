@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# 题库、种子、运行结果都在仓库外（$GKBENCH_DATA）；万一放进来也不提交
+data/
+runs/
+private/
+*.jsonl.zst
+web/node_modules/
+web/dist/
+server/gkbench-server
+*.tsbuildinfo

@@ -1,0 +1,12 @@
+[project]
+name = "gkbench"
+version = "0.1.0"
+description = "学園アイドルマスター考试出牌算法 benchmark"
+requires-python = ">=3.12"
+dependencies = ["numpy", "zstandard", "onnxruntime", "pyyaml", "httpx"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
