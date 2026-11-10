@@ -68,7 +68,7 @@
 
 它生成 `AS-编号.gksave.json`。编号是按内容算的，改过内容就要重新生成；直接传手改过的存档会被拒，原因写「编号不符」。改一份现成的 `.gksave.json` 也用这条命令重算。
 
-**3. 上传。** 网页「試験集合」里进自己的集合，在「上传考试」选这个文件；或者用命令行（要先在网页「我的」里生成令牌）：
+**3. 上传。** 用命令行传（网页上没有上传按钮）。先在网页「我的」页生成命令行令牌，存到 `~/.config/gkbench/token`（或设环境变量 `GKBENCH_TOKEN`），集合在网页「試験集合」里建，或者用 `--new` 顺手建：
 
     python -m gkbench upload-problems AS-编号.gksave.json --set <集合>
     python -m gkbench upload-problems AS-编号.gksave.json --new "我的集合"      # 先建一个集合再传
