@@ -394,7 +394,7 @@ function UploadGuide({ set }: { set: string }) {
         <ChevronRight size={14} aria-hidden className="text-ink-3 motion-safe:transition-transform group-open:rotate-90" />
         三步做出文件，传上去会核对什么
       </summary>
-      <div className="max-w-[78ch] border-t border-line px-3 pb-3 pt-2.5 [overflow-wrap:anywhere]">
+      <div className="border-t border-line px-3 pb-3 pt-2.5 [overflow-wrap:anywhere] *:max-w-[78ch]">
         <ol className="list-decimal space-y-1.5 pl-5">
           <li>
             写开局配置：偶像、哪场考试、牌组 <Code>deck_cards</Code>、P 道具 <Code>produce_item_ids</Code>、饮料 <Code>drink_ids</Code>、开局体力这些，
