@@ -130,7 +130,7 @@ export function tagValueLabel(tag: string, v: string, idolName?: (id: string) =>
 }
 
 export const SET_INFO: Record<string, { title: string; blurb: string }> = {
-  'hif-live': { title: 'H.I.F真实记录测试集', blurb: 'H.I.F 实战里打过的 5 个开局，篠澤広。' },
+  'hif-live': { title: 'H.I.F真实记录测试集', blurb: 'H.I.F 实战里打过的开局，篠澤広。从开局存档或对局快照还原。' },
   gkms480: { title: 'H.I.F随机牌组测试', blurb: 'GKMS 按主数据生成：6 种机制 × 4 位偶像 × 2 种牌组 × 5 个阶段。' },
 }
 

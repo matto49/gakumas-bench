@@ -21,7 +21,15 @@ function useFeatured() {
     let live = true
     ;(async () => {
       const runs = (await api<RunItem[]>(`api/runs?set=${FEATURE_SET}`)).filter((r) => (r.kind ?? 'fixed') === 'fixed')
-      const infos = await Promise.all(runs.map((r) => api<RunInfo>(`api/runs/${r.run}`)))
+      const all = await Promise.all(runs.map((r) => api<RunInfo>(`api/runs/${r.run}`)))
+      // 同一个算法跑过几次（题集扩过题）时只留最新的一次
+      const latest = new Map<string, RunInfo>()
+      for (const r of all) {
+        const k = `${r.privileged ? 'oracle:' : ''}${r.label}`
+        const old = latest.get(k)
+        if (!old || (r.uploaded ?? r.finished ?? r.started ?? '') > (old.uploaded ?? old.finished ?? old.started ?? '')) latest.set(k, r)
+      }
+      const infos = [...latest.values()]
       const oracleRun = infos.find((r) => r.privileged)
       const first = oracleRun?.episodes.find((e) => e.seed_index === 0) ?? infos[0]?.episodes[0]
       if (!first) throw new Error('没有成绩')
@@ -125,6 +133,8 @@ export function Home() {
       </section>
 
       <div className="mx-auto max-w-[1120px]">
+        <Why />
+
         <section className="mb-12">
           <SectionTitle>题集</SectionTitle>
           <div className="grid gap-3 md:grid-cols-2">
@@ -196,5 +206,45 @@ function Way({ title, body, children }: { title: string; body: string; children:
         <CodeBlock>{children}</CodeBlock>
       </dd>
     </div>
+  )
+}
+
+const Pow = ({ n }: { n: number }) => <>10<sup>{n}</sup></>
+
+/** 基础说明：为什么有这个网站，一局本战有多大、几种算法各算多少。数字是实测的，口径写在表下 */
+function Why() {
+  const rows: [string, React.ReactNode][] = [
+    ['一局要做的决定', <>9 或 12 回合，20 到 35 次出牌决定；每次平均 4 到 6 种选择，最多 10 种。</>],
+    ['看不见的部分', <>牌堆 20 到 25 张，排法约 <Pow n={18} /> 到 <Pow n={23} /> 种。出牌时不知道是哪一种。</>],
+    ['种子固定后的打法', <>牌序定了，完整的打法仍有约 <Pow n={13} /> 到 <Pow n={18} /> 种，穷举不完。</>],
+    ['理论上限', <>提前知道种子，单核搜 30 秒，约 135 万次整局模拟，只走过全部打法里极小的一部分。它是限时搜到的最好成绩，不是最优解。</>],
+    ['PIMC（16 世界，每步 2 秒）', <>不知道种子：每步猜 16 种牌序，各搜约 0.85 秒，约 60 万次模拟。一局约 1,600 万次，10 核的 Mac 上约 46 秒（约 6 核·分钟）。</>],
+    ['UINet', <>神经网络看一眼画面直接出牌，不做模拟，一局约 0.2 秒。</>],
+  ]
+  return (
+    <section className="mb-12">
+      <SectionTitle>为什么有这个网站</SectionTitle>
+      <div className="grid gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+        <div className="space-y-3 text-[14.5px] leading-relaxed text-ink-2">
+          <p>学マス的考试是一个人的牌局：每回合从手牌里挑牌打出去，把分数堆高。下一张抽到什么，出牌时并不知道；就算知道，打法也多到算不完。所以一局牌没有现成的标准答案，各种出牌算法只能互相比。</p>
+          <p>比的时候条件得一样。这里把题目、种子和每步的思考时间都固定下来，同一局让所有算法各打一遍，分数和用时都记下来，每一步出了什么牌也能点开看。</p>
+          <p>算得多不一定打得高。表里的 PIMC 一局要做约 1,600 万次模拟，UINet 一次也不做，两者的分数却差不多，都在理论上限的一半上下。这种差别要放在同一批题上才看得出来。</p>
+        </div>
+        <div>
+          <p className="mb-2 text-[13px] font-bold text-ink">H.I.F 本战的一局有多大</p>
+          <dl className="divide-y divide-line rounded-xl border border-line bg-surface text-[13px]">
+            {rows.map(([k, v]) => (
+              <div key={k} className="grid gap-x-4 gap-y-0.5 px-4 py-2.5 sm:grid-cols-[11rem_minmax(0,1fr)]">
+                <dt className="font-semibold text-ink">{k}</dt>
+                <dd className="leading-relaxed text-ink-2">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-2 text-[12px] leading-relaxed text-ink-3">
+            2026 年 11 月在「H.I.F真实记录测试集」的 12 道本战题上实测。打法数用随机试打估算（Knuth 估计，每题 400 局）；模拟次数按 Apple M4 单核每秒约 4.5 万局算。
+          </p>
+        </div>
+      </div>
+    </section>
   )
 }
