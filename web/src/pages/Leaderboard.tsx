@@ -80,8 +80,10 @@ export function Leaderboard() {
     update({ sort: k, dir: nextDir })
   }
 
+  // 换了集合或成绩口径、新的还没取回来时，手里还是上一份成绩：不能摆在新标题下面，先当没有
+  const stale = !!lb.data && !(lb.loadedPath ?? '').includes(`set=${encodeURIComponent(set ?? '')}&kind=${kind}&`)
   const rows = useMemo(() => {
-    const rs = [...(lb.data ?? [])]
+    const rs = stale ? [] : [...(lb.data ?? [])]
     const sign = dir === 'asc' ? 1 : -1
     const key = sort === 'oracle' && !rs.some((r) => r.vs_oracle && !r.privileged) ? 'mean' : sort
     rs.sort((a, b) => {
@@ -92,7 +94,7 @@ export function Leaderboard() {
       return (va - vb) * sign
     })
     return rs
-  }, [lb.data, sort, dir])
+  }, [lb.data, stale, sort, dir])
 
   if (!set) {
     if (sets.data?.length) return <Navigate to={`/sets/${sets.data[0].set}`} replace />
@@ -177,8 +179,8 @@ export function Leaderboard() {
       </div>
 
       {lb.error && <ErrorState error={lb.error} onRetry={lb.reload} />}
-      {lb.loading && !lb.data && <TableSkeleton />}
-      {lb.data && rows.length === 0 && (
+      {lb.loading && (!lb.data || stale) && <TableSkeleton />}
+      {lb.data && !stale && rows.length === 0 && (
         <Empty>
           <p className="font-semibold text-ink">{kind === 'template' ? '保密种子还没有成绩。' : kind === 'legacy' ? '没有旧版评测。' : '这套题还没有成绩。'}</p>
           {kind !== 'legacy' && (
