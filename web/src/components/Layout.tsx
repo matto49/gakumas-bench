@@ -9,7 +9,7 @@ const nav = [
   { to: '/sets', label: '算法排行' },
   { to: '/exams', label: '試験集合' },
   { to: '/cards', label: '卡组资源一览' },
-  { to: '/compare', label: '对比' },
+  // 「对比」不放导航：从复盘页的「和别的算法对比」进（/compare 路由还在）
 ]
 
 const pill = ({ isActive }: { isActive: boolean }) =>
