@@ -199,6 +199,8 @@ export type Catalog = {
   items: Record<string, CatalogThing>
   enchants: Record<string, CatalogThing>
   idols: Record<string, CatalogThing>
+  /** 回忆（memory_ability_ids）→ 效果文字 */
+  memories?: Record<string, CatalogThing>
 }
 
 /** /api/sets/{set}/problems 的一项：题模板（审查存档原样）+ 便于展示的字段 + 固定种子的公开信息 */

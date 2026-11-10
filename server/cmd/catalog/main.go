@@ -211,6 +211,17 @@ func main() {
 		items[str(r, "id")] = Thing{Name: str(r, "name"), Rarity: short("PRODUCE_ITEM_RARITY_", enumName(r, "rarity")),
 			Plan: short("PRODUCE_PLAN_TYPE_", enumName(r, "planType")), Text: describe(r), Asset: sprite(str(r, "assetId"))}
 	}
+	// 回忆（编成里的 memory_ability_ids）：效果写在 ProduceSkill 上
+	skills := map[string]string{}
+	for _, r := range readTable(*master, "ProduceSkill") {
+		skills[str(r, "id")] = describe(r)
+	}
+	memories := map[string]Thing{}
+	for _, r := range readTable(*master, "MemoryAbility") {
+		if t := skills[str(r, "skillId")]; t != "" {
+			memories[str(r, "id")] = Thing{Text: t}
+		}
+	}
 	chars := map[string]string{}
 	for _, r := range readTable(*master, "Character") {
 		chars[str(r, "id")] = str(r, "lastName") + str(r, "firstName")
@@ -254,11 +265,12 @@ func main() {
 		n++
 	}
 	doc := map[string]any{"schema": "gkbench.catalog.v1", "cards": cards, "drinks": drinks, "items": items,
-		"enchants": enchants, "idols": idols}
+		"enchants": enchants, "idols": idols, "memories": memories}
 	b, _ := json.Marshal(doc)
 	if err := os.WriteFile(filepath.Join(*out, "catalog.json"), b, 0o644); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("回忆 %d；", len(memories))
 	fmt.Printf("目录：卡 %d、饮料 %d、P 道具 %d、持续效果 %d、偶像 %d；小图 %d 张（新生成 %d），catalog.json %d KB\n",
 		len(cards), len(drinks), len(items), len(enchants), len(idols), len(used), n, len(b)/1024)
 }

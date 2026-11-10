@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowRight, Download, FolderPlus, Loader2, ShieldCheck, Trash2, Upload } from 'lucide-react'
+import { ArrowRight, Download, FolderPlus, Layers, Loader2, ShieldCheck, Trash2, Upload } from 'lucide-react'
+import { DeckView } from '../components/DeckView'
 import { toast } from 'sonner'
 import { api, ApiError, BASE, type Job, type Problem, type SetInfo } from '../lib/api'
 import { useApi } from '../lib/hooks'
@@ -286,6 +287,10 @@ export function ExamSet() {
 
 function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: boolean; onDelete: (p: Problem) => void }) {
   const cat = useCatalog()
+  const [q, setQ] = useSearchParams()
+  const openId = q.get('deck')
+  const setOpen = (id: string) => { const n = new URLSearchParams(q); id ? n.set('deck', id) : n.delete('deck'); setQ(n, { replace: true }) }
+  const opened = rows.find((p) => p.id === openId)
   return (
     <div className="overflow-x-auto rounded-xl border border-line bg-surface">
       <table className="w-full min-w-[980px] border-collapse text-[13px]">
@@ -294,19 +299,19 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
             <th scope="col" className="px-3 py-2.5 text-left font-semibold">偶像 · 题</th>
             <th scope="col" className="px-3 py-2.5 text-left font-semibold">考试</th>
             <th scope="col" className="px-3 py-2.5 text-left font-semibold">流派 · 机制</th>
-            <th scope="col" className="px-3 py-2.5 text-right font-semibold">回合</th>
+            <th scope="col" className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">回合</th>
             <th scope="col" className="px-3 py-2.5 text-right font-semibold">牌组</th>
             <th scope="col" className="px-3 py-2.5 text-left font-semibold">P 道具</th>
             <th scope="col" className="px-3 py-2.5 text-left font-semibold">饮料</th>
             <th scope="col" className="px-3 py-2.5 text-left font-semibold"><span className="inline-flex items-center">题族<Help tip="题族编号 AF-：同一个开局（编成去掉种子）的编号。上传时按它去重。" /></span></th>
-            <th scope="col" className="w-20 px-3 py-2.5" />
+            <th scope="col" className="w-24 px-3 py-2.5" />
           </tr>
         </thead>
         <tbody>
           {rows.map((p) => {
             const sc = p.scene ?? {}
             return (
-              <tr key={p.id} className="border-b border-line last:border-0 hover:bg-brand-tint">
+              <tr key={p.id} onDoubleClick={() => setOpen(p.id)} title="双击看完整牌组" className="cursor-pointer border-b border-line select-none last:border-0 hover:bg-brand-tint">
                 <td className="max-w-[320px] px-3 py-2">
                   <div className="flex items-center gap-2.5">
                     <IdolThumb id={sc.idol} size={30} />
@@ -320,8 +325,8 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
                   {examLine(sc.exam, sc.stage, sc.round)}
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap text-ink-2">{[sc.plan && (PLAN[sc.plan] ?? sc.plan), sc.mechanic && sceneValueLabel('mechanic', sc.mechanic)].filter(Boolean).join(' · ')}</td>
-                <td className="num px-3 py-2 text-right">{sc.turns ?? '—'}</td>
-                <td className="num px-3 py-2 text-right">{sc.deck ?? '—'} 张</td>
+                <td className="num px-3 py-2 text-right whitespace-nowrap">{sc.turns ?? '—'}</td>
+                <td className="num px-3 py-2 text-right whitespace-nowrap">{sc.deck ?? '—'} 张</td>
                 <td className="px-3 py-2">
                   <span className="flex flex-wrap gap-1">
                     {(sc.items ?? []).map((id, i) => {
@@ -343,8 +348,9 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
                     })}
                   </span>
                 </td>
-                <td className="px-3 py-2 font-mono text-[11.5px] text-ink-3">{p.family}</td>
+                <td className="px-3 py-2 font-mono text-[11.5px] whitespace-nowrap text-ink-3">{p.family}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">
+                  <Tip tip="看完整牌组（也可以双击这一行）"><button onClick={() => setOpen(p.id)} aria-label={`看 ${p.name} 的牌组`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-ink"><Layers size={14} /></button></Tip>
                   <Tip tip="下载这道题的题模板（审查存档）"><a href={`${BASE}api/saves/${p.id}?download=1`} aria-label={`下载 ${p.name}`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-ink"><Download size={14} /></a></Tip>
                   {canEdit && <button onClick={() => onDelete(p)} aria-label={`删除 ${p.name}`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-critical"><Trash2 size={14} /></button>}
                 </td>
@@ -353,6 +359,7 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
           })}
         </tbody>
       </table>
+      {opened && <DeckView p={opened} onClose={() => setOpen('')} />}
     </div>
   )
 }
