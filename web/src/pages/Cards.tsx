@@ -10,7 +10,7 @@ import { Select } from '../components/Select'
 import { Empty, PageHeader, Skeleton } from '../components/ui'
 import { CardDetail, CardImage, CardTags, Meta, RarityTag, SOURCE, sourceOf, UP_LABEL } from '../components/CardDetail'
 
-/** 卡组资源一览（原「牌库」）：游戏里的技能卡、饮料、P 道具图鉴。数据是 GKMS 主数据生成的 catalog.json */
+/** 考试资源一览（原「牌库」）：游戏里的技能卡、饮料、P 道具图鉴。数据是 GKMS 主数据生成的 catalog.json */
 
 const RARITY_ORDER = ['LEGEND', 'SSR', 'SR', 'R', 'N']
 const PLAN_ORDER = ['PLAN1', 'PLAN2', 'PLAN3', 'COMMON']
@@ -75,7 +75,7 @@ export function Cards() {
 
   return (
     <div>
-      <PageHeader title="卡组资源一览" sub="游戏里的技能卡、饮料和 P 道具，数据来自 GKMS 读的主数据，和裁判用的是同一份。" />
+      <PageHeader title="考试资源一览" sub="游戏里的技能卡、饮料和 P 道具，数据来自 GKMS 读的主数据，和裁判用的是同一份。" />
 
       <Tabs value={tab} onValueChange={(v) => update({ tab: v === 'cards' ? '' : String(v), rarity: '', cat: '', src: '', up: '' })}>
         <TabsList className="mb-4">
