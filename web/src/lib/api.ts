@@ -217,12 +217,25 @@ export type CardCustom = { max: number; dirs: { id: string; levels: { pp: number
 export type CatalogCard = { name: string; rarity: string; plan: string; category: string; asset?: string; up: Record<string, { name: string; text: string }>; custom?: CardCustom; unlock?: number }
 /** unlock：解锁 P 等级（技能卡、饮料才有；没有 = 不靠等级解锁） */
 export type CatalogThing = { name: string; rarity?: string; plan?: string; text?: string; asset?: string; unlock?: number }
+/** 偶像卡：流派（style，如 EXAM_PARAMETER_BUFF）、初始 Vo/Da/Vi、成长率（千分比）、初始体力、固有技能卡和 P 道具（item_up 是特训后） */
+export type CatalogIdol = {
+  name: string
+  rarity?: string
+  plan?: string
+  style?: string
+  params?: [number, number, number]
+  growth?: [number, number, number]
+  stamina?: number
+  card?: string
+  item?: string
+  item_up?: string
+}
 export type Catalog = {
   cards: Record<string, CatalogCard>
   drinks: Record<string, CatalogThing>
   items: Record<string, CatalogThing>
   enchants: Record<string, CatalogThing>
-  idols: Record<string, CatalogThing>
+  idols: Record<string, CatalogIdol>
   /** 回忆（memory_ability_ids）→ 效果文字 */
   memories?: Record<string, CatalogThing>
 }

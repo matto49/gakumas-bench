@@ -16,6 +16,16 @@ export const PLAN: Record<string, string> = {
   '4': 'アノマリー',
 }
 
+/** 偶像卡的流派（IdolCard.examEffectType） */
+export const IDOL_STYLE: Record<string, string> = {
+  EXAM_PARAMETER_BUFF: '好調',
+  EXAM_LESSON_BUFF: '集中',
+  EXAM_REVIEW: '好印象',
+  EXAM_CARD_PLAY_AGGRESSIVE: 'やる気',
+  EXAM_CONCENTRATION: '強気',
+  EXAM_FULL_POWER: '全力',
+}
+
 export const MECHANIC: Record<string, string> = {
   parameter_buff: '好調',
   lesson_buff: '集中',

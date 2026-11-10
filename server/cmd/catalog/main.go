@@ -5,7 +5,8 @@
 //
 // 输出
 //
-//	catalog.json       cards / drinks / items / enchants / idols：编号 -> 日文名、稀有度、效果文字、小图名；卡带定制方向（custom）；
+//	catalog.json       cards / drinks / items / enchants：编号 -> 日文名、稀有度、效果文字、小图名；卡带定制方向（custom）；
+//	                   idols：流派、初始参数和成长率、固有技能卡和 P 道具；memories：效果文字和图标（memicon-*）；
 //	                   卡和饮料带解锁 P 等级（unlock，0 省略）
 //	sprites/<asset>.png  96px 小图（只生成用得到的）
 package main
@@ -240,6 +241,25 @@ type Thing struct {
 	Unlock int    `json:"unlock,omitempty"` // 饮料的解锁 P 等级；P 道具主数据里没有这一项
 }
 
+// 偶像卡（IdolCard）：流派、初始参数和成长率、固有技能卡和固有 P 道具
+type Idol struct {
+	Name    string `json:"name"`
+	Rarity  string `json:"rarity,omitempty"`
+	Plan    string `json:"plan,omitempty"`
+	Style   string `json:"style,omitempty"`   // 流派：examEffectType 去掉前缀，如 EXAM_PARAMETER_BUFF（好調）
+	Params  [3]int `json:"params"`            // 初始 Vo / Da / Vi
+	Growth  [3]int `json:"growth"`            // 成长率 Vo / Da / Vi，千分比
+	Stamina int    `json:"stamina,omitempty"` // 初始体力
+	Card    string `json:"card,omitempty"`    // 固有技能卡
+	Item    string `json:"item,omitempty"`    // 固有 P 道具
+	ItemUp  string `json:"item_up,omitempty"` // 特训（潜在能力）后的 P 道具
+}
+
+func num(r row, k string) int {
+	v, _ := r[k].(float64)
+	return int(v)
+}
+
 func resize(src, dst string, size int) error {
 	f, err := os.Open(src)
 	if err != nil {
@@ -397,20 +417,78 @@ func main() {
 	for _, r := range readTable(*master, "ProduceSkill") {
 		skills[str(r, "id")] = describe(r)
 	}
+	// 回忆的图标：游戏里是彩色方底 + 白色图案，导出时已经合成好（gkmas-assets/tools/export_memory_icons.py → memicon-*）。
+	// 考试中生效的（附魔）按附魔给的第一种考试效果取图案；培育中生效的按效果类型取
+	skillRows := byID(readTable(*master, "ProduceSkill"))
+	effects := byID(readTable(*master, "ProduceEffect"))
+	enchantRows := byID(readTable(*master, "ProduceExamStatusEnchant"))
+	examEffects := byID(readTable(*master, "ProduceExamEffect"))
+	produceIcon := map[string]string{
+		"VOCAL_ADDITION": "vocal", "DANCE_ADDITION": "dance", "VISUAL_ADDITION": "visual",
+		"VOCAL_GROWTH_RATE_ADDITION": "vocalgrowthrate", "DANCE_GROWTH_RATE_ADDITION": "dancegrowthrate", "VISUAL_GROWTH_RATE_ADDITION": "visualgrowthrate",
+		"STAMINA_RECOVER_FIX": "staminarecover", "PRODUCE_POINT_ADDITION_DISABLE_TRIGGER": "producepoint",
+	}
+	examIcon := func(typ string) string { // PRODUCE_EXAM_EFFECT_TYPE_EXAM_BLOCK -> memicon-exam-examblock
+		t := short("PRODUCE_EXAM_EFFECT_TYPE_", typ)
+		if t == "" || t == "EXAM_STATUS_ENCHANT" {
+			return ""
+		}
+		return sprite("memicon-exam-" + strings.ToLower(strings.ReplaceAll(t, "_", "")))
+	}
+	memIcon := func(skill row) string {
+		e := effects[str(skill, "produceEffectId1")]
+		typ := short("PRODUCE_EFFECT_TYPE_", enumName(e, "produceEffectType"))
+		if k, ok := produceIcon[typ]; ok {
+			return sprite("memicon-" + k)
+		}
+		if typ != "EXAM_STATUS_ENCHANT" {
+			return ""
+		}
+		en := enchantRows[str(e, "produceExamStatusEnchantId")]
+		ds, _ := en["produceDescriptions"].([]any)
+		for _, d := range ds {
+			if a := examIcon(enumName(d.(map[string]any), "exam_effect_type")); a != "" {
+				return a
+			}
+		}
+		ids, _ := en["produceExamEffectIds"].([]any)
+		for _, x := range ids {
+			id, _ := x.(string)
+			if a := examIcon(enumName(examEffects[id], "effectType")); a != "" {
+				return a
+			}
+		}
+		// H.I.F 专用的那些套了一层回合计时、说明里也没写效果类型：用游戏里的「计时效果」图标
+		return sprite("memicon-exam-exameffecttimer")
+	}
 	memories := map[string]Thing{}
+	noIcon := 0
 	for _, r := range readTable(*master, "MemoryAbility") {
 		if t := skills[str(r, "skillId")]; t != "" {
-			memories[str(r, "id")] = Thing{Text: t}
+			sk := skillRows[str(r, "skillId")]
+			plan := short("PRODUCE_PLAN_TYPE_", enumName(sk, "planType"))
+			if plan == "COMMON" {
+				plan = ""
+			}
+			m := Thing{Text: t, Rarity: short("SKILL_RARITY_", enumName(sk, "rarity")), Plan: plan, Asset: memIcon(sk)}
+			if m.Asset == "" {
+				noIcon++
+			}
+			memories[str(r, "id")] = m
 		}
 	}
 	chars := map[string]string{}
 	for _, r := range readTable(*master, "Character") {
 		chars[str(r, "id")] = str(r, "lastName") + str(r, "firstName")
 	}
-	idols := map[string]Thing{}
+	idols := map[string]Idol{}
 	for _, r := range readTable(*master, "IdolCard") {
-		idols[str(r, "id")] = Thing{Name: fmt.Sprintf("【%s】%s", str(r, "name"), chars[str(r, "characterId")]),
-			Plan: short("PRODUCE_PLAN_TYPE_", enumName(r, "planType"))}
+		idols[str(r, "id")] = Idol{Name: fmt.Sprintf("【%s】%s", str(r, "name"), chars[str(r, "characterId")]),
+			Rarity: short("IDOL_CARD_RARITY_", enumName(r, "rarity")), Plan: short("PRODUCE_PLAN_TYPE_", enumName(r, "planType")),
+			Style:   short("PRODUCE_EXAM_EFFECT_TYPE_", enumName(r, "examEffectType")),
+			Params:  [3]int{num(r, "produceVocal"), num(r, "produceDance"), num(r, "produceVisual")},
+			Growth:  [3]int{num(r, "produceVocalGrowthRatePermil"), num(r, "produceDanceGrowthRatePermil"), num(r, "produceVisualGrowthRatePermil")},
+			Stamina: num(r, "produceStamina"), Card: str(r, "produceCardId"), Item: str(r, "beforeProduceItemId"), ItemUp: str(r, "afterProduceItemId")}
 	}
 	// 持续效果：P 道具的效果用道具名，回忆的效果用卡名，其余用效果文字
 	itemRe := regexp.MustCompile(`p_item_effect_([0-9]+-[0-9]+-[0-9]+-[0-9]+)`)
@@ -451,7 +529,7 @@ func main() {
 	if err := os.WriteFile(filepath.Join(*out, "catalog.json"), b, 0o644); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("回忆 %d；能定制的卡 %d；", len(memories), nCustom)
+	fmt.Printf("回忆 %d（没图标 %d）；能定制的卡 %d；", len(memories), noIcon, nCustom)
 	fmt.Printf("目录：卡 %d、饮料 %d、P 道具 %d、持续效果 %d、偶像 %d；小图 %d 张（新生成 %d），catalog.json %d KB\n",
 		len(cards), len(drinks), len(items), len(enchants), len(idols), len(used), n, len(b)/1024)
 }

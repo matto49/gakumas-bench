@@ -18,6 +18,7 @@ export const SOURCE: Record<string, string> = { common: '通用', idol: '偶像�
 
 const RARITY_STYLE: Record<string, string> = {
   LEGEND: 'bg-[linear-gradient(135deg,oklch(0.8_0.12_330),oklch(0.82_0.12_200),oklch(0.86_0.13_90))] text-ink',
+  UR: 'bg-[linear-gradient(135deg,oklch(0.8_0.12_330),oklch(0.82_0.12_200),oklch(0.86_0.13_90))] text-ink',
   SSR: 'bg-[oklch(0.85_0.13_85)] text-ink',
   SR: 'bg-[oklch(0.82_0.07_250)] text-ink',
   R: 'bg-surface-3 text-ink-2',

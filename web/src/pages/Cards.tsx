@@ -3,16 +3,17 @@ import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import type { CatalogCard, CatalogThing } from '../lib/api'
 import { spriteUrl, useCatalog } from '../lib/catalog'
-import { PLAN } from '../lib/game'
+import { IDOL_STYLE, PLAN } from '../lib/game'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select } from '../components/Select'
-import { CopyId, Empty, IdolThumb, PageHeader, Skeleton } from '../components/ui'
+import { CopyId, Empty, PageHeader, Skeleton } from '../components/ui'
 import { CardDetail, CardImage, CardTags, Meta, RarityTag, SOURCE, sourceOf, UnlockTag, UP_LABEL } from '../components/CardDetail'
+import { IdolDetail, IdolTile, MemoryTile } from '../components/IdolCard'
 
 /** 游戏资源一览（原「牌库」）：游戏里的技能卡、饮料、P 道具、偶像卡、回忆能力图鉴，带编号（上传编成时要填）。数据是 GKMS 主数据生成的 catalog.json */
 
-const RARITY_ORDER = ['LEGEND', 'SSR', 'SR', 'R', 'N']
+const RARITY_ORDER = ['LEGEND', 'UR', 'SSR', 'SR', 'R', 'N']
 const PLAN_ORDER = ['PLAN1', 'PLAN2', 'PLAN3', 'COMMON']
 /** P 等级筛选：只看到这个制作人等级为止能拿到的（解锁等级不超过它，或不靠等级解锁） */
 const LV_STEPS = [10, 20, 30, 40, 50, 60, 70]
@@ -89,25 +90,33 @@ export function Cards() {
     })
   }, [cat, q])
 
-  // 偶像卡：按编号排（同一角色的卡排在一起），名字或编号都能搜
+  // 偶像卡：按编号排（同一角色的卡排在一起）。名字、编号、固有技能卡和 P 道具的名字都能搜
   const idols = useMemo(() => Object.entries(cat?.idols ?? {})
-    .filter(([id, d]) => (!get('plan') || d.plan === get('plan')) && (!text || d.name.toLowerCase().includes(text) || id.includes(text)))
+    .filter(([, d]) => (!get('plan') || d.plan === get('plan')) && (!get('rarity') || d.rarity === get('rarity')) && (!get('style') || d.style === get('style')))
+    .filter(([id, d]) => {
+      if (!text) return true
+      const hay = [d.name, id, d.card && cat?.cards[d.card]?.name, d.item && cat?.items[d.item]?.name, d.item_up && cat?.items[d.item_up]?.name]
+      return hay.some((x) => x && x.toLowerCase().includes(text))
+    })
     .sort(([a], [b]) => a.localeCompare(b)), [cat, q])
-  // 回忆能力：只有效果文字，没有名字
+  // 回忆能力：只有效果文字，没有名字。通用的计划是空，筛选里叫 COMMON
   const memories = useMemo(() => Object.entries(cat?.memories ?? {})
+    .filter(([, d]) => (!get('plan') || (d.plan || 'COMMON') === get('plan')) && (!get('rarity') || d.rarity === get('rarity')))
     .filter(([id, d]) => !text || (d.text ?? '').toLowerCase().includes(text) || id.includes(text))
     .sort(([a], [b]) => a.localeCompare(b)), [cat, q])
 
   const counts = { cards: cards.length, drinks: drinks.length, items: items.length, idols: idols.length, memories: memories.length }
   const open = get('card')
-  const planOpts = opt('全部计划', PLAN_ORDER.map((p) => [p, PLAN[p]]))
-  const rarityOpts = opt('全部稀有度', (tab === 'cards' ? RARITY_ORDER : RARITY_ORDER.slice(1)).map((r) => [r, r]))
+  const openIdol = get('idol')
+  const planOpts = opt('全部计划', PLAN_ORDER.map((p) => [p, p === 'COMMON' ? '通用' : PLAN[p]]))
+  const rarities = tab === 'cards' ? ['LEGEND', 'SSR', 'SR', 'R', 'N'] : tab === 'memories' ? ['UR', 'SSR', 'SR', 'R'] : tab === 'idols' ? ['SSR', 'SR', 'R'] : ['SSR', 'SR', 'R', 'N']
+  const rarityOpts = opt('全部稀有度', rarities.map((r) => [r, r]))
 
   return (
     <div>
       <PageHeader title="游戏资源一览" sub="游戏里的技能卡、饮料、P 道具、偶像卡和回忆能力，数据来自 GKMS 读的主数据，和裁判用的是同一份。编号旁边的按钮可以复制，上传编成时用。" />
 
-      <Tabs value={tab} onValueChange={(v) => update({ tab: v === 'cards' ? '' : String(v), rarity: '', cat: '', src: '', up: '' })}>
+      <Tabs value={tab} onValueChange={(v) => update({ tab: v === 'cards' ? '' : String(v), rarity: '', cat: '', src: '', up: '', style: '' })}>
         <TabsList className="mb-4">
           <TabsTrigger value="cards">技能卡</TabsTrigger>
           <TabsTrigger value="drinks">饮料</TabsTrigger>
@@ -120,10 +129,11 @@ export function Cards() {
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="relative w-64 max-w-full">
           <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-3" aria-hidden />
-          <Input value={get('q')} onChange={(e) => update({ q: e.target.value })} placeholder={tab === 'idols' ? '搜名字或编号，如 篠澤' : tab === 'memories' ? '搜效果，如 体力回復' : '搜名字或效果，如 好印象'} aria-label="搜索" className="h-8 rounded-full pl-8" />
+          <Input value={get('q')} onChange={(e) => update({ q: e.target.value })} placeholder={tab === 'idols' ? '搜名字、编号或固有卡 / P 道具' : tab === 'memories' ? '搜效果，如 体力回復' : '搜名字或效果，如 好印象'} aria-label="搜索" className="h-8 rounded-full pl-8" />
         </div>
-        {tab !== 'memories' && <Select label="培育计划" value={get('plan')} onChange={(v) => update({ plan: v })} options={tab === 'idols' ? planOpts.filter((o) => o.value !== 'COMMON') : planOpts} />}
-        {tab !== 'idols' && tab !== 'memories' && <Select label="稀有度" value={get('rarity')} onChange={(v) => update({ rarity: v })} options={rarityOpts} />}
+        <Select label="培育计划" value={get('plan')} onChange={(v) => update({ plan: v })} options={tab === 'idols' ? planOpts.filter((o) => o.value !== 'COMMON') : planOpts} />
+        <Select label="稀有度" value={get('rarity')} onChange={(v) => update({ rarity: v })} options={rarityOpts} />
+        {tab === 'idols' && <Select label="流派" value={get('style')} onChange={(v) => update({ style: v })} options={opt('全部流派', Object.entries(IDOL_STYLE))} />}
         {(tab === 'cards' || tab === 'drinks') && (
           <Select label="P 等级" value={get('lv')} onChange={(v) => update({ lv: v })}
             options={[{ value: '', label: '全部 P 等级' }, ...LV_STEPS.map((n) => ({ value: String(n), label: `到 PLv ${n} 能拿到的` }))]} />
@@ -165,29 +175,20 @@ export function Cards() {
 
       {cat && tab === 'idols' && (
         idols.length === 0 ? <Empty>没有符合条件的偶像卡。</Empty> : (
-          <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
-            {idols.map(([id, d]) => (
-              <div key={id} className="flex items-center gap-3 rounded-xl border border-line bg-surface p-3">
-                <IdolThumb id={id} size={48} title={false} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-ink" title={d.name}>{d.name}</p>
-                  <div className="mt-0.5 flex items-center gap-1.5">{d.plan && <Meta>{PLAN[d.plan] ?? d.plan}</Meta>}<CopyId id={id} className="min-w-0" /></div>
-                </div>
-              </div>
-            ))}
+          <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+            {idols.map(([id, d]) => <IdolTile key={id} id={id} d={d} cat={cat} onOpen={() => update({ idol: id })} />)}
           </div>
         )
+      )}
+
+      {cat && openIdol && cat.idols[openIdol] && (
+        <IdolDetail id={openIdol} d={cat.idols[openIdol]} cat={cat} onClose={() => update({ idol: '' })} onOpenCard={(c) => update({ idol: '', card: c })} />
       )}
 
       {cat && tab === 'memories' && (
         memories.length === 0 ? <Empty>没有符合条件的回忆能力。</Empty> : (
           <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(320px,1fr))]">
-            {memories.map(([id, d]) => (
-              <div key={id} className="rounded-xl border border-line bg-surface p-3">
-                <p className="text-[13px] leading-relaxed whitespace-pre-line text-ink">{d.text || d.name || '（无说明）'}</p>
-                <CopyId id={id} className="mt-1.5" />
-              </div>
-            ))}
+            {memories.map(([id, d]) => <MemoryTile key={id} id={id} d={d} />)}
           </div>
         )
       )}
