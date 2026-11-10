@@ -70,11 +70,7 @@ def main():
                 rep["verdict"] = rep.pop("ok")
             elif op == "check_problem":
                 from .problems import check_upload
-                doc = req["doc"]
-                if isinstance(doc, str):                       # 分享码
-                    from .save import from_share_code
-                    doc = from_share_code(doc.strip())
-                rep = check_upload(doc)
+                rep = check_upload(req["doc"])
             elif op == "replay":
                 rep = replay(req["problem"], int(req["seed"]), req["episode"])
                 rep["verdict"] = rep.pop("ok")

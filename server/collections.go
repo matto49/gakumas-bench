@@ -10,7 +10,7 @@ package main
 //	GET    /api/sets/{set}/problems          每道题带 scene（考试、阶段、轮次、流派、机制、偶像、回合、牌组张数、P 道具、饮料）
 //	POST   /api/sets {title, blurb}          登录用户新建社区集合
 //	PATCH  /api/sets/{set} {title?, blurb?, status?}   提交人或管理员改名字说明；status 只有管理员能改（审核：社区 → 官方）
-//	POST   /api/sets/{set}/problems          上传题：表单字段 files（.gksave.json / JSON Lines，可多个）、codes（GKAS1: 分享码，一行一个）
+//	POST   /api/sets/{set}/problems          上传题：表单字段 files（.gksave.json / JSON Lines，可多个）
 //	DELETE /api/sets/{set}/problems/{id}     提交人或管理员删一道题（官方集合只有管理员能删）
 //
 // 上传的每道题交给引擎核对（worker check_problem：编号、题族、起点、能开局），同一集合里题族编号相同的算重复。
@@ -314,7 +314,7 @@ func (a *App) handleUploadProblems(w http.ResponseWriter, r *http.Request, u str
 		fail(w, 400, "表单不对："+err.Error())
 		return
 	}
-	var docs []any // map（存档对象）或 string（分享码）
+	var docs []any // 存档对象
 	for _, fh := range r.MultipartForm.File["files"] {
 		f, err := fh.Open()
 		if err != nil {
@@ -332,29 +332,16 @@ func (a *App) handleUploadProblems(w http.ResponseWriter, r *http.Request, u str
 			if line == "" {
 				continue
 			}
-			if strings.HasPrefix(line, "GKAS1:") {
-				docs = append(docs, line)
-				continue
-			}
 			var d map[string]any
 			if err := json.Unmarshal([]byte(line), &d); err != nil {
-				fail(w, 400, fmt.Sprintf("%s 不是 JSON、JSON Lines 或分享码：%v", fh.Filename, err))
+				fail(w, 400, fmt.Sprintf("%s 不是 JSON 或 JSON Lines：%v", fh.Filename, err))
 				return
 			}
 			docs = append(docs, d)
 		}
 	}
-	for _, line := range strings.Split(r.FormValue("codes"), "\n") {
-		if line = strings.TrimSpace(line); line != "" {
-			if !strings.HasPrefix(line, "GKAS1:") {
-				fail(w, 400, "分享码要以 GKAS1: 开头："+trimRunes(line, 20))
-				return
-			}
-			docs = append(docs, line)
-		}
-	}
 	if len(docs) == 0 {
-		fail(w, 400, "没有题：选文件（.gksave.json / JSON Lines）或粘贴 GKAS1: 分享码")
+		fail(w, 400, "没有题：选文件（.gksave.json / JSON Lines）")
 		return
 	}
 	if len(docs) > maxUploadDocs {

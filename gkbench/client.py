@@ -198,8 +198,8 @@ def evaluate(set_name, algo_spec, seeds=32, parallel=3, budget=5.0, label=None, 
     return {"eval": ev, "run": run, "ok": ok, "failed": failed}
 
 
-def upload_problems(set_name, paths=(), codes=(), server=None, new_title=None):
-    """往試験集合传考试：题模板 / 固定种子题的 .gksave.json（或 JSON Lines），或 GKAS1: 分享码。
+def upload_problems(set_name, paths=(), server=None, new_title=None):
+    """往試験集合传考试：题模板 / 固定种子题的 .gksave.json（或 JSON Lines）。
     new_title 给了就先建一个自己的社区集合，再往里传。返回上传任务的结果（added / rejected）。"""
     with _client(server) as c:
         if new_title:
@@ -208,7 +208,7 @@ def upload_problems(set_name, paths=(), codes=(), server=None, new_title=None):
                 raise SystemExit(f"建集合失败 {r.status_code}：{r.text[:500]}")
             set_name = r.json()["set"]
         files = [("files", (Path(p).name, Path(p).read_bytes(), "application/json")) for p in paths]
-        r = c.post(f"/api/sets/{set_name}/problems", files=files or None, data={"codes": "\n".join(codes)})
+        r = c.post(f"/api/sets/{set_name}/problems", files=files)
         if r.status_code >= 400:
             raise SystemExit(f"上传失败 {r.status_code}：{r.text[:2000]}")
         j = r.json()

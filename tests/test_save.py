@@ -44,16 +44,12 @@ def test_sample_runs_roundtrip():
     assert save.pack_runs(answers) == doc["runs"]
 
 
-def test_tamper_and_share_code():
+def test_tamper():
     doc = _fixture("AS-HM5N7G5Z")
     bad = copy.deepcopy(doc)
     bad["loadout"]["starting_stamina"] = 43
     with pytest.raises(save.SaveError, match="编号不符"):
         save.read(bad)
-    code = save.share_code(doc)
-    assert code.startswith("GKAS1:")
-    back = save.from_share_code(code)
-    assert back["id"] == doc["id"] and back["runs"] == []
 
 
 def test_template_rules():
@@ -135,3 +131,9 @@ def test_make_template_from_loadout_and_rejects_unknown():
     assert save.make_template(lo)["id"] == save.archive_id({k: v for k, v in lo.items() if k != "seed"})
     with pytest.raises(save.SaveError, match="认不出"):
         save.make_template({"deck": []})
+
+
+def test_make_template_from_compact_loadout():
+    doc = _fixture("AS-73S73RCH")
+    compact = dict(doc["loadout"], schema=save.LOADOUT_SCHEMA)       # 卡写成字符串的紧凑写法也收，编号和展开写法一样
+    assert save.make_template(compact)["id"] == "AS-73S73RCH"

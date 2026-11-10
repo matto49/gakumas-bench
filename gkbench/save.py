@@ -1,23 +1,20 @@
 """审查存档 gkms.audition_save.v2（GKMS-STD-001 v2）的实现。
 
 一个存档 = 一道题（编成 loadout、前缀 prefix、目标 objective、起点核对 check）+ 描述 meta + 若干张算法表 runs。
-本模块只做格式本身：紧凑写法（第 2 章）、动作记号（第 3 章）、编号 / 题族编号 / 分享码 / 时间（第 4 章）、
+本模块只做格式本身：紧凑写法（第 2 章）、动作记号（第 3 章）、编号 / 题族编号 / 时间（第 4 章；4.2 的分享码没有实现）、
 算法表的打包展开（1.7）和读取核对（第 5 章）。和引擎打交道的部分（建局、重放）由调用方传入。
 
 术语对照：题模板 = 编成不含 seed 的存档；固定种子题 = 编成含 seed 的存档；题族 = 同一开局（去掉 seed）的所有题。
 """
 from __future__ import annotations
 
-import base64
 import hashlib
 import json
 import re
-import zlib
 from datetime import datetime, timezone
 
 FORMAT = "gkms.audition_save.v2"
 FORMATS = ("gkms.audition_save.v2", "gkms.audition_save.v1")   # v2 读取方要能读 v1
-SHARE_PREFIX = "GKAS1:"
 ALPHABET = "23456789ABCDEFGHJKMNPQRSTVWXYZ"                     # 不含 0 O 1 I L U
 TOP = ("format", "id", "loadout", "prefix", "objective", "check", "meta", "runs")
 HEADER = ("algo", "params", "budget", "seconds", "step_seconds", "rules", "machine", "mode", "by")   # 表 6（cols / rows 除外）
@@ -319,7 +316,7 @@ def make_template(src: dict, *, name: str | None = None) -> dict:
         objective = src.get("objective") or {}
         tags = [t for t in (src.get("meta") or {}).get("tags") or [] if isinstance(t, str)]
     elif src.get("schema") == LOADOUT_SCHEMA:
-        lo, objective = dict(src), {}
+        lo, objective = expand_loadout(dict(src)), {}    # 展开写法和紧凑写法（卡写成一个字符串）都收
     else:
         raise SaveError(f"认不出：既不是审查存档（format {FORMAT}），也不是开局配置（schema {LOADOUT_SCHEMA}）")
     lo = {k: v for k, v in lo.items() if k not in ("seed", "source") and not k.startswith("_")}
@@ -334,25 +331,6 @@ def is_template(doc: dict) -> bool:
     return "seed" not in lo
 
 
-# ---------------------------------------------------------------- 4.2 分享码
-def share_code(doc: dict) -> str:
-    part = {k: doc[k] for k in ("format", "loadout", "prefix", "objective", "check", "meta")}
-    raw = zlib.compress(canonical(part), 9)
-    return SHARE_PREFIX + base64.urlsafe_b64encode(raw).decode().rstrip("=")
-
-
-def from_share_code(code: str) -> dict:
-    if not code.startswith(SHARE_PREFIX):
-        raise SaveError(f"分享码应以 {SHARE_PREFIX} 开头")
-    body = code[len(SHARE_PREFIX):].strip()
-    raw = zlib.decompress(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
-    doc = json.loads(raw.decode("utf-8"))
-    doc["runs"] = []
-    doc["id"] = archive_id(expand_loadout(doc["loadout"]), doc.get("prefix", ""), doc.get("objective") or {})
-    return doc
-
-
-# ---------------------------------------------------------------- 第 5 章 读取与核对
 def read(doc: dict, *, engine_check=None) -> dict:
     """按第 5 章读取。返回 {"doc", "loadout"（展开）, "answers", "template", "id", "family"}；不合格抛 SaveError。
 

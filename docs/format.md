@@ -4,6 +4,77 @@
 
 所有文件都是 UTF-8 JSON。带 `schema` / `format` 的文档按版本号区分，只加字段不改含义；要改含义就升版本号。
 
+## 写一道题
+
+要往「試験集合」加一道考试，按这一章做就够，后面几章是参考。人和 AI 都按同样的三步：写开局配置、算编号、上传。
+
+**1. 写开局配置**，一个 JSON 对象，存成 `exam.json`。下面是一道完整的题（H.I.F 選抜 1，篠澤広）：
+
+```json
+{
+  "schema": "gkms.hif_loadout.v1",
+  "idol_card_id": "i_card-shro-3-007",
+  "produce_id": "produce-007",
+  "step_type": 16,
+  "round": "mid1",
+  "parameters": [296, 221, 172],
+  "score_bonus_permils": [13410, 14630, 8870],
+  "deck_cards": [
+    "p_card-00-acc-0_002",
+    "p_card-00-sup-3_093+1",
+    "p_card-02-act-1_037+1/p_card_custom-040_040_070-g_effect-p_card-02-act-1_037-enc_1-g_effect-p_card-02-act-1_037-enc_2-g_effect-p_card-02-act-1_037-enc_3",
+    "p_card-02-men-0_039",
+    "p_card-02-men-0_039",
+    "p_card-02-men-1_031+1/p_card_custom-040_040_070-g_effect-aggressive_add-1-g_effect-aggressive_add-2-g_effect-aggressive_add-5*3"
+  ],
+  "include_produce_default": false,
+  "produce_item_ids": ["pitem_02-3-076-0"],
+  "starting_stamina": 33,
+  "max_stamina": 33,
+  "drink_ids": ["pdrink_00-2-010", "pdrink_02-1-008"],
+  "support_cards": ["s_card-2-0007:56", "s_card-3-0039:70"],
+  "memory_ability_ids": [],
+  "main_item_enchant_ids": []
+}
+```
+
+| 字段 | 写什么 |
+|---|---|
+| `schema` | 固定写 `gkms.hif_loadout.v1` |
+| `idol_card_id` | 偶像卡编号（`i_card-…`）。流派、机制由它决定 |
+| `produce_id` | 哪场考试：`produce-007` H.I.F 選抜、`produce-008` H.I.F 本戦 |
+| `step_type` `round` | 第几轮，两项要对应：`16` / `mid1`、`17` / `mid2`（只有選抜有）、`18` / `final`。本戦上半场是 `16` / `mid1`，下半场是 `18` / `final`。回合数由考试和轮次决定，不用写 |
+| `parameters` | 这场考试的审查基准 `[Vo, Da, Vi]`。選抜 1 / 2 / 3 是 `[296, 221, 172]`、`[585, 435, 340]`、`[988, 735, 574]`，本戦两场都是 `[1871, 1392, 1088]` |
+| `score_bonus_permils` | Vo / Da / Vi 回合的分数倍率 × 1000，`[13410, 14630, 8870]` 就是 13.41 / 14.63 / 8.87 倍 |
+| `deck_cards` | 牌组，一张一项，同一张卡带几张就写几项。写法 `卡编号`、`卡编号+强化次数`，做过定制的再接 `/定制编号*档`（第 1 档可以不写 `*1`，多个定制接着写 `/…`） |
+| `include_produce_default` | 写 `false`：`deck_cards` 就是完整牌组 |
+| `produce_item_ids` | 带的 P 道具（`pitem_…`） |
+| `starting_stamina` `max_stamina` | 开局体力、体力上限 |
+| `drink_ids` | 带的饮料（`pdrink_…`），同一种带两瓶就写两次 |
+| `support_cards` | 支援卡，`编号:千分比`（考试里支援卡效果触发用的数值，照实机抄）。没有就写 `[]` |
+| `memory_ability_ids` | 回忆的能力编号，没有就写 `[]` |
+| `main_item_enchant_ids` | 定制 P 道具在考试开始时的效果（`enchant-customize_pitem-…`），没有就写 `[]` |
+
+不要写 `seed`：传上去的是题模板，种子由服务器配。卡、三元组、支援卡也可以写成展开的对象（`{"produce_card_id", "current_upgrade_count", "customizes": [{"id", "customize_count"}]}`、`{"1": …, "2": …, "3": …}`、`{"support_card_id", "permil"}`），两种写法算出的编号相同。
+
+编号去哪查：
+
+- 卡、饮料、P 道具、偶像、定制 P 道具效果、回忆：`GET https://hiro.matto.top/gkbench/api/catalog`（JSON，按编号给名字和效果文字；`cards.<编号>.custom.dirs[].id` 是这张卡能选的定制编号，`levels` 是各档效果），网页版是「考试资源一览」。
+- 现成的题：`GET https://hiro.matto.top/gkbench/api/sets/<集合>/problems`，每项的 `archive.loadout` 就是一份开局配置，可以照着改。支援卡的编号和千分比目录里没有，从这里抄。
+
+**2. 算编号。** 在本仓库目录下运行（只用格式模块，不需要游戏引擎，装法见 README）：
+
+    python -m gkbench save make exam.json --name 题名
+
+它生成 `AS-编号.gksave.json`。编号是按内容算的，改过内容就要重新生成；直接传手改过的存档会被拒，原因写「编号不符」。改一份现成的 `.gksave.json` 也用这条命令重算。
+
+**3. 上传。** 网页「試験集合」里进自己的集合，在「上传考试」选这个文件；或者用命令行（要先在网页「我的」里生成令牌）：
+
+    python -m gkbench upload-problems AS-编号.gksave.json --set <集合>
+    python -m gkbench upload-problems AS-编号.gksave.json --new "我的集合"      # 先建一个集合再传
+
+服务器逐道核对：编号和内容对得上；引擎认得里面的偶像、卡、P 道具，能开局；同一集合里已有同一开局（题族相同）的算重复，不收。没收的每道都写原因。收下后每道题配 32 个保密种子，所有算法打同一组。
+
 ## 1. 审查存档（题）
 
 实现在 `gkbench/save.py`（Python）和 `server/saves.go`（Go）。要点：
@@ -21,7 +92,6 @@
 | `mode` | `internal` 内置、`self` 自报（本地跑完提交）、`hosted` 托管（裁判握种子、逐步交动作）、`player` 玩家实战 |
 | `exam` / `exam_sha` | 题模板的答记所用的考试种子；保密时只写 `exam_sha`（十进制种子串的 SHA-256 前 12 位），这样的答第三方无法重放 |
 | `step_ms` / `step_seconds` | 每一步的思考毫秒数 / 每步预算；超过 `step_seconds × 1200 + 50` 毫秒的步算超时（1.7 f）） |
-| 分享码 | `GKAS1:` + zlib(9) + base64url（4.2） |
 | 时间 | `YYYYMMDDThhmmssZ`，UTC 整秒（4.3） |
 
 ## 2. 题库

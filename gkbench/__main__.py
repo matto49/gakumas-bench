@@ -19,8 +19,6 @@
   save export --set NAME [--runs RUN_DIR...] [--no-fixed] [--no-templates] --out FILE.jsonl
   save check FILE... [--no-replay]                             按第 5 章核对，并重放答
   save make FILE... [--name 名字] [--out DIR]                    自己出题：开局配置或改过的存档 → 可上传的题模板（重算编号）
-  save share FILE                                              分享码 GKAS1:…
-  save unshare CODE [--out FILE]
 """
 from __future__ import annotations
 
@@ -75,11 +73,10 @@ def main(argv=None):
     up.add_argument("run")
     up.add_argument("--server", default=None)
 
-    upp = sub.add_parser("upload-problems", help="往試験集合传考试（题模板 / 分享码）")
-    upp.add_argument("files", nargs="*")
+    upp = sub.add_parser("upload-problems", help="往試験集合传考试（.gksave.json / JSON Lines）")
+    upp.add_argument("files", nargs="+")
     upp.add_argument("--set", default=None, help="传进哪个集合（自己建的社区集合；管理员可传官方集合）")
     upp.add_argument("--new", default=None, metavar="名字", help="先新建一个社区集合再传")
-    upp.add_argument("--code", action="append", default=[], help="GKAS1: 分享码，可多次")
     upp.add_argument("--server", default=None)
 
     us = sub.add_parser("upload-saves")
@@ -124,11 +121,6 @@ def main(argv=None):
     sm.add_argument("files", nargs="+")
     sm.add_argument("--name", default=None, help="题名（写进 name: 标签）；多个文件时只用于第一个")
     sm.add_argument("--out", default=".", help="输出目录，每题一个 <编号>.gksave.json")
-    sh = ss.add_parser("share")
-    sh.add_argument("file")
-    su = ss.add_parser("unshare")
-    su.add_argument("code")
-    su.add_argument("--out", default=None)
 
     a = ap.parse_args(argv)
     # GKMS 引擎会切换当前目录，参数里的路径先转成绝对路径
@@ -175,7 +167,7 @@ def main(argv=None):
         from .client import upload_problems
         if not a.set and not a.new:
             raise SystemExit("要 --set <集合> 或 --new <名字>")
-        r = upload_problems(a.set, [absp(f) for f in a.files], a.code, a.server, a.new)
+        r = upload_problems(a.set, [absp(f) for f in a.files], a.server, a.new)
         print(f"集合 {r['set']}：收下 {r['accepted']} 道" + "".join(f"\n  + {x['id']} {x.get('name', '')}" for x in r.get("added") or []))
         for x in r["rejected"]:
             print(f"  没收 {x['id']}：{x['reason']}")
@@ -223,7 +215,6 @@ def main(argv=None):
                     d = save.make_template(src, name=a.name if i == 0 else None)
                     (out / f"{d['id']}.gksave.json").write_text(save.dumps(d))
                     print(f"{d['id']}（题族 {d['meta']['family']}）→ {out / (d['id'] + '.gksave.json')}")
-                    print(f"  分享码 {save.share_code(d)}")
             return
         from . import archive
         if a.scmd == "export":
@@ -245,18 +236,6 @@ def main(argv=None):
                     all_ok &= ok
                     print("\n".join(lines))
             sys.exit(0 if all_ok else 1)
-        elif a.scmd == "share":
-            for d in archive.load_docs(absp(a.file)):
-                print(save.share_code(d))
-        elif a.scmd == "unshare":
-            d = save.from_share_code(a.code)
-            save.read(d)
-            text = save.dumps(d)
-            if a.out:
-                Path(absp(a.out)).write_text(text)
-                print(f"{d['id']} → {a.out}")
-            else:
-                print(text, end="")
     elif a.cmd == "show":
         from .runner import read_episodes
         for e in read_episodes(absp(a.run)):
