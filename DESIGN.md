@@ -37,7 +37,8 @@ shadcn 的语义变量（`background` `foreground` `primary` `muted` `accent` `b
 | `Button`（shadcn） | 圆角胶囊；`default` 深橙底白字，底下一道深色阴影像游戏按钮；`outline` 白底细边，悬停变橙；`size="sm"` 小号。链接要长成按钮用 `btn.primary` / `btn.secondary` / `btn.small`（同一套样式的类名） |
 | `Select` | 全站下拉框（`components/Select.tsx`），包了 shadcn 的 Select：传 `options` 数组，选项可带小图（偶像头像）和右侧灰字说明；靠右的用 `align="end"`。不要再用原生 `<select>` |
 | `Tip` / `Help` | 悬停说明，底层 shadcn Tooltip，弹层挂在 body 上，不会被表格滚动区裁掉 |
-| `ToggleGroup variant="segment"` | 分段切换（排行页的固定 / 保密种子） |
+| `Checkbox` | 勾选框。排行页的「固定种子」：默认不勾，看保密种子成绩；勾上是 `?kind=fixed` |
+| `ToggleGroup variant="segment"` | 分段切换（暂时没用到） |
 | `Badge` | `ModeBadge` 用它：`outline` 自报、`brand` 托管、`quiet` 上限 |
 | `Input` | 文本输入框；文件选择框仍用原生 |
 | `toast`（sonner） | 操作结果提示（上传收下 / 失败），右下角 |

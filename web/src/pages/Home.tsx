@@ -81,7 +81,7 @@ function FeaturedResult() {
       </ol>
       <div className="flex items-center justify-between bg-surface-2 px-5 py-2.5 text-[12.5px] text-ink-2">
         <span>理论上限 <span className="disp text-[15px] text-ink">{int(data.oracle)}</span></span>
-        <Link to={`/sets/${FEATURE_SET}`} className="inline-flex items-center gap-1 font-semibold text-brand-ink hover:underline">
+        <Link to={`/sets/${FEATURE_SET}?kind=fixed`} className="inline-flex items-center gap-1 font-semibold text-brand-ink hover:underline">
           完整排行 <ArrowRight size={13} aria-hidden />
         </Link>
       </div>

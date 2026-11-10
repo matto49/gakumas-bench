@@ -7,7 +7,8 @@ import { useCatalog, idolShort } from '../lib/catalog'
 import { compact, int, ms, secs } from '../lib/format'
 import { GRADE_HINT, KIND_INFO, SET_INFO, TAG_LABEL, tagValueLabel, type Kind } from '../lib/game'
 import { Select } from '../components/Select'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Code, cx, Empty, SectionTitle, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, RankNum, RatioText, TableSkeleton, Tip } from '../components/ui'
 
 type SortKey = 'oracle' | 'base' | 'mean' | 'p50' | 'n' | 'label'
@@ -58,8 +59,9 @@ export function Leaderboard() {
   const [q, setQ] = useSearchParams()
   const cat = useCatalog()
   const sets = useApi<SetInfo[]>('api/sets')
-  const rawKind = q.get('kind') ?? (q.get('mode') === 'random' ? 'template' : '')
-  const kind: Kind = rawKind === 'template' || rawKind === 'legacy' ? rawKind : 'fixed'
+  // 默认看保密种子；?kind=fixed 固定种子，?kind=legacy 旧版评测
+  const rawKind = q.get('kind') ?? ''
+  const kind: Kind = rawKind === 'fixed' || rawKind === 'legacy' ? rawKind : 'template'
   const base = q.get('base') ?? ''
   const group = q.get('group') ?? ''
   const sort = ((q.get('sort') as SortKey) || 'oracle') as SortKey
@@ -108,7 +110,7 @@ export function Leaderboard() {
         {sets.data?.map((s) => (
           <Link
             key={s.set}
-            to={`/sets/${s.set}${kind !== 'fixed' ? `?kind=${kind}` : ''}`}
+            to={`/sets/${s.set}${kind !== 'template' ? `?kind=${kind}` : ''}`}
             role="tab"
             aria-selected={s.set === set}
             className={cx(
@@ -123,7 +125,7 @@ export function Leaderboard() {
       </div>
 
       <PageHeader
-        title={SET_INFO[set]?.title ?? set}
+        title={<span className="inline-flex flex-wrap items-center gap-2.5">{SET_INFO[set]?.title ?? set}<Badge variant={kind === 'template' ? 'brand' : 'quiet'}>{KIND_INFO[kind].title}</Badge></span>}
         sub={
           <>
             {SET_INFO[set]?.blurb}
@@ -137,21 +139,14 @@ export function Leaderboard() {
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-        <ToggleGroup
-          aria-label="种子"
-          variant="segment"
-          spacing={0}
-          value={[kind === 'legacy' ? 'template' : kind]}
-          onValueChange={(v) => v[0] && update({ kind: v[0] === 'fixed' ? '' : String(v[0]), mode: '', base: '', sort: '', dir: '' })}
-          className="rounded-full border border-input bg-background p-0.5"
-        >
-          {(['fixed', 'template'] as const).map((m) => (
-            <ToggleGroupItem key={m} value={m} className="rounded-full!">
-              {KIND_INFO[m].title}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-        <Help tip={KIND_INFO[kind].hint} />
+        <label className="inline-flex cursor-pointer items-center gap-2 font-semibold text-ink select-none">
+          <Checkbox
+            checked={kind === 'fixed'}
+            onCheckedChange={(c) => update({ kind: c ? 'fixed' : '', mode: '', base: '', sort: '', dir: '' })}
+          />
+          固定种子
+        </label>
+        <Help tip={<>不勾：看保密种子成绩（每题 32 个种子，只在服务器上，所有算法托管跑）。<br />勾上：看固定种子成绩。{KIND_INFO.fixed.hint}</>} />
         <span className="inline-flex items-center gap-2 text-ink-2">
           基准
           <Select label="基准" value={base} onChange={(v) => update({ base: v })} width="14rem"
@@ -166,7 +161,7 @@ export function Leaderboard() {
         {kind === 'legacy' ? (
           <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-surface-3 px-3 py-1 text-[12.5px] text-ink-2">
             正在看旧版评测，和现在的成绩不可比
-            <button onClick={() => update({ kind: 'template', base: '', sort: '', dir: '' })} className="font-semibold text-brand-ink hover:underline">回到保密种子</button>
+            <button onClick={() => update({ kind: '', base: '', sort: '', dir: '' })} className="font-semibold text-brand-ink hover:underline">回到保密种子</button>
           </span>
         ) : kind === 'template' ? (
           <button onClick={() => update({ kind: 'legacy', base: '', sort: '', dir: '' })} className="ml-auto text-[12.5px] text-ink-3 hover:text-brand-ink">
