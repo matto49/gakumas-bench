@@ -5,8 +5,9 @@ import { useApi } from '../lib/hooks'
 import { cx } from './ui'
 
 const nav = [
-  { to: '/', label: '首页', end: true },
-  { to: '/sets', label: '排行' },
+  { to: '/', label: '首页', end: true, wide: true }, // 小屏上藏起来，点 logo 回首页
+  { to: '/sets', label: '算法排行' },
+  { to: '/cards', label: '牌库' },
   { to: '/compare', label: '对比' },
 ]
 
@@ -34,15 +35,15 @@ export function Layout() {
             </Link>
             <nav className="flex items-center gap-0.5 sm:gap-1">
               {nav.map((n) => (
-                <NavLink key={n.to} to={n.to} end={n.end} className={pill}>
+                <NavLink key={n.to} to={n.to} end={n.end} className={(s) => cx(pill(s), 'wide' in n && 'max-sm:hidden')}>
                   {n.label}
                 </NavLink>
               ))}
             </nav>
             <div className="ml-auto">
-              <NavLink to="/me" className={(s) => cx(pill(s), 'inline-flex items-center gap-1.5')}>
+              <NavLink to="/me" aria-label={me.data?.user ?? '登录'} className={(s) => cx(pill(s), 'inline-flex items-center gap-1.5')}>
                 {me.data?.avatar ? <img src={me.data.avatar} alt="" width={18} height={18} className="size-[18px] rounded-full" /> : <UserRound size={14} aria-hidden />}
-                {me.data?.user ?? '登录'}
+                <span className="hidden sm:inline">{me.data?.user ?? '登录'}</span>
               </NavLink>
             </div>
           </div>

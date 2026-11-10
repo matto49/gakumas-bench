@@ -55,7 +55,7 @@ export function Compare() {
       </div>
 
       {!set && <Empty>先选题集，再选两个算法。</Empty>}
-      {set && (!a || !b) && <Empty>选两个运行。不知道选哪个？去 <Link to={`/sets/${set}`} className="text-brand-ink underline underline-offset-2">排行</Link> 看看。</Empty>}
+      {set && (!a || !b) && <Empty>选两个运行。不知道选哪个？去 <Link to={`/sets/${set}`} className="text-brand-ink underline underline-offset-2">算法排行</Link> 看看。</Empty>}
       {a && b && !problem && <PairList a={a} b={b} labelA={label(a)} labelB={label(b)} onPick={(p, s) => update({ problem: p, seed: String(s) })} />}
       {a && b && problem && seed !== '' && <PairDetail a={a} b={b} labelA={label(a)} labelB={label(b)} problem={problem} seed={seed} />}
     </div>

@@ -76,7 +76,7 @@ export function Replay() {
   return (
     <div>
       <p className="mb-3 text-[12.5px] text-ink-3">
-        <Link to={`/sets/${e.set}`} className="hover:text-brand-ink">排行</Link> / <Link to={`/runs/${run}`} className="hover:text-brand-ink">{runInfo.data?.label ?? run}</Link> / 复盘
+        <Link to={`/sets/${e.set}`} className="hover:text-brand-ink">算法排行</Link> / <Link to={`/runs/${run}`} className="hover:text-brand-ink">{runInfo.data?.label ?? run}</Link> / 复盘
       </p>
       <header className="mb-5 overflow-hidden rounded-2xl border border-line bg-surface">
         <div className="stripes flex flex-wrap items-center gap-4 bg-brand-deep px-5 py-3.5 text-white">

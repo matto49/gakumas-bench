@@ -11,6 +11,7 @@ import { Leaderboard } from './pages/Leaderboard'
 import { RunPage } from './pages/Run'
 import { Replay } from './pages/Replay'
 import { Compare } from './pages/Compare'
+import { Cards } from './pages/Cards'
 import { Me } from './pages/Me'
 import { NotFound } from './pages/NotFound'
 
@@ -25,6 +26,7 @@ const router = createBrowserRouter(
         { path: '/runs/:run', element: <RunPage /> },
         { path: '/runs/:run/:problem/:seed', element: <Replay /> },
         { path: '/compare', element: <Compare /> },
+        { path: '/cards', element: <Cards /> },
         { path: '/me', element: <Me /> },
         { path: '/leaderboard', element: <Navigate to="/sets" replace /> },
         { path: '*', element: <NotFound /> },
