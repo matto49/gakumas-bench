@@ -17,7 +17,7 @@ official_ai 要求宿主实现 SequenceHost / EvaluationHost 两个接口，这�
 - 触发预测按每条效果执行前后的净变化记一条差分；原版按引擎内部的每次变化逐条记（链式效果会有细微出入）；
   效果里的卡牌成长（差分类型 20）没记；
 - 「效果抽牌总数」（评估第 28 项）原生核心不记，按 0；
-- 来源是 P 道具的定时效果和来源是卡的分不开，定时效果一律按卡牌来源算。
+- 定时效果的来源只分得出直接（出牌装的）和间接（持续效果、P 道具装的），直接的一律按卡牌来源算。
 """
 from __future__ import annotations
 
@@ -324,8 +324,10 @@ class NativeHost:
             trigger = str(row.get("trigger") or "").split("|", 1)[-1]
             out.append(_Trigger(trigger, 31, card, left, tuple(row.get("effect_ids") or ())))
         for turn, effect_ids in sorted((seq.state.effect_timer_queue or {}).items()):
-            if int(turn) >= int(seq.turn):
-                out.append(_Trigger("", 30, "timer", 1, tuple(effect_ids)))
+            # 「~」开头的是持续效果 / P 道具装的间接定时效果，不算技能卡来源
+            direct = tuple(e for e in effect_ids if not str(e).startswith("~"))
+            if int(turn) >= int(seq.turn) and direct:
+                out.append(_Trigger("", 30, "timer", 1, direct))
         return tuple(out)
 
     def create_prediction_resolver(self, seq):
@@ -373,7 +375,10 @@ class _Resolver:
         from official_ai.evaluation_types import EffectDifference
         if self.broken:
             return ()
-        sid = self.work._round.ctx.sid(effect_id)
+        try:
+            sid = self.work._round.ctx.sid(effect_id)
+        except Exception:                            # 这局的核心表里没有这条效果：不预测
+            return ()
         before = self._snap()
         rc = self.host.ext.bx_apply_effect(self.work._core, sid)
         self.work._dirty()
