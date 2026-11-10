@@ -22,10 +22,10 @@ export function SkillCard({ card, size = 44, dim, mark }: { card: Card; size?: n
       tip={
         <span className="block">
           <span className="block font-medium text-ink">{name}</span>
-          {c && <span className="mt-0.5 block text-[11px] text-muted">{c.rarity} · {c.category === 'ACTIVE_SKILL' ? 'アクティブ' : c.category === 'MENTAL_SKILL' ? 'メンタル' : c.category === 'TROUBLE' ? 'トラブル' : c.category}</span>}
+          {c && <span className="mt-0.5 block text-[11px] text-ink-3">{c.rarity} · {c.category === 'ACTIVE_SKILL' ? 'アクティブ' : c.category === 'MENTAL_SKILL' ? 'メンタル' : c.category === 'TROUBLE' ? 'トラブル' : c.category}</span>}
           {text && <span className="mt-1 block whitespace-pre-line">{text}</span>}
-          {card.c && card.c.length > 0 && <span className="mt-1 block text-accent-ink">定制 {card.c.map((x) => `×${x[1]}`).join(' ')}</span>}
-          {card.g && card.g.length > 0 && <span className="mt-1 block text-accent-ink">考试中成长 {card.g.length} 次</span>}
+          {card.c && card.c.length > 0 && <span className="mt-1 block text-brand-ink">定制 {card.c.map((x) => `×${x[1]}`).join(' ')}</span>}
+          {card.g && card.g.length > 0 && <span className="mt-1 block text-brand-ink">考试中成长 {card.g.length} 次</span>}
           {card.p === 0 && <span className="mt-1 block text-critical">现在打不出</span>}
         </span>
       }
@@ -39,7 +39,7 @@ export function SkillCard({ card, size = 44, dim, mark }: { card: Card; size?: n
           className={cx(
             'relative grid place-items-center overflow-hidden rounded-[6px] bg-surface-3 ring-1',
             RARITY_RING[c?.rarity ?? 'N'] ?? 'ring-line',
-            mark === 'chosen' && 'ring-2 ring-accent',
+            mark === 'chosen' && 'ring-2 ring-brand',
           )}
           style={{ width: size, height: size }}
         >
@@ -63,7 +63,7 @@ export function DrinkChip({ id, mark }: { id: string; mark?: boolean }) {
   const d = cat?.drinks[id]
   return (
     <Tip tip={<span className="block"><span className="block font-medium text-ink">{drinkName(cat, id)}</span>{d?.text && <span className="mt-1 block whitespace-pre-line">{d.text}</span>}</span>}>
-      <span tabIndex={0} className={cx('inline-flex items-center gap-1.5 rounded-md border bg-surface px-1.5 py-1', mark ? 'border-accent ring-1 ring-accent' : 'border-line')}>
+      <span tabIndex={0} className={cx('inline-flex items-center gap-1.5 rounded-md border bg-surface px-1.5 py-1', mark ? 'border-brand ring-1 ring-brand' : 'border-line')}>
         {d?.asset ? <img src={spriteUrl(d.asset)} alt="" width={22} height={22} className="size-[22px]" /> : <span className="size-[22px] rounded bg-surface-3" />}
         <span className="max-w-32 truncate text-[12px] text-ink">{drinkName(cat, id)}</span>
       </span>
@@ -79,7 +79,7 @@ export function EnchantChip({ id, uses, turns }: { id: string; uses: number; tur
     <Tip tip={<span className="block"><span className="block font-medium text-ink">{enchantName(cat, id)}</span>{e?.text && <span className="mt-1 block whitespace-pre-line">{e.text}</span>}</span>} wide>
       <span tabIndex={0} className="inline-flex max-w-full items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[11.5px] text-ink-2">
         <span className="truncate">{enchantName(cat, id)}</span>
-        {meta && <span className="shrink-0 text-muted">{meta}</span>}
+        {meta && <span className="shrink-0 text-ink-3">{meta}</span>}
       </span>
     </Tip>
   )
@@ -90,7 +90,7 @@ export function StatusChip({ kind, value, turns }: { kind: string; value: number
     <span className="inline-flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[11.5px]">
       <span className="text-ink-2">{STATUS[kind] ?? kind}</span>
       <span className="num font-semibold text-ink">{Number.isInteger(value) ? value : value.toFixed(1)}</span>
-      {turns >= 0 && <span className="text-muted">{turns}T</span>}
+      {turns >= 0 && <span className="text-ink-3">{turns}T</span>}
     </span>
   )
 }

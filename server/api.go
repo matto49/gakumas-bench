@@ -137,26 +137,39 @@ func (a *App) handleSets(w http.ResponseWriter, r *http.Request, u string) {
 				}
 			}
 		}
-		files, _ := filepath.Glob(filepath.Join(a.store.Data, "problems", s, "*.json"))
-		out = append(out, map[string]any{"set": s, "problems": len(files), "seeds": map[string]int{"dev": dev, "test": test},
-			"runs": len(a.store.Runs(s)), "public_seeds": cfg[s].PublicSeeds})
+		var idols []string // 题里出现的偶像卡，按出现顺序去重，首页画头像用
+		seen := map[string]bool{}
+		for _, p := range a.store.Problems(s) {
+			if id, _ := tagsOf(p)["idol"].(string); id != "" && !seen[id] {
+				seen[id] = true
+				idols = append(idols, id)
+			}
+		}
+		out = append(out, map[string]any{"set": s, "problems": len(a.store.Problems(s)), "seeds": map[string]int{"dev": dev, "test": test},
+			"template_seeds": TemplateSeeds, "idols": idols, "runs": len(a.store.Runs(s)), "public_seeds": cfg[s].PublicSeeds})
 	}
 	writeJSONResp(w, 200, out)
 }
 
+// 题集里的题：题模板（审查存档原样）+ 便于展示的 name、family、tags + 每个固定种子的公开信息（不含种子本身）
 func (a *App) handleProblems(w http.ResponseWriter, r *http.Request, u string) {
 	set := r.PathValue("set")
 	seeds := a.store.Seeds(set)
-	probs := a.store.Problems(set)
-	for _, p := range probs {
+	out := []map[string]any{}
+	for _, p := range a.store.Problems(set) {
 		id, _ := p["id"].(string)
-		var rows []map[string]any
+		rows := []map[string]any{}
 		for _, s := range seeds[id] {
-			rows = append(rows, map[string]any{"index": s.Index, "split": s.Split, "label": s.Label, "seed_sha": seedSha(s.Seed)})
+			row := map[string]any{"index": s.Index, "split": s.Split, "label": s.Label}
+			if !secretSplit(s.Split) { // 种子只有约 21 亿种，exam_sha 和固定种子题编号都能穷举反推出种子
+				row["exam_sha"], row["fixed_id"] = seedSha(s.Seed), s.FixedID
+			}
+			rows = append(rows, row)
 		}
-		p["seeds"] = rows
+		out = append(out, map[string]any{"id": id, "name": nameOf(p), "family": metaOf(p)["family"], "tags": tagsOf(p),
+			"archive": p, "seeds": rows})
 	}
-	writeJSONResp(w, 200, probs)
+	writeJSONResp(w, 200, out)
 }
 
 // 开发集种子（本地跑要用）：题集开了 public_seeds 时谁都能下载，否则要令牌。测试集种子永不下发。
@@ -174,7 +187,7 @@ func (a *App) handleSeeds(w http.ResponseWriter, r *http.Request, u string) {
 			}
 		}
 	}
-	writeJSONResp(w, 200, map[string]any{"schema": "gkbench.seeds.v1", "set": set, "problems": out})
+	writeJSONResp(w, 200, map[string]any{"schema": "gkbench.seeds.v2", "set": set, "problems": out})
 }
 
 // ---------------------------------------------------------------- 运行
@@ -195,25 +208,28 @@ func (a *App) handleRun(w http.ResponseWriter, r *http.Request, u string) {
 		fail(w, 500, err.Error())
 		return
 	}
+	secret := info["template_seeds"] != nil
 	for i := range idx {
-		idx[i].ThinkMs = nil
+		idx[i].StepMs = nil
+		if secret {
+			idx[i].ExamSha = ""
+		}
 	}
 	info["episodes"] = idx
 	writeJSONResp(w, 200, info)
 }
 
 func (a *App) handleEpisode(w http.ResponseWriter, r *http.Request, u string) {
-	run, pid := r.PathValue("run"), r.PathValue("problem")
+	run, pid := r.PathValue("run"), r.PathValue("id")
 	si, err := strconv.Atoi(r.PathValue("seed"))
 	if err != nil || !a.store.validName(run) {
 		fail(w, 400, "参数不对")
 		return
 	}
-	var found map[string]any
+	var found map[string]any // 逐局追加的运行里同一局可能重打过，取最后一次
 	_ = ReadEpisodes(filepath.Join(a.store.RunDir(run), "episodes.jsonl.zst"), func(e map[string]any) bool {
-		if e["problem"] == pid && int(num(e["seed_index"])) == si {
+		if e["id"] == pid && int(num(e["seed_index"])) == si {
 			found = e
-			return false
 		}
 		return true
 	})
@@ -221,10 +237,14 @@ func (a *App) handleEpisode(w http.ResponseWriter, r *http.Request, u string) {
 		fail(w, 404, "没有这一局")
 		return
 	}
-	// 测试集对局的逐步记录会暴露这个种子的抽牌顺序，不公开
-	if found["seed_split"] == "test" && u == "" {
-		fail(w, http.StatusForbidden, "测试集对局的逐步记录不公开，登录后可看")
-		return
+	// 保密种子（测试集、题模板的固定种子）的逐步记录会暴露抽牌顺序，不公开；exam_sha 能穷举反推出种子，一律不下发
+	if split := str(found["seed_split"]); secretSplit(split) {
+		if u == "" {
+			fail(w, http.StatusForbidden, "保密种子的逐步记录不公开，登录后可看")
+			return
+		}
+		delete(found, "exam_sha")
+		delete(found, "fixed_id")
 	}
 	// 只给裁判看的字段不下发到网页
 	if steps, ok := found["steps"].([]any); ok {
@@ -239,7 +259,11 @@ func (a *App) handleEpisode(w http.ResponseWriter, r *http.Request, u string) {
 
 func (a *App) handleLeaderboard(w http.ResponseWriter, r *http.Request, u string) {
 	q := r.URL.Query()
-	rows, err := a.store.Leaderboard(q.Get("set"), q.Get("base"), q.Get("group"))
+	kind := q.Get("kind")
+	if kind == "" {
+		kind = q.Get("mode") // 旧参数名
+	}
+	rows, err := a.store.Leaderboard(q.Get("set"), q.Get("base"), q.Get("group"), kind)
 	if err != nil {
 		fail(w, 500, err.Error())
 		return
@@ -294,8 +318,12 @@ func (a *App) handleUpload(w http.ResponseWriter, r *http.Request, u string) {
 		return
 	}
 	var info map[string]any
-	if json.Unmarshal(runRaw, &info) != nil || info["schema"] != "gkbench.run.v1" {
-		fail(w, 400, "run.json 格式不对")
+	if json.Unmarshal(runRaw, &info) != nil || info["schema"] != "gkbench.run.v2" {
+		fail(w, 400, "run.json 格式不对（要 gkbench.run.v2）")
+		return
+	}
+	if info["kind"] == "template" {
+		fail(w, 400, "题模板（保密种子）的成绩只能托管跑，不能上传整次运行")
 		return
 	}
 	runID := slug(fmt.Sprintf("%v-%s", info["run"], u))
@@ -365,7 +393,7 @@ func (a *App) verify(j *Job, info map[string]any, tmp string, u string) {
 					if ok[i] {
 						j.Accepted++
 					} else {
-						j.Rejected = append(j.Rejected, map[string]any{"problem": e["problem"], "seed_index": e["seed_index"], "reason": reasons[i]})
+						j.Rejected = append(j.Rejected, map[string]any{"id": e["id"], "seed_index": e["seed_index"], "reason": reasons[i]})
 					}
 				})
 			}
@@ -387,7 +415,11 @@ func (a *App) verify(j *Job, info map[string]any, tmp string, u string) {
 		setJob(func() { j.Status = "rejected" })
 		return
 	}
-	info["run"], info["uploader"], info["mode"], info["uploaded"] = j.Run, u, "upload", now()
+	// 上传的成绩一律是 self（自报）：服务器核对过分数，但证明不了算法没偷看种子；by 以令牌为准
+	if info["mode"] != "self" && info["mode"] != nil {
+		info["claimed_mode"] = info["mode"]
+	}
+	info["run"], info["by"], info["mode"], info["uploaded"], info["kind"] = j.Run, u, "self", now(), "fixed"
 	info["verified"] = map[string]any{"accepted": len(accepted), "rejected": len(eps) - len(accepted), "engine": a.engineInfo}
 	a.store.mu.Lock()
 	err := a.store.WriteRun(j.Run, info, accepted)
@@ -405,7 +437,7 @@ func (a *App) verify(j *Job, info map[string]any, tmp string, u string) {
 
 // check 返回空字符串表示通过，否则是拒收原因
 func (a *App) check(wk *Worker, set string, seeds map[string][]SeedRow, e map[string]any) string {
-	pid := fmt.Sprint(e["problem"])
+	pid := fmt.Sprint(e["id"])
 	si := int(num(e["seed_index"]))
 	var row *SeedRow
 	for i := range seeds[pid] {
@@ -414,11 +446,11 @@ func (a *App) check(wk *Worker, set string, seeds map[string][]SeedRow, e map[st
 		}
 	}
 	switch {
-	case e["schema"] != "gkbench.episode.v1" || row == nil:
+	case e["schema"] != "gkbench.episode.v2" || row == nil:
 		return "没有这道题或种子"
 	case row.Split == "test":
 		return "测试集只能托管跑"
-	case e["seed_sha"] != seedSha(row.Seed):
+	case e["exam_sha"] != seedSha(row.Seed):
 		return "种子哈希不符"
 	}
 	prob, err := a.store.Problem(set, pid)
@@ -432,6 +464,8 @@ func (a *App) check(wk *Worker, set string, seeds map[string][]SeedRow, e map[st
 	if v, _ := rep["verdict"].(bool); !v {
 		return fmt.Sprint(rep["reason"])
 	}
+	// 题的身份信息以服务器的题库为准
+	e["fixed_id"], e["family"], e["name"], e["tags"] = row.FixedID, metaOf(prob)["family"], nameOf(prob), tagsOf(prob)
 	return ""
 }
 
@@ -440,7 +474,7 @@ func (a *App) check(wk *Worker, set string, seeds map[string][]SeedRow, e map[st
 func (a *App) handleMyRuns(w http.ResponseWriter, r *http.Request, u string) {
 	out := []map[string]any{}
 	for _, info := range a.store.Runs("") {
-		if info["uploader"] == u {
+		if info["by"] == u {
 			out = append(out, info)
 		}
 	}
@@ -462,3 +496,6 @@ func (a *App) handleMyJobs(w http.ResponseWriter, r *http.Request, u string) {
 	}
 	writeJSONResp(w, 200, out)
 }
+
+// secretSplit 种子保密的局：测试集、题模板的固定种子
+func secretSplit(split string) bool { return split == "test" || split == "template" }

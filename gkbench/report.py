@@ -25,7 +25,7 @@ def load(run_dirs):
     for d in run_dirs:
         d = Path(d)
         info = json.loads((d / "run.json").read_text())
-        eps = {(e["problem"], e["seed_index"]): e for e in read_episodes(d)}
+        eps = {(e["id"], e["seed_index"]): e for e in read_episodes(d)}
         runs.append((info, eps))
     return runs
 
@@ -45,7 +45,7 @@ def summarize(run_dirs, base=None):
     runs = load(run_dirs)
     oracle = {}
     for info, eps in runs:
-        if info["algo"].get("privileged"):
+        if info.get("privileged"):
             for k, e in eps.items():
                 oracle[k] = max(oracle.get(k, 0), e["final"]["score"])
     base_eps = None
@@ -58,13 +58,13 @@ def summarize(run_dirs, base=None):
     rows = []
     for info, eps in runs:
         scores = [e["final"]["score"] for e in eps.values()]
-        think = [s["think_ms"] for e in eps.values() for s in e["steps"]]
-        per_ep = [e["final"]["think_s"] for e in eps.values()]
-        row = {"label": info["label"], "run": info["run"], "privileged": bool(info["algo"].get("privileged")),
-               "budget_s": info.get("budget_s"), "n": len(eps), "mean": sum(scores) / len(scores) if scores else 0,
-               "errors": sum(1 for e in eps.values() if e["error"]),
+        think = [s["step_ms"] for e in eps.values() for s in e["steps"]]
+        per_ep = [e["final"]["secs"] for e in eps.values()]
+        row = {"label": info["label"], "run": info["run"], "privileged": bool(info.get("privileged")),
+               "budget_s": info.get("step_seconds"), "n": len(eps), "mean": sum(scores) / len(scores) if scores else 0,
+               "errors": sum(1 for e in eps.values() if e["err"]),
                "unfinished": sum(1 for e in eps.values() if not e["final"]["finished"]),
-               "over": sum(e["final"]["over_budget_steps"] for e in eps.values()),
+               "over": sum(e["final"]["over_steps"] for e in eps.values()),
                "p50_ms": _pct(think, 0.5), "p95_ms": _pct(think, 0.95), "max_ms": max(think) if think else None,
                "ep_think_s": sum(per_ep) / len(per_ep) if per_ep else 0}
         pairs = [(e["final"]["score"], oracle[k]) for k, e in eps.items() if k in oracle]

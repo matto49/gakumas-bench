@@ -16,6 +16,8 @@ export function useCatalog() {
 }
 
 export const spriteUrl = (asset: string) => `${BASE}sprites/${asset}.png`
+export const idolThumbUrl = (id: string) => `${BASE}sprites/idol-${id}.webp`
+export const gradeUrl = (key: string) => `${BASE}sprites/rank-${key}.webp`
 
 export function cardName(cat: Catalog | null, id: string, u = 0) {
   const c = cat?.cards[id]
@@ -25,6 +27,12 @@ export function cardName(cat: Catalog | null, id: string, u = 0) {
 
 export function idolName(cat: Catalog | null, id: string) {
   return cat?.idols[id]?.name ?? id
+}
+
+/** 偶像名去掉【卡名】前缀，只留人名 */
+export function idolShort(cat: Catalog | null, id: string) {
+  const n = idolName(cat, id)
+  return n.includes('】') ? n.slice(n.indexOf('】') + 1) : n
 }
 
 export function drinkName(cat: Catalog | null, id: string) {

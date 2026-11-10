@@ -23,7 +23,8 @@ class Referee:
     def __init__(self, loadout: dict, seed: int):
         engine.setup()
         from uinet.env import Battle
-        lo = {k: v for k, v in loadout.items() if not k.startswith("_") and k != "source"}
+        from .save import expand_loadout
+        lo = {k: v for k, v in expand_loadout(loadout).items() if not k.startswith("_") and k != "source"}
         lo["seed"] = int(seed)
         self.loadout_public = {k: v for k, v in lo.items() if k != "seed"}
         self.battle = Battle(lo)
@@ -78,9 +79,12 @@ class Referee:
     # -- 推进
     def step(self, action) -> dict:
         action = tuple(action)
-        legal = self.legal()
-        if action not in legal:
-            raise IllegalAction(action, legal)
+        if action[0] == "select":                   # 选牌（记号 s）：合法与否由引擎判断
+            action = ("select", list(action[1]) if isinstance(action[1], (list, tuple)) else list(action[1:]))
+        else:
+            legal = self.legal()
+            if action not in legal:
+                raise IllegalAction(action, legal)
         before = self.numbers()
         hand_before = _card_ids(self.battle.session.deck.hand)
         self.battle.step(action)

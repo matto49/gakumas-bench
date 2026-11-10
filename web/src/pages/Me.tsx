@@ -5,9 +5,12 @@ import { api, ApiError, BASE, type Job } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { when } from '../lib/format'
 import { SET_INFO } from '../lib/game'
-import { Code, CodeBlock, cx, ErrorState, ModeBadge, PageHeader, TableSkeleton } from '../components/ui'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { toast } from 'sonner'
+import { Code, CodeBlock, cx, Empty, ErrorState, ModeBadge, PageHeader, SectionTitle, TableSkeleton } from '../components/ui'
 
-type MyRun = { run: string; label: string; set: string; mode?: string; uploaded?: string; finished?: string; started?: string; episodes?: number; verified?: { accepted: number; rejected: number }; algo?: { privileged?: boolean } }
+type MyRun = { run: string; label: string; set: string; kind?: string; mode?: string; uploaded?: string; finished?: string; started?: string; episodes?: number; verified?: { accepted: number; rejected?: number }; privileged?: boolean }
 
 export function Me() {
   const me = useApi<{ user: string; engine: { rules_version?: number } }>('api/me')
@@ -36,24 +39,24 @@ function Login({ onDone }: { onDone: () => void }) {
   }
   return (
     <div className="max-w-[560px] py-6">
-      <PageHeader title="登录" sub="排行、复盘、对比不用登录就能看。上传成绩、托管跑和查看自己的上传需要令牌。" />
+      <PageHeader title="登录" sub="看排行和复盘不用登录。交成绩、托管跑要令牌。" />
       <form onSubmit={submit} className="space-y-3">
         <label className="block">
           <span className="mb-1 block font-medium text-ink">令牌</span>
-          <input
+          <Input
             type="password"
             autoComplete="off"
             value={tok}
             onChange={(e) => setTok(e.target.value)}
-            className="h-9 w-full rounded-md border border-line-strong bg-surface px-3 font-mono text-ink"
-            placeholder="粘贴管理员给你的令牌"
+            className="h-10 font-mono"
+            placeholder="粘贴令牌"
           />
         </label>
         {err && <p className="text-critical">{err}</p>}
-        <button disabled={!tok.trim() || busy} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent px-4 font-medium text-white hover:bg-accent-ink disabled:opacity-50">
+        <Button type="submit" disabled={!tok.trim() || busy}>
           {busy && <Loader2 size={15} className="animate-spin" aria-hidden />}登录
-        </button>
-        <p className="text-[12.5px] text-muted">令牌只存在这个浏览器的 cookie 里（180 天）。还没有令牌？向管理员要一个。</p>
+        </Button>
+        <p className="text-[12.5px] text-ink-3">令牌存在这个浏览器的 cookie 里，180 天有效。没有令牌找管理员要。</p>
       </form>
     </div>
   )
@@ -90,30 +93,30 @@ function Dashboard({ user }: { user: string }) {
       <PageHeader
         title={`我的 · ${user}`}
         right={
-          <button onClick={logout} className="inline-flex items-center gap-1.5 rounded-md border border-line-strong px-3 py-1.5 text-ink-2 hover:bg-surface-2">
+          <Button variant="outline" size="sm" onClick={logout}>
             <LogOut size={14} aria-hidden />退出
-          </button>
+          </Button>
         }
       />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0">
           {jobs.length > 0 && (
             <section className="mb-8">
-              <h2 className="mb-2 text-[15px] font-semibold text-ink">上传核对</h2>
-              <ul className="divide-y divide-line rounded-lg border border-line">
+              <SectionTitle>上传核对</SectionTitle>
+              <ul className="divide-y divide-line rounded-xl border border-line bg-surface">
                 {jobs.map((j) => <JobRow key={j.job} j={j} />)}
               </ul>
             </section>
           )}
           <section>
-            <h2 className="mb-2 text-[15px] font-semibold text-ink">我的运行</h2>
+            <SectionTitle>我的运行</SectionTitle>
             {runs.error && <ErrorState error={runs.error} onRetry={runs.reload} />}
             {runs.loading && !runs.data && <TableSkeleton rows={4} />}
             {runs.data && runs.data.length === 0 && (
-              <p className="rounded-lg border border-dashed border-line-strong px-6 py-8 text-center text-ink-2">还没有成绩。右边可以直接在网页上传，也可以用命令行。</p>
+              <Empty>还没有成绩。右边可以上传，也可以用命令行交。</Empty>
             )}
             {runs.data && runs.data.length > 0 && (
-              <div className="overflow-x-auto rounded-lg border border-line">
+              <div className="overflow-x-auto rounded-xl border border-line bg-surface">
                 <table className="w-full min-w-[640px] border-collapse text-[13px]">
                   <thead className="border-b border-line bg-surface-2 text-[12.5px] text-ink-2">
                     <tr>
@@ -126,15 +129,15 @@ function Dashboard({ user }: { user: string }) {
                   </thead>
                   <tbody>
                     {[...runs.data].reverse().map((r) => (
-                      <tr key={r.run} className="border-b border-line last:border-0 hover:bg-surface-2">
+                      <tr key={r.run} className="border-b border-line last:border-0 hover:bg-brand-tint">
                         <td className="px-3 py-2">
-                          <Link to={`/runs/${r.run}`} className="font-medium text-ink hover:text-accent-ink">{r.label}</Link>
-                          <div className="font-mono text-[11px] text-muted">{r.run}</div>
+                          <Link to={`/runs/${r.run}`} className="font-semibold text-ink hover:text-brand-ink">{r.label}</Link>
+                          <div className="font-mono text-[11px] text-ink-3">{r.run}</div>
                         </td>
                         <td className="px-3 py-2 text-ink-2">{SET_INFO[r.set]?.title ?? r.set}</td>
-                        <td className="px-3 py-2"><ModeBadge mode={r.mode} privileged={!!r.algo?.privileged} /></td>
+                        <td className="px-3 py-2"><ModeBadge mode={r.mode} privileged={!!r.privileged} /></td>
                         <td className="num px-3 py-2 text-right">
-                          {r.verified ? <>{r.verified.accepted}{r.verified.rejected > 0 && <span className="text-critical"> / 拒 {r.verified.rejected}</span>}</> : r.episodes ?? '—'}
+                          {r.verified ? <>{r.verified.accepted}{(r.verified.rejected ?? 0) > 0 && <span className="text-critical"> / 拒 {r.verified.rejected}</span>}</> : r.episodes ?? '—'}
                         </td>
                         <td className="num px-3 py-2 text-right text-ink-2">{when(r.uploaded ?? r.finished ?? r.started)}</td>
                       </tr>
@@ -146,14 +149,15 @@ function Dashboard({ user }: { user: string }) {
           </section>
         </div>
         <aside className="space-y-8">
+          <SaveUploadForm onStarted={refreshJobs} />
           <UploadForm onStarted={refreshJobs} />
           <section>
-            <h2 className="mb-2 text-[15px] font-semibold text-ink">命令行</h2>
-            <p className="mb-2 text-ink-2">把令牌存进 <Code>~/.config/gkbench/token</Code>（权限 600），之后：</p>
+            <SectionTitle>命令行</SectionTitle>
+            <p className="mb-2 text-ink-2">令牌存进 <Code>~/.config/gkbench/token</Code>（权限 600）：</p>
             <CodeBlock>{`python -m gkbench run --set hif-live --algo uinet
 python -m gkbench upload <运行目录>
-python -m gkbench hosted --set hif-live --algo uinet`}</CodeBlock>
-            <p className="mt-2 text-[12.5px] text-muted">服务器地址默认 https://api.matto.top/gkbench，可用 <Code>GKBENCH_SERVER</Code> 改。</p>
+python -m gkbench eval --set hif-live --algo uinet`}</CodeBlock>
+            <p className="mt-2 text-[12.5px] text-ink-3">服务器默认 https://hiro.matto.top/gkbench，用 <Code>GKBENCH_SERVER</Code> 改。</p>
           </section>
         </aside>
       </div>
@@ -171,12 +175,12 @@ function JobRow({ j }: { j: Job }) {
       <div className="flex items-center gap-2">
         {icon}
         <span className="font-medium text-ink">{text}</span>
-        <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-muted">{j.run}</span>
+        <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-ink-3">{j.run}</span>
         <span className="num text-[12.5px] text-ink-2">{j.done} / {j.total || '?'} · 收下 {j.accepted}</span>
       </div>
       {running && (
         <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-3" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-          <div className="h-full rounded-full bg-accent transition-[width] duration-200" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-brand transition-[width] duration-200" style={{ width: `${pct}%` }} />
         </div>
       )}
       {j.error && <p className="mt-1 text-[12.5px] text-critical">{j.error}</p>}
@@ -184,7 +188,7 @@ function JobRow({ j }: { j: Job }) {
         <details className="mt-1.5 text-[12.5px]">
           <summary className="cursor-pointer text-ink-2">拒收 {j.rejected.length} 局，看原因</summary>
           <ul className="mt-1 space-y-0.5 pl-4 text-ink-2">
-            {j.rejected.slice(0, 20).map((r, i) => <li key={i}><span className="font-mono text-[11.5px]">{r.problem} #{r.seed_index}</span>：{r.reason}</li>)}
+            {j.rejected.slice(0, 20).map((r, i) => <li key={i}><span className="font-mono text-[11.5px]">{r.id}{r.seed_index != null ? ` #${r.seed_index}` : ''}{r.answer != null && r.answer >= 0 ? ` 答 ${r.answer}` : ''}</span>：{r.reason}</li>)}
           </ul>
         </details>
       )}
@@ -209,19 +213,21 @@ function UploadForm({ onStarted }: { onStarted: () => void }) {
       const r = await fetch(`${BASE}api/runs`, { method: 'POST', body: fd })
       const j = await r.json()
       if (!r.ok) throw new Error(j?.detail ?? `${r.status}`)
-      setMsg({ ok: true, text: '已收下，正在核对，进度看左边。' })
+      setMsg(null)
+      toast.success('已收下，正在核对', { description: '进度看左边「上传核对」。' })
       onStarted()
     } catch (err) {
       setMsg({ ok: false, text: `上传失败：${(err as Error).message}` })
+      toast.error('上传失败', { description: (err as Error).message })
     } finally {
       setBusy(false)
     }
   }
-  const file = 'block w-full text-[12.5px] text-ink-2 file:mr-3 file:h-8 file:rounded-md file:border file:border-line-strong file:bg-surface file:px-3 file:text-ink hover:file:bg-surface-2'
+  const file = 'block w-full text-[12.5px] text-ink-2 file:mr-3 file:h-8 file:rounded-full file:border file:border-line-strong file:bg-surface file:px-3 file:text-ink hover:file:bg-surface-2'
   return (
     <section>
-      <h2 className="mb-2 text-[15px] font-semibold text-ink">上传一次运行</h2>
-      <p className="mb-3 text-ink-2">选本地运行目录里的两个文件。服务器会按种子逐局重放核对，对不上的局拒收。</p>
+      <SectionTitle>上传本地运行</SectionTitle>
+      <p className="mb-3 text-ink-2">本地跑完后输出目录里的两个文件。服务器按种子逐局重放，对不上的局拒收。</p>
       <form onSubmit={submit} className="space-y-3">
         <label className="block">
           <span className="mb-1 block text-[12.5px] font-medium text-ink"><Code>run.json</Code></span>
@@ -231,9 +237,57 @@ function UploadForm({ onStarted }: { onStarted: () => void }) {
           <span className="mb-1 block text-[12.5px] font-medium text-ink"><Code>episodes.jsonl.zst</Code></span>
           <input type="file" accept=".zst" onChange={(e) => setEpFile(e.target.files?.[0] ?? null)} className={file} />
         </label>
-        <button disabled={!runFile || !epFile || busy} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent px-4 font-medium text-white hover:bg-accent-ink disabled:opacity-50">
+        <Button type="submit" disabled={!runFile || !epFile || busy}>
           {busy ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Upload size={15} aria-hidden />}上传
-        </button>
+        </Button>
+        {msg && <p className={cx('text-[12.5px]', msg.ok ? 'text-ink-2' : 'text-critical')}>{msg.text}</p>}
+      </form>
+    </section>
+  )
+}
+
+/** 上传审查存档（gkms.audition_save.v2）：只要路线，服务器按编号找题和种子、逐条重放生成记录 */
+function SaveUploadForm({ onStarted }: { onStarted: () => void }) {
+  const [files, setFiles] = useState<FileList | null>(null)
+  const [label, setLabel] = useState('')
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!files?.length) return
+    setBusy(true)
+    setMsg(null)
+    const fd = new FormData()
+    for (const f of Array.from(files)) fd.append('saves', f)
+    if (label.trim()) fd.append('label', label.trim())
+    try {
+      const r = await fetch(`${BASE}api/saves`, { method: 'POST', body: fd })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j?.detail ?? `${r.status}`)
+      setMsg(null)
+      toast.success('已收下，正在逐条重放', { description: '进度看左边「上传核对」。' })
+      onStarted()
+    } catch (err) {
+      setMsg({ ok: false, text: `上传失败：${(err as Error).message}` })
+      toast.error('上传失败', { description: (err as Error).message })
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <section>
+      <SectionTitle>上传审查存档</SectionTitle>
+      <p className="mb-3 text-ink-2">
+        <Code>.gksave.json</Code> 或 JSON Lines，每条答只要路线。服务器按编号找到题和种子逐条重放；题模板的答要带 <Code>exam</Code>。一张算法表算一次运行，标「自报」。
+      </p>
+      <form onSubmit={submit} className="space-y-3">
+        <input type="file" multiple accept=".json,.jsonl,application/json" onChange={(e) => setFiles(e.target.files)}
+          className="block w-full text-[12.5px] text-ink-2 file:mr-3 file:h-8 file:rounded-full file:border file:border-line-strong file:bg-surface file:px-3 file:text-ink hover:file:bg-surface-2" />
+        <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="运行名（不填就用算法名）"
+          className="h-9" />
+        <Button type="submit" disabled={!files?.length || busy}>
+          {busy ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Upload size={15} aria-hidden />}上传存档
+        </Button>
         {msg && <p className={cx('text-[12.5px]', msg.ok ? 'text-ink-2' : 'text-critical')}>{msg.text}</p>}
       </form>
     </section>

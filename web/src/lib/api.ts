@@ -32,22 +32,30 @@ export type SetInfo = {
   seeds: { dev: number; test: number }
   runs: number
   public_seeds: boolean
+  template_seeds?: number
+  idols?: string[]
 }
 
 export type Engine = { engine?: string; gkms_commit?: string; rules_version?: number; master_version?: string | null }
 
-export type Algo = { name: string; params?: Record<string, unknown>; privileged?: boolean; model_file?: string }
-
 export type Group = { n: number; mean: number; vs_oracle: Ratio | null; vs_base?: Ratio | null }
+
+/** 审查存档表 6 的表头 mode：internal 内置、self 自报、hosted 托管、player 玩家实战 */
+export type Mode = 'internal' | 'self' | 'hosted' | 'player'
 
 export type Row = {
   run: string
   label: string
-  mode: string
-  uploader: string
+  algo: string
+  params?: Record<string, unknown>
+  mode: Mode
+  kind: 'fixed' | 'template'
+  by: string
   privileged: boolean
-  budget_s: number | null
+  step_seconds: number | null
   n: number
+  problems: number
+  seeds_per_problem?: number
   mean: number
   errors: number
   unfinished: number
@@ -60,35 +68,50 @@ export type Row = {
   vs_base?: Ratio | null
   groups?: Record<string, Group>
   engine: Engine
-  algo: Algo
 }
 
 export type EpisodeSummary = {
-  problem: string
+  id: string
+  name?: string
+  fixed_id?: string
   seed_index: number
+  exam_sha?: string
   score: number
   finished: boolean
   decisions: number
-  think_s: number
-  over_budget_steps: number
-  error?: string
+  secs: number
+  over_steps: number
+  err?: string
+  at?: string
+  route?: string
   tags?: Record<string, string>
+  types?: number[]
 }
 
 export type RunInfo = {
   run: string
   label: string
   set: string
-  mode?: string
-  uploader?: string
-  algo: Algo
-  budget_s: number | null
+  kind: 'fixed' | 'template'
+  algo: string
+  params?: Record<string, unknown>
+  budget?: number
+  seconds?: number
+  step_seconds?: number
+  rules?: number
+  machine?: string
+  mode: Mode
+  by?: string
+  privileged?: boolean
+  claimed_mode?: string
+  claimed_by?: string
   engine: Engine
   started?: string
   uploaded?: string
   finished?: string
-  machine?: { host?: string; system?: string; python?: string }
-  verified?: { accepted: number; rejected: number }
+  verified?: { accepted: number; rejected?: number }
+  seeds_per_problem?: number
+  template_seeds?: string
   episodes: EpisodeSummary[]
   mean_score?: number
 }
@@ -116,14 +139,15 @@ export type Obs = {
 export type Step = {
   i: number
   turn: number
+  token: string
   obs: Obs | null
   action: (string | number)[]
   algo_meta: Record<string, unknown> | null
-  think_ms: number
+  step_ms: number
   cpu_ms?: number | null
   client_ms?: number | null
   worlds?: number
-  over_budget: boolean
+  over: boolean
   result: {
     after: Record<string, number | string | null>
     delta: Record<string, number>
@@ -134,20 +158,27 @@ export type Step = {
 }
 
 export type Episode = {
-  problem: string
+  id: string
+  name?: string
+  family?: string
+  fixed_id?: string
   set: string
   tags: Record<string, string>
   seed_index: number
   seed_label?: string
   seed_split?: string
+  exam_sha?: string
+  exam?: number
   meta: { produce_id?: string; step_type?: string; plan_type?: number; limit_turn?: number; criteria?: Record<string, number>; score_cap?: number; rival_scores?: number[]; round_label?: string }
+  route: string
   steps: Step[]
-  final: { score: number; finished: boolean; decisions: number; turns: number; think_s: number; wall_s: number; over_budget_steps: number; begin_s?: number }
-  error: string | null
+  final: { score: number; finished: boolean; decisions: number; turns: number; secs: number; wall_s: number | null; over_steps: number; begin_s?: number }
+  err: string | null
+  at?: string
   run: string
 }
 
-export type Job = { job: string; run: string; status: 'queued' | 'running' | 'done' | 'rejected' | 'error'; done: number; total: number; accepted: number; rejected: { problem: string; seed_index: number; reason: string }[]; error?: string }
+export type Job = { job: string; run: string; status: 'queued' | 'running' | 'done' | 'rejected' | 'error'; done: number; total: number; accepted: number; rejected: { id: string; seed_index?: number; answer?: number; reason: string }[]; error?: string }
 
 export type CatalogCard = { name: string; rarity: string; plan: string; category: string; asset?: string; up: Record<string, { name: string; text: string }> }
 export type CatalogThing = { name: string; rarity?: string; plan?: string; text?: string; asset?: string }
@@ -157,4 +188,14 @@ export type Catalog = {
   items: Record<string, CatalogThing>
   enchants: Record<string, CatalogThing>
   idols: Record<string, CatalogThing>
+}
+
+/** /api/sets/{set}/problems 的一项：题模板（审查存档原样）+ 便于展示的字段 + 固定种子的公开信息 */
+export type Problem = {
+  id: string
+  name: string
+  family: string
+  tags: Record<string, string>
+  archive: Record<string, unknown>
+  seeds: { index: number; split: string; label: string; exam_sha: string; fixed_id?: string }[]
 }

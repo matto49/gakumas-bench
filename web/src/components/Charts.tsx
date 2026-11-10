@@ -99,7 +99,7 @@ export function ScoreChart({
         {ticks.map((t) => (
           <g key={t}>
             <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="var(--color-line)" strokeWidth={1} />
-            <text x={pad.l - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize={11} fill="var(--color-muted)" className="num">
+            <text x={pad.l - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize={11} fill="var(--color-ink-3)" className="num">
               {compact(t)}
             </text>
           </g>
@@ -122,7 +122,7 @@ export function ScoreChart({
             </g>
           )
         })}
-        <text x={pad.l - 8} y={bandY + 10} textAnchor="end" fontSize={10} fill="var(--color-muted)">回合</text>
+        <text x={pad.l - 8} y={bandY + 10} textAnchor="end" fontSize={10} fill="var(--color-ink-3)">回合</text>
         {hi != null && <line x1={x(hi)} x2={x(hi)} y1={pad.t} y2={height - pad.b} stroke="var(--color-line-strong)" strokeWidth={1} />}
         {series.map((s) => (
           <g key={s.name}>
@@ -147,7 +147,7 @@ export function ScoreChart({
           className="pointer-events-none absolute top-2 z-10 rounded-md border border-line bg-surface px-2.5 py-1.5 text-[12px] shadow-[0_6px_24px_-8px_oklch(0.3_0.02_60/0.25)]"
           style={{ left: `${Math.min(78, (x(hover) / W) * 100)}%` }}
         >
-          <div className="text-muted">第 {hover + 1} 步 · 回合 {turnOf[hover] ?? '?'}</div>
+          <div className="text-ink-3">第 {hover + 1} 步 · 回合 {turnOf[hover] ?? '?'}</div>
           {series.map((s) => (
             <div key={s.name} className="flex items-center gap-1.5">
               <span className="inline-block h-0.5 w-3 rounded" style={{ background: s.color }} aria-hidden />
@@ -183,7 +183,7 @@ export function StripPlot({ values, onPick, label }: { values: { v: number; key:
       <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="block" role="img" aria-label={label}>
         <line x1={pad.l} x2={W - pad.r} y1={H - 22} y2={H - 22} stroke="var(--color-line-strong)" strokeWidth={1} />
         {ticks.map((t) => (
-          <text key={t} x={x(t)} y={H - 6} textAnchor="middle" fontSize={11} fill="var(--color-muted)" className="num">
+          <text key={t} x={x(t)} y={H - 6} textAnchor="middle" fontSize={11} fill="var(--color-ink-3)" className="num">
             {(t * 100).toFixed(0)}%
           </text>
         ))}
@@ -193,7 +193,7 @@ export function StripPlot({ values, onPick, label }: { values: { v: number; key:
             cx={d.cx}
             cy={Math.max(6, d.cy)}
             r={hover === i ? 5 : 4}
-            fill="var(--color-da)"
+            fill="var(--color-brand-deep)"
             stroke="var(--color-surface)"
             strokeWidth={2}
             className="cursor-pointer"

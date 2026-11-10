@@ -25,7 +25,8 @@ class PimcAlgo(Algorithm):
 
     mode = "vote"：每个世界搜整条路线，按第一步投票（平票比平均预期分）。
     mode = "eval"：每个合法动作 × 每个世界（各动作共用同一组世界）先走这一步再搜，取平均分最高的动作。
-    seconds 不给时按预算算：budget × threads / 搜索次数 × 0.85。
+    seconds 不给时按预算算：(预算 − 已经花掉的时间 − 0.15 秒余量) ÷ 搜索轮数 × 0.85。
+    「已经花掉的」主要是取世界：本地采样很快，托管时要等服务器生成、走网络、再导入，约 1 秒。
     """
     name = "pimc"
 
@@ -40,23 +41,25 @@ class PimcAlgo(Algorithm):
         d["name"] = f"pimc-{self.mode}"
         return d
 
-    def _deadline(self, ctx, searches):
+    def _deadline(self, ctx, searches, spent=0.0):
         if self.seconds:
             return float(self.seconds)
         waves = max(1, -(-searches // self.threads))
-        return max(0.05, ctx.budget / waves * 0.85)
+        return max(0.05, (ctx.budget - spent - 0.15) / waves * 0.85)
 
     def decide(self, ctx):
         from ..engine import native, prior
         _, ns = native()
         pr = prior()
+        t0 = time.monotonic()
         legal = [tuple(a) for a in ctx.obs["legal"]]
         if len(legal) == 1:
             return Decision(legal[0], {"forced": True})
         worlds = ctx.worlds(self.worlds_n)
+        spent = time.monotonic() - t0
         seeds = [ctx.rng.getrandbits(31) for _ in range(len(worlds) * (len(legal) if self.mode == "eval" else 1))]
         if self.mode == "eval":
-            sec = self._deadline(ctx, len(legal) * len(worlds))
+            sec = self._deadline(ctx, len(legal) * len(worlds), spent)
             jobs = [(a, w, seeds[i * len(worlds) + k]) for i, a in enumerate(legal) for k, w in enumerate(worlds)]
 
             def run(job):
@@ -75,7 +78,7 @@ class PimcAlgo(Algorithm):
             best = max(means, key=means.get)
             return Decision(best, {"seconds_per_search": round(sec, 3), "worlds": len(worlds),
                                    "expected": {str(list(a)): int(v) for a, v in means.items()}})
-        sec = self._deadline(ctx, len(worlds))
+        sec = self._deadline(ctx, len(worlds), spent)
 
         def run(job):
             w, sd = job
@@ -91,7 +94,7 @@ class PimcAlgo(Algorithm):
         if not votes:
             return Decision(legal[0], {"fallback": "no vote"})
         best = max(votes, key=lambda a: (votes[a], sum(scores[a]) / len(scores[a])))
-        return Decision(best, {"seconds_per_search": round(sec, 3), "worlds": len(worlds),
+        return Decision(best, {"seconds_per_search": round(sec, 3), "worlds": len(worlds), "worlds_s": round(spent, 3),
                                "votes": {str(list(a)): [votes[a], int(sum(scores[a]) / len(scores[a]))] for a in votes}})
 
 

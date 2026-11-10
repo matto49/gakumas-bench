@@ -8,16 +8,22 @@ GKMS 的引擎是 Python + C++，这一层只做转接，不放业务逻辑。
   step    {sid, action}                        推进一步，回 result、private（这一步之前）、obs（没结束时）、done、final
   close   {sid}                                丢掉一局
   replay  {problem, seed, episode}             重放核对一局记录，回 ok / reason
+  worlds  {sid, k}                             k 个重抽过隐藏信息的世界（export_world，base64），给托管模式的 PIMC 等算法
+  replay_route {problem, seed, route, step_ms}  只给路线（审查存档里的一条答），重放出完整的逐步记录
 """
 from __future__ import annotations
 
+import base64
 import json
+import random
+import secrets
 import sys
 import traceback
 
 from . import engine
 from .referee import Referee
-from .verify import replay
+from .verify import replay, replay_route
+from .worlds import export_world
 
 MAX_DECISIONS = 300
 
@@ -50,9 +56,17 @@ def main():
                 if done:
                     rep["final"] = {"score": ref.score, "finished": bool(ref.finished),
                                     "turns": int(ref.numbers().get("turn") or 0)}
+            elif op == "worlds":
+                ref = sessions[req["sid"]]
+                k = max(1, min(64, int(req.get("k", 16))))
+                rng = random.Random(secrets.randbits(64))        # 世界的随机数不可预测，也和种子无关
+                rep = {"worlds": [base64.b64encode(export_world(ref.sample_world(rng))).decode() for _ in range(k)]}
             elif op == "close":
                 sessions.pop(req["sid"], None)
                 rep = {}
+            elif op == "replay_route":
+                rep = replay_route(req["problem"]["loadout"], int(req["seed"]), req["route"], req.get("step_ms"))
+                rep["verdict"] = rep.pop("ok")
             elif op == "replay":
                 rep = replay(req["problem"], int(req["seed"]), req["episode"])
                 rep["verdict"] = rep.pop("ok")

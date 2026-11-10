@@ -3,10 +3,12 @@ import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import { useApi } from '../lib/hooks'
 import type { Row, SetInfo } from '../lib/api'
-import { useCatalog, idolName } from '../lib/catalog'
+import { useCatalog, idolShort } from '../lib/catalog'
 import { compact, int, ms, secs } from '../lib/format'
-import { SET_INFO, TAG_LABEL, tagValueLabel } from '../lib/game'
-import { cx, ErrorState, Help, ModeBadge, PageHeader, RatioBar, RatioText, TableSkeleton, Tip } from '../components/ui'
+import { GRADE_HINT, KIND_INFO, SET_INFO, TAG_LABEL, tagValueLabel, type Kind } from '../lib/game'
+import { Select } from '../components/Select'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Code, cx, Empty, SectionTitle, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, RankNum, RatioText, TableSkeleton, Tip } from '../components/ui'
 
 type SortKey = 'oracle' | 'base' | 'mean' | 'p50' | 'n' | 'label'
 
@@ -15,8 +17,8 @@ const GROUPS_BY_SET: Record<string, string[]> = {
   'hif-live': ['round', 'produce'],
 }
 
-// 顺序色阶（单一蓝色，浅到深），只作格子底色；数字始终用正文色
-const SEQ = ['#eef4fd', '#cde2fb', '#b7d3f6', '#9ec5f4', '#86b6ef']
+// 顺序色阶（单一橙色，浅到深），只作格子底色；数字始终用正文色
+const SEQ = ['oklch(0.975 0.02 66)', 'oklch(0.95 0.045 62)', 'oklch(0.92 0.07 58)', 'oklch(0.89 0.095 55)', 'oklch(0.86 0.115 52)']
 
 function sortValue(r: Row, k: SortKey): number | string {
   switch (k) {
@@ -39,11 +41,11 @@ function SortHead({ k, children, sort, dir, onSort, align = 'right', help }: { k
   const active = sort === k
   const Icon = active ? (dir === 'asc' ? ArrowUp : ArrowDown) : ChevronsUpDown
   return (
-    <th scope="col" aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'} className={cx('px-3 py-2 font-medium', align === 'right' ? 'text-right' : 'text-left')}>
+    <th scope="col" aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'} className={cx('px-3 py-2.5 font-semibold', align === 'right' ? 'text-right' : 'text-left')}>
       <span className={cx('inline-flex items-center', align === 'right' && 'justify-end')}>
         <button type="button" onClick={() => onSort(k)} className={cx('inline-flex items-center gap-1 rounded hover:text-ink', active ? 'text-ink' : 'text-ink-2')}>
           {children}
-          <Icon size={12} className={active ? 'text-accent-ink' : 'text-muted'} aria-hidden />
+          <Icon size={12} className={active ? 'text-brand-ink' : 'text-ink-3'} aria-hidden />
         </button>
         {help && <Help tip={help} />}
       </span>
@@ -56,11 +58,13 @@ export function Leaderboard() {
   const [q, setQ] = useSearchParams()
   const cat = useCatalog()
   const sets = useApi<SetInfo[]>('api/sets')
+  const rawKind = q.get('kind') ?? (q.get('mode') === 'random' ? 'template' : '')
+  const kind: Kind = rawKind === 'template' || rawKind === 'legacy' ? rawKind : 'fixed'
   const base = q.get('base') ?? ''
   const group = q.get('group') ?? ''
-  const sort = (q.get('sort') as SortKey) ?? 'oracle'
+  const sort = ((q.get('sort') as SortKey) || 'oracle') as SortKey
   const dir = (q.get('dir') as 'asc' | 'desc') ?? (sort === 'p50' || sort === 'label' ? 'asc' : 'desc')
-  const lb = useApi<Row[]>(set ? `api/leaderboard?set=${encodeURIComponent(set)}&base=${encodeURIComponent(base)}&group=${encodeURIComponent(group)}` : null)
+  const lb = useApi<Row[]>(set ? `api/leaderboard?set=${encodeURIComponent(set)}&kind=${kind}&base=${encodeURIComponent(base)}&group=${encodeURIComponent(group)}` : null)
 
   const update = (patch: Record<string, string>) => {
     const n = new URLSearchParams(q)
@@ -75,10 +79,11 @@ export function Leaderboard() {
   const rows = useMemo(() => {
     const rs = [...(lb.data ?? [])]
     const sign = dir === 'asc' ? 1 : -1
+    const key = sort === 'oracle' && !rs.some((r) => r.vs_oracle && !r.privileged) ? 'mean' : sort
     rs.sort((a, b) => {
       if (a.privileged !== b.privileged) return a.privileged ? 1 : -1
-      const va = sortValue(a, sort)
-      const vb = sortValue(b, sort)
+      const va = sortValue(a, key)
+      const vb = sortValue(b, key)
       if (typeof va === 'string' || typeof vb === 'string') return String(va).localeCompare(String(vb)) * sign
       return (va - vb) * sign
     })
@@ -92,150 +97,176 @@ export function Leaderboard() {
   }
 
   const info = sets.data?.find((s) => s.set === set)
-  const hasOracle = rows.some((r) => r.privileged)
+  const hasOracle = rows.some((r) => r.privileged && r.vs_oracle)
   const groups = GROUPS_BY_SET[set] ?? ['idol']
   const labels = Array.from(new Set(rows.filter((r) => !r.privileged).map((r) => r.label)))
   let rank = 0
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap gap-1 border-b border-line" role="tablist" aria-label="题集">
+      <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="题集">
         {sets.data?.map((s) => (
           <Link
             key={s.set}
-            to={`/sets/${s.set}`}
+            to={`/sets/${s.set}${kind !== 'fixed' ? `?kind=${kind}` : ''}`}
             role="tab"
             aria-selected={s.set === set}
-            className={cx('-mb-px border-b-2 px-3 py-2 text-[13.5px]', s.set === set ? 'border-accent font-medium text-ink' : 'border-transparent text-ink-2 hover:text-ink')}
+            className={cx(
+              'inline-flex items-center gap-2 rounded-full border py-1 pr-3.5 pl-1 text-[13.5px] font-semibold transition-colors duration-150',
+              s.set === set ? 'border-brand-deep bg-brand-deep text-white' : 'border-line-strong bg-surface text-ink-2 hover:border-brand hover:text-brand-ink',
+            )}
           >
+            <IdolThumb id={s.idols?.[0]} size={24} title={false} className="rounded-full ring-0" />
             {SET_INFO[s.set]?.title ?? s.set}
-            <span className="ml-1.5 text-[12px] text-muted">{s.set}</span>
           </Link>
         ))}
       </div>
 
       <PageHeader
-        title={`排行 · ${SET_INFO[set]?.title ?? set}`}
+        title={SET_INFO[set]?.title ?? set}
         sub={
           <>
             {SET_INFO[set]?.blurb}
             {info && (
-              <span className="num ml-1 text-muted">
-                {info.problems} 题，开发集 {info.seeds.dev} 个种子{info.seeds.test ? `、测试集 ${info.seeds.test} 个` : ''}。
-                {info.public_seeds ? '开发集种子公开下载。' : ''}
+              <span className="num ml-1">
+                {info.problems} 题；每题 {Math.round((info.seeds.dev + info.seeds.test) / Math.max(1, info.problems))} 个固定种子{info.public_seeds ? '（公开）' : ''}，另有 {info.template_seeds ?? 32} 个保密种子。
               </span>
             )}
           </>
         }
       />
 
-      <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-        <label className="inline-flex items-center gap-2 text-ink-2">
+      <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <ToggleGroup
+          aria-label="种子"
+          variant="segment"
+          spacing={0}
+          value={[kind === 'legacy' ? 'template' : kind]}
+          onValueChange={(v) => v[0] && update({ kind: v[0] === 'fixed' ? '' : String(v[0]), mode: '', base: '', sort: '', dir: '' })}
+          className="rounded-full border border-input bg-background p-0.5"
+        >
+          {(['fixed', 'template'] as const).map((m) => (
+            <ToggleGroupItem key={m} value={m} className="rounded-full!">
+              {KIND_INFO[m].title}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+        <Help tip={KIND_INFO[kind].hint} />
+        <span className="inline-flex items-center gap-2 text-ink-2">
           基准
-          <select value={base} onChange={(e) => update({ base: e.target.value })} className="h-8 rounded-md border border-line-strong bg-surface px-2 text-ink">
-            <option value="">不比较</option>
-            {labels.map((l) => (
-              <option key={l} value={l}>{l}</option>
-            ))}
-          </select>
-          <Help tip="选一个算法作基准，表里多出「相对基准」和胜率：同题同种子对它的分数比。" />
-        </label>
-        <label className="inline-flex items-center gap-2 text-ink-2">
+          <Select label="基准" value={base} onChange={(v) => update({ base: v })} width="14rem"
+            options={[{ value: '', label: '不比' }, ...labels.map((l) => ({ value: l, label: l }))]} />
+          <Help tip="选一个算法当基准，表里多两列：同题同种子对它的分数比，和赢它的局数比例。" />
+        </span>
+        <span className="inline-flex items-center gap-2 text-ink-2">
           分组
-          <select value={group} onChange={(e) => update({ group: e.target.value })} className="h-8 rounded-md border border-line-strong bg-surface px-2 text-ink">
-            <option value="">不分组</option>
-            {groups.map((g) => (
-              <option key={g} value={g}>按{TAG_LABEL[g] ?? g}</option>
-            ))}
-          </select>
-        </label>
+          <Select label="分组" value={group} onChange={(v) => update({ group: v })}
+            options={[{ value: '', label: '不分' }, ...groups.map((g) => ({ value: g, label: `按${TAG_LABEL[g] ?? g}` }))]} />
+        </span>
+        {kind === 'legacy' ? (
+          <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-surface-3 px-3 py-1 text-[12.5px] text-ink-2">
+            正在看旧版评测，和现在的成绩不可比
+            <button onClick={() => update({ kind: 'template', base: '', sort: '', dir: '' })} className="font-semibold text-brand-ink hover:underline">回到保密种子</button>
+          </span>
+        ) : kind === 'template' ? (
+          <button onClick={() => update({ kind: 'legacy', base: '', sort: '', dir: '' })} className="ml-auto text-[12.5px] text-ink-3 hover:text-brand-ink">
+            11 月 9 日以前的旧版评测
+          </button>
+        ) : null}
       </div>
 
       {lb.error && <ErrorState error={lb.error} onRetry={lb.reload} />}
       {lb.loading && !lb.data && <TableSkeleton />}
       {lb.data && rows.length === 0 && (
-        <div className="rounded-lg border border-dashed border-line-strong px-6 py-10 text-center">
-          <p className="font-medium text-ink">这套题还没有成绩。</p>
-          <p className="mt-1 text-ink-2">
-            跑一次并上传：<code className="font-mono text-[12px]">python -m gkbench run --set {set} --algo greedy</code>，详见 <Link to="/#join" className="text-accent-ink underline underline-offset-2">怎么参与</Link>。
-          </p>
-        </div>
+        <Empty>
+          <p className="font-semibold text-ink">{kind === 'template' ? '保密种子还没有成绩。' : kind === 'legacy' ? '没有旧版评测。' : '这套题还没有成绩。'}</p>
+          {kind !== 'legacy' && (
+            <p className="mt-1.5">
+              跑一次：<Code>{kind === 'template' ? `python -m gkbench eval --set ${set} --algo greedy` : `python -m gkbench run --set ${set} --algo greedy`}</Code>
+              ，详见 <Link to="/#join" className="text-brand-ink underline underline-offset-2">交成绩</Link>。
+            </p>
+          )}
+        </Empty>
       )}
 
       {rows.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-line">
-          <table className="w-full min-w-[980px] border-collapse text-[13px]">
+        <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+          <table className="w-full min-w-[960px] border-collapse text-[13px]">
             <thead className="border-b border-line bg-surface-2 text-[12.5px]">
               <tr>
-                <th scope="col" className="w-10 px-3 py-2 text-right font-medium text-ink-2">#</th>
+                <th scope="col" className="w-14 px-3 py-2.5 text-center font-semibold whitespace-nowrap text-ink-2">名次</th>
                 <SortHead k="label" sort={sort} dir={dir} onSort={onSort} align="left">算法</SortHead>
-                <th scope="col" className="px-3 py-2 text-left font-medium text-ink-2">方式</th>
                 {hasOracle && (
-                  <SortHead k="oracle" sort={sort} dir={dir} onSort={onSort} help="同题同种子，对「看种子」理论上限的分数比，取几何平均；± 是标准误。100% 表示和知道答案的搜索打得一样高。">
+                  <SortHead k="oracle" sort={sort} dir={dir} onSort={onSort} help={<>每局分数 ÷ 同题同种子理论上限的分数，取几何平均；± 是标准误。<br />{GRADE_HINT}</>}>
                     相对上限
                   </SortHead>
                 )}
                 {base && (
-                  <SortHead k="base" sort={sort} dir={dir} onSort={onSort} help={`同题同种子对 ${base} 的分数比（几何平均 ± 标准误），后面是胜率（平局算半场）。`}>
+                  <SortHead k="base" sort={sort} dir={dir} onSort={onSort} help={kind === 'legacy' ? `每道题先求平均分，再按题对 ${base} 求分数比（几何平均 ± 标准误）；胜率是平均分更高的题所占比例。` : `同题同种子对 ${base} 的分数比（几何平均 ± 标准误），后面是胜率，平局算一半。`}>
                     相对 {base}
                   </SortHead>
                 )}
-                <SortHead k="mean" sort={sort} dir={dir} onSort={onSort}>平均分</SortHead>
-                <SortHead k="p50" sort={sort} dir={dir} onSort={onSort} help="每一步思考时间的中位数，斜杠后是 95 分位。托管跑以服务器计时为准。理论上限在开局一次算完，所以每步接近 0。">
-                  每步耗时
+                <SortHead k="mean" sort={sort} dir={dir} onSort={onSort} help={kind === 'fixed' ? '所有局的平均分。' : '每道题先求平均，再对题求平均。'}>平均分</SortHead>
+                <SortHead k="p50" sort={sort} dir={dir} onSort={onSort} help="每步思考时间的中位数 / 95 分位。托管按服务器计时。理论上限开局一次算完，所以接近 0。">
+                  每步
                 </SortHead>
-                <th scope="col" className="px-3 py-2 text-right font-medium text-ink-2">每局思考</th>
+                <th scope="col" className="px-3 py-2.5 text-right font-semibold text-ink-2">每局思考</th>
                 <SortHead k="n" sort={sort} dir={dir} onSort={onSort}>局数</SortHead>
-                <th scope="col" className="px-3 py-2 text-right font-medium text-ink-2">
-                  <span className="inline-flex items-center">超时 / 出错<Help tip="超时：这一步思考超过预算的 1.2 倍再加 50 ms。出错：算法抛了异常，这局按当时的分数结束。" /></span>
+                <th scope="col" className="px-3 py-2.5 text-right font-semibold text-ink-2">
+                  <span className="inline-flex items-center">超时 / 出错<Help tip="超时：一步想了超过预算 1.2 倍再加 50 ms，只记数不扣分。出错：算法抛了异常，这局按当时的分数结束。" /></span>
                 </th>
-                <th scope="col" className="px-3 py-2 text-right font-medium text-ink-2">规则</th>
+                <th scope="col" className="px-3 py-2.5 text-right font-semibold text-ink-2">规则</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => {
                 if (!r.privileged) rank++
-                const params = r.algo?.params ? Object.entries(r.algo.params).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${v}`).join(' ') : ''
+                const params = r.params ? Object.entries(r.params).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${v}`).join(' ') : ''
                 return (
-                  <tr key={r.run} className={cx('border-b border-line last:border-0 hover:bg-surface-2', r.privileged && 'bg-surface-2/60 text-ink-2')}>
-                    <td className="num px-3 py-2.5 text-right text-muted">{r.privileged ? '' : rank}</td>
-                    <td className="max-w-[300px] px-3 py-2.5">
-                      <Link to={`/runs/${r.run}`} className="font-medium text-ink hover:text-accent-ink hover:underline hover:underline-offset-2">
-                        {r.label}
-                      </Link>
-                      <div className="truncate text-[11.5px] text-muted">
-                        {r.algo?.name}
-                        {params && ` · ${params}`}
-                        {r.uploader && ` · ${r.uploader}`}
+                  <tr key={r.run} className={cx('border-b border-line last:border-0', r.privileged ? 'bg-surface-2 text-ink-2' : 'hover:bg-brand-tint')}>
+                    <td className="px-3 py-3 text-center">{r.privileged ? <span className="text-[12px] whitespace-nowrap text-ink-3">分母</span> : <RankNum n={rank} />}</td>
+                    <td className="max-w-[300px] px-3 py-3">
+                      <span className="flex items-center gap-2">
+                        <Link to={`/runs/${r.run}`} className="truncate text-[14px] font-bold text-ink hover:text-brand-ink">
+                          {r.label}
+                        </Link>
+                        <ModeBadge mode={r.mode} privileged={r.privileged} />
+                      </span>
+                      <div className="truncate text-[11.5px] text-ink-3">
+                        {[params, r.step_seconds != null && `每步 ${r.step_seconds} s`, r.by].filter(Boolean).join(' · ')}
                       </div>
                     </td>
-                    <td className="px-3 py-2.5"><ModeBadge mode={r.mode} privileged={r.privileged} /></td>
-                    {hasOracle && <td className="px-3 py-2.5 text-right">
-                      {r.privileged ? <span className="text-muted">分母</span> : (
-                        <span className="inline-flex items-center gap-2.5">
-                          <RatioBar r={r.vs_oracle} />
-                          <RatioText r={r.vs_oracle} strong />
-                        </span>
-                      )}
-                    </td>}
-                    {base && (
-                      <td className="px-3 py-2.5 text-right">
-                        <RatioText r={r.vs_base} />
-                        {r.vs_base && <span className="num ml-2 text-[12px] text-muted">胜 {(r.vs_base.win * 100).toFixed(0)}%</span>}
+                    {hasOracle && (
+                      <td className="px-3 py-3 text-right">
+                        {r.privileged ? <span className="text-ink-3">100%</span> : (
+                          <span className="inline-flex items-center justify-end gap-2.5">
+                            <Grade ratio={r.vs_oracle?.geo} size={30} />
+                            <RatioText r={r.vs_oracle} strong />
+                          </span>
+                        )}
                       </td>
                     )}
-                    <td className="num px-3 py-2.5 text-right text-ink">{int(r.mean)}</td>
-                    <td className="num px-3 py-2.5 text-right whitespace-nowrap">
-                      {ms(r.p50_ms)} <span className="text-muted">/ {ms(r.p95_ms)}</span>
+                    {base && (
+                      <td className="px-3 py-3 text-right">
+                        <RatioText r={r.vs_base} />
+                        {r.vs_base && <span className="num ml-2 text-[12px] text-ink-3">胜 {(r.vs_base.win * 100).toFixed(0)}%</span>}
+                      </td>
+                    )}
+                    <td className="px-3 py-3 text-right"><span className="disp text-[17px] text-ink">{int(r.mean)}</span></td>
+                    <td className="num px-3 py-3 text-right whitespace-nowrap">
+                      {ms(r.p50_ms)} <span className="text-ink-3">/ {ms(r.p95_ms)}</span>
                     </td>
-                    <td className="num px-3 py-2.5 text-right">{secs(r.ep_think_s)}</td>
-                    <td className="num px-3 py-2.5 text-right">{r.n}</td>
-                    <td className="num px-3 py-2.5 text-right">
-                      <span className={r.over ? 'text-ink' : 'text-muted'}>{r.over}</span>
-                      <span className="text-muted"> / </span>
-                      <span className={r.errors + r.unfinished ? 'font-medium text-critical' : 'text-muted'}>{r.errors + r.unfinished}</span>
+                    <td className="num px-3 py-3 text-right">{secs(r.ep_think_s)}</td>
+                    <td className="num px-3 py-3 text-right">
+                      {r.n}
+                      {kind !== 'fixed' && <div className="text-[11px] text-ink-3">{r.problems} 题</div>}
                     </td>
-                    <td className="num px-3 py-2.5 text-right text-muted">
+                    <td className="num px-3 py-3 text-right">
+                      <span className={r.over ? 'text-ink' : 'text-ink-3'}>{r.over}</span>
+                      <span className="text-ink-3"> / </span>
+                      <span className={r.errors + r.unfinished ? 'font-semibold text-critical' : 'text-ink-3'}>{r.errors + r.unfinished}</span>
+                    </td>
+                    <td className="num px-3 py-3 text-right text-ink-3">
                       <Tip tip={`GKMS ${r.engine?.gkms_commit?.slice(0, 8) ?? '?'}，规则版本 ${r.engine?.rules_version ?? '?'}`}>
                         <span tabIndex={0}>v{r.engine?.rules_version ?? '?'}</span>
                       </Tip>
@@ -248,13 +279,13 @@ export function Leaderboard() {
         </div>
       )}
 
-      {group && rows.length > 0 && <GroupMatrix rows={rows} group={group} hasOracle={hasOracle} base={base} idol={(id) => idolName(cat, id)} />}
+      {group && rows.length > 0 && <GroupMatrix rows={rows} group={group} hasOracle={hasOracle} base={base} idol={(id) => idolShort(cat, id)} />}
 
-      <section className="mt-8 grid max-w-[980px] gap-x-10 gap-y-3 text-[12.5px] leading-relaxed text-ink-2 sm:grid-cols-2">
-        <p><span className="font-medium text-ink">配对比较。</span>所有比值都是同一道题、同一个种子上两局的分数比，再取几何平均；不是平均分之比。样本数和标准误跟着数字走。</p>
-        <p><span className="font-medium text-ink">三种方式。</span>托管：种子不离开服务器；自报：本地跑完上传、服务器重放核对过；上限：看种子的搜索，只作分母。</p>
-        <p><span className="font-medium text-ink">引擎版本。</span>规则版本不同的成绩不能直接比；引擎更新后，旧成绩可以按新规则重放重算。</p>
-        <p><span className="font-medium text-ink">时间预算。</span>每次运行声明每步预算，超过预算 1.2 倍的步数单独记在「超时」里，不扣分，但会显示。</p>
+      <section className="mt-8 grid max-w-[1040px] gap-x-10 gap-y-2.5 text-[12.5px] leading-relaxed text-ink-2 md:grid-cols-2">
+        <p><span className="font-semibold text-ink">成对比。</span>比值都是同题同种子两局的分数比，再取几何平均，不是平均分之比。{kind === 'legacy' && '旧版评测各算法种子不同，只能先按题平均再比。'}</p>
+        <p><span className="font-semibold text-ink">上限不排名。</span>理论上限提前知道种子，只当分母。自报的成绩服务器重放核对过，但证明不了没偷看种子；要排除这一点看托管成绩。</p>
+        <p><span className="font-semibold text-ink">规则版本。</span>版本不同的成绩不能直接比；引擎更新后，旧成绩可以按新规则重放重算。</p>
+        <p><span className="font-semibold text-ink">时间。</span>每次运行声明每步预算，超时只记数、不扣分。</p>
       </section>
     </div>
   )
@@ -272,17 +303,19 @@ function GroupMatrix({ rows, group, hasOracle, base, idol }: { rows: Row[]; grou
   const tint = (v: number | null) => (v == null || hi === lo ? undefined : SEQ[Math.min(SEQ.length - 1, Math.floor(((v - lo) / (hi - lo)) * SEQ.length))])
   return (
     <section className="mt-8">
-      <h2 className="mb-1 text-[15px] font-semibold text-ink">按{TAG_LABEL[group] ?? group}分组</h2>
+      <SectionTitle className="mb-1">按{TAG_LABEL[group] ?? group}分组</SectionTitle>
       <p className="mb-3 text-[12.5px] text-ink-2">
         格子里是{metric === 'vs_oracle' ? '相对上限' : metric === 'vs_base' ? `相对 ${base}` : '平均分'}，底色越深越高（只作辅助，以数字为准）。悬停看局数和标准误。
       </p>
-      <div className="inline-block max-w-full overflow-x-auto rounded-lg border border-line align-top">
+      <div className="inline-block max-w-full overflow-x-auto rounded-xl border border-line bg-surface align-top">
         <table className="border-collapse text-[12.5px]">
           <thead className="bg-surface-2">
             <tr>
               <th scope="col" className="sticky left-0 bg-surface-2 px-3 py-2 text-left font-medium text-ink-2">算法</th>
               {keys.map((k) => (
-                <th key={k} scope="col" className="px-3 py-2 text-right font-medium whitespace-nowrap text-ink-2">{tagValueLabel(group, k, idol)}</th>
+                <th key={k} scope="col" className="px-3 py-2 text-right font-semibold whitespace-nowrap text-ink-2">
+                  {group === 'idol' ? <span className="inline-flex items-center gap-1.5"><IdolThumb id={k} size={22} />{idol(k)}</span> : tagValueLabel(group, k, idol)}
+                </th>
               ))}
             </tr>
           </thead>
@@ -296,7 +329,7 @@ function GroupMatrix({ rows, group, hasOracle, base, idol }: { rows: Row[]; grou
                   const v = metric === 'mean' ? g?.mean ?? null : ratio?.geo ?? null
                   return (
                     <td key={k} className="num border-l border-surface px-3 py-2 text-right text-ink" style={{ background: tint(v) }}>
-                      {v == null ? <span className="text-muted">—</span> : (
+                      {v == null ? <span className="text-ink-3">—</span> : (
                         <Tip tip={ratio ? `${ratio.n} 局，±${(ratio.se * 100).toFixed(1)}%` : `${g?.n ?? 0} 局`}>
                           <span tabIndex={0}>{metric === 'mean' ? compact(v) : `${(v * 100).toFixed(1)}%`}</span>
                         </Tip>

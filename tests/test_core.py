@@ -77,7 +77,7 @@ def test_illegal_action_rejected(case):
 def test_episode_replays(case):
     p, row = case
     ep = play_episode(p, row, algos.make("random"), budget=1.0)
-    assert ep["error"] is None and ep["final"]["finished"]
+    assert ep["err"] is None and ep["final"]["finished"]
     assert replay(p, row["seed"], ep)["ok"]
     bad = copy.deepcopy(ep)
     bad["final"]["score"] += 1

@@ -19,26 +19,30 @@ type Ratio struct {
 }
 
 type Row struct {
-	Run        string            `json:"run"`
-	Label      string            `json:"label"`
-	Mode       string            `json:"mode"`
-	Uploader   string            `json:"uploader"`
-	Privileged bool              `json:"privileged"`
-	BudgetS    any               `json:"budget_s"`
-	N          int               `json:"n"`
-	Mean       float64           `json:"mean"`
-	Errors     int               `json:"errors"`
-	Unfinished int               `json:"unfinished"`
-	Over       int               `json:"over"`
-	P50        float64           `json:"p50_ms"`
-	P95        float64           `json:"p95_ms"`
-	Max        float64           `json:"max_ms"`
-	EpThinkS   float64           `json:"ep_think_s"`
-	VsOracle   *Ratio            `json:"vs_oracle"`
-	VsBase     *Ratio            `json:"vs_base,omitempty"`
-	Groups     map[string]*Group `json:"groups,omitempty"`
-	Engine     any               `json:"engine"`
-	Algo       any               `json:"algo"`
+	Run             string            `json:"run"`
+	Label           string            `json:"label"`
+	Mode            string            `json:"mode"`
+	Uploader        string            `json:"by"`
+	Kind            string            `json:"kind"`
+	Params          any               `json:"params,omitempty"`
+	Privileged      bool              `json:"privileged"`
+	BudgetS         any               `json:"step_seconds"`
+	N               int               `json:"n"`
+	Problems        int               `json:"problems"`
+	SeedsPerProblem any               `json:"seeds_per_problem,omitempty"`
+	Mean            float64           `json:"mean"`
+	Errors          int               `json:"errors"`
+	Unfinished      int               `json:"unfinished"`
+	Over            int               `json:"over"`
+	P50             float64           `json:"p50_ms"`
+	P95             float64           `json:"p95_ms"`
+	Max             float64           `json:"max_ms"`
+	EpThinkS        float64           `json:"ep_think_s"`
+	VsOracle        *Ratio            `json:"vs_oracle"`
+	VsBase          *Ratio            `json:"vs_base,omitempty"`
+	Groups          map[string]*Group `json:"groups,omitempty"`
+	Engine          any               `json:"engine"`
+	Algo            any               `json:"algo"`
 }
 
 // Group 按题目标签分组后的成绩：相对上限（有上限时）、相对基准（选了基准时）、平均分
@@ -102,8 +106,7 @@ func ratioStats(pairs [][2]float64) *Ratio {
 }
 
 func privileged(info map[string]any) bool {
-	algo, _ := info["algo"].(map[string]any)
-	p, _ := algo["privileged"].(bool)
+	p, _ := info["privileged"].(bool)
 	return p
 }
 
@@ -114,23 +117,77 @@ func tagOf(e EpisodeSummary, group string) string {
 	return "（无）"
 }
 
-func (s *Store) Leaderboard(set, base, group string) ([]Row, error) {
-	type run struct {
-		info map[string]any
-		eps  map[key]EpisodeSummary
+// perProblem 旧版题模板评测（各算法种子不同）：同一道题的各局合成一条（分数取平均），之后按题配对比较
+func perProblem(idx []EpisodeSummary) map[key]EpisodeSummary {
+	type acc struct {
+		e   EpisodeSummary
+		sum float64
+		ts  float64
+		n   int
 	}
+	m := map[string]*acc{}
+	for _, e := range idx {
+		a := m[e.ID]
+		if a == nil {
+			a = &acc{e: EpisodeSummary{ID: e.ID, Tags: e.Tags, Finished: true}}
+			m[e.ID] = a
+		}
+		a.n++
+		a.sum += e.Score
+		a.ts += e.Secs
+		a.e.Decisions += e.Decisions
+		a.e.Over += e.Over
+		a.e.StepMs = append(a.e.StepMs, e.StepMs...)
+		a.e.Finished = a.e.Finished && e.Finished
+		if e.Err != "" {
+			a.e.Err = e.Err
+		}
+	}
+	out := map[key]EpisodeSummary{}
+	for p, a := range m {
+		a.e.Score = a.sum / float64(a.n)
+		a.e.Secs = a.ts / float64(a.n)
+		out[key{p, 0}] = a.e
+	}
+	return out
+}
+
+// Leaderboard kind：
+//
+//	fixed     默认，固定种子题：self、hosted、上限
+//	template  题模板，每题固定 32 个保密种子：同题同种子配对，和 fixed 一样；平均分是先按题平均再对题平均
+//	legacy    2026-11-09 以前的题模板评测（每次临时抽种子）：各算法种子不同，只能按题平均后比较
+func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
+	type run struct {
+		info  map[string]any
+		eps   map[key]EpisodeSummary
+		count int
+	}
+	legacy := kind == "legacy"
+	tmpl := kind == "template" || kind == "random" || legacy
 	var runs []run
 	for _, info := range s.Runs(set) {
-		name, _ := info["run"].(string)
-		idx, err := s.Index(name)
-		if err != nil {
+		if (info["kind"] == "template") != tmpl {
 			continue
 		}
-		m := map[key]EpisodeSummary{}
-		for _, e := range idx {
-			m[key{e.Problem, e.SeedIndex}] = e
+		if tmpl && (info["template_seeds"] == TemplateSeedsVersion) == legacy {
+			continue
 		}
-		runs = append(runs, run{info, m})
+		name, _ := info["run"].(string)
+		idx, err := s.Index(name)
+		if err != nil || len(idx) == 0 {
+			continue
+		}
+		var m map[key]EpisodeSummary
+		if legacy {
+			m = perProblem(idx)
+		} else {
+			m = map[key]EpisodeSummary{}
+			for _, e := range idx {
+				m[key{e.ID, e.SeedIndex}] = e
+			}
+		}
+		runs = append(runs, run{info, m, len(idx)})
 	}
 	oracle := map[key]float64{}
 	for _, r := range runs {
@@ -152,21 +209,23 @@ func (s *Store) Leaderboard(set, base, group string) ([]Row, error) {
 	}
 	rows := []Row{}
 	for _, r := range runs {
-		row := Row{Privileged: privileged(r.info), BudgetS: r.info["budget_s"], N: len(r.eps),
-			Engine: r.info["engine"], Algo: r.info["algo"]}
+		row := Row{Privileged: privileged(r.info), BudgetS: r.info["step_seconds"], N: r.count, Problems: len(r.eps),
+			Engine: r.info["engine"], Algo: r.info["algo"], SeedsPerProblem: r.info["seeds_per_problem"]}
 		row.Run, _ = r.info["run"].(string)
 		row.Label, _ = r.info["label"].(string)
 		row.Mode, _ = r.info["mode"].(string)
-		row.Uploader, _ = r.info["uploader"].(string)
+		row.Uploader, _ = r.info["by"].(string)
+		row.Kind, _ = r.info["kind"].(string)
+		row.Params = r.info["params"]
 		var think []float64
 		var vsO, vsB [][2]float64
 		sum, epThink := 0.0, 0.0
 		for k, e := range r.eps {
 			sum += e.Score
-			epThink += e.ThinkS
-			think = append(think, e.ThinkMs...)
+			epThink += e.Secs
+			think = append(think, e.StepMs...)
 			row.Over += e.Over
-			if e.Error != "" {
+			if e.Err != "" {
 				row.Errors++
 			}
 			if !e.Finished {
@@ -179,9 +238,22 @@ func (s *Store) Leaderboard(set, base, group string) ([]Row, error) {
 				vsB = append(vsB, [2]float64{e.Score, b.Score})
 			}
 		}
-		if row.N > 0 {
-			row.Mean = sum / float64(row.N)
-			row.EpThinkS = epThink / float64(row.N)
+		if len(r.eps) > 0 { // 旧版题模板的 eps 是每题一条（已按题平均），所以除以条数而不是局数
+			row.Mean = sum / float64(len(r.eps))
+			row.EpThinkS = epThink / float64(len(r.eps))
+		}
+		if tmpl && !legacy { // 先按题平均，再对题平均：没跑完的题不会因为局数少而权重变小
+			byProb := map[string][2]float64{}
+			for k, e := range r.eps {
+				v := byProb[k.p]
+				byProb[k.p] = [2]float64{v[0] + e.Score, v[1] + 1}
+			}
+			row.Mean = 0
+			for _, v := range byProb {
+				row.Mean += v[0] / v[1]
+			}
+			row.Mean /= float64(len(byProb))
+			row.Problems = len(byProb)
 		}
 		row.P50, row.P95 = pct(think, 0.5), pct(think, 0.95)
 		for _, t := range think {

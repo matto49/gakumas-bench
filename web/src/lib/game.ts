@@ -26,6 +26,11 @@ export const MECHANIC: Record<string, string> = {
 }
 
 export const STAGE: Record<string, string> = {
+  'hif.sel1': '選抜 1',
+  'hif.sel2': '選抜 2',
+  'hif.sel3': '選抜 3',
+  'hif.main1': '本戦 1',
+  'hif.main2': '本戦 2',
   sel1: '選抜 1',
   sel2: '選抜 2',
   sel3: '選抜 3',
@@ -72,7 +77,7 @@ export const STANCE: Record<string, string> = {
   FullPower: '全力',
 }
 
-export const TAG_LABEL: Record<string, string> = { mechanic: '机制', stage: '阶段', idol: '偶像', deck: '牌组', round: '轮次', produce: '考试' }
+export const TAG_LABEL: Record<string, string> = { mechanic: '机制', stage: '场次', idol: '偶像', deck: '牌组', round: '轮次', produce: '考试' }
 
 export function tagValueLabel(tag: string, v: string, idolName?: (id: string) => string): string {
   switch (tag) {
@@ -93,12 +98,51 @@ export function tagValueLabel(tag: string, v: string, idolName?: (id: string) =>
 }
 
 export const SET_INFO: Record<string, { title: string; blurb: string }> = {
-  'hif-live': { title: '实机开局', blurb: '数字小广在 H.I.F 实战里打过的开局（Campus mode!! 篠澤広）。每题 1 个实机种子加 4 个随机种子。' },
-  gkms480: { title: '审查题库', blurb: 'GKMS 按主数据生成的题：6 种机制 × 4 位偶像 × 2 种牌组 × 5 个阶段，每题 2 个种子。不含实机录制。' },
+  'hif-live': { title: '实机开局', blurb: 'H.I.F 实战里打过的 5 个开局，篠澤広。' },
+  gkms480: { title: '审查题库', blurb: 'GKMS 按主数据生成：6 种机制 × 4 位偶像 × 2 种牌组 × 5 个阶段。' },
+}
+
+/** 种子模式。fixed：固定种子题；template：题模板，每题固定 32 个保密种子；legacy：11-09 以前每次临时抽种子的旧评测 */
+export type Kind = 'fixed' | 'template' | 'legacy'
+
+export const KIND_INFO: Record<Kind, { title: string; hint: string }> = {
+  fixed: {
+    title: '固定种子',
+    hint: '每道题配几个公开的种子，大家打同一批，逐局配对比较。可以本地跑完上传，也可以托管跑。',
+  },
+  template: {
+    title: '保密种子',
+    hint: '每道题固定 32 个种子，只存在服务器上，所有算法打同一组。只能托管跑，算法看不到种子；逐局记录登录后才能看。',
+  },
+  legacy: {
+    title: '旧版评测',
+    hint: '11 月 9 日以前的题模板评测：每次评测临时抽种子，各算法打的种子不同，只能按题平均后比较，和现在的保密种子成绩不可比。',
+  },
 }
 
 export function modeLabel(mode: string | undefined, privileged: boolean) {
-  if (privileged) return { text: '上限', hint: '看种子的搜索，只作分母，不参与排名' }
-  if (mode === 'hosted') return { text: '托管', hint: '种子留在服务器，算法每一步交动作，服务器计时' }
-  return { text: '自报', hint: '本地跑完上传，服务器按种子重放核对过分数，但证明不了算法没偷看种子' }
+  if (privileged) return { text: '上限', hint: '提前知道种子的搜索。只当分母，不排名。' }
+  if (mode === 'hosted') return { text: '托管', hint: '种子留在服务器上，算法每步向服务器要画面、交动作，用时按服务器计。' }
+  if (mode === 'player') return { text: '玩家', hint: '玩家实战记录。' }
+  if (mode === 'internal') return { text: '内置', hint: '在服务器或出题方机器上跑的内置算法。' }
+  return { text: '自报', hint: '本地跑完上传，服务器按种子逐局重放核对过分数；但证明不了算法没偷看种子。' }
 }
+
+/** 评级：按「相对上限」划线，用游戏里的培育评级徽章 */
+export const GRADES: [number, string, string][] = [
+  [0.95, 'ss', 'SS'],
+  [0.85, 'splus', 'S+'],
+  [0.75, 's', 'S'],
+  [0.6, 'aplus', 'A+'],
+  [0.45, 'a', 'A'],
+  [0.3, 'bplus', 'B+'],
+  [0.15, 'b', 'B'],
+  [0, 'c', 'C'],
+]
+
+export function gradeOf(ratio: number) {
+  const g = GRADES.find(([t]) => ratio >= t) ?? GRADES[GRADES.length - 1]
+  return { key: g[1], label: g[2] }
+}
+
+export const GRADE_HINT = '评级按相对上限划线：SS ≥95%，S+ ≥85%，S ≥75%，A+ ≥60%，A ≥45%，B+ ≥30%，B ≥15%，其余 C。'

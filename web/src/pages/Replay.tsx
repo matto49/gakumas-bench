@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, GitCompareArrows } from 'lucide-react'
-import type { Card, Episode, Obs, Step } from '../lib/api'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, GitCompareArrows } from 'lucide-react'
+import { BASE, type Card, type Episode, type Obs, type RunInfo, type Step } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { useCatalog, idolName, cardName } from '../lib/catalog'
 import { int, ms } from '../lib/format'
 import { PLAN, PRODUCE, STANCE, ROUND } from '../lib/game'
 import { ScoreChart } from '../components/Charts'
 import { actionText, DrinkChip, EnchantChip, SkillCard, StatusChip } from '../components/GameBits'
-import { AttrChip, cx, ErrorState, Help, PageHeader, TableSkeleton } from '../components/ui'
+import { AttrChip, btn, cx, ErrorState, Grade, Help, IdolThumb, TableSkeleton, TurnStrip } from '../components/ui'
+import { useOracle } from './Run'
 
 const DELTA_LABEL: Record<string, string> = {
   score: '分数', stamina: '体力', max_stamina: '最大体力', block: '元気', review: '好印象', aggressive: 'やる気',
@@ -32,6 +33,8 @@ export function Replay() {
   const [q, setQ] = useSearchParams()
   const cat = useCatalog()
   const ep = useApi<Episode>(`api/runs/${encodeURIComponent(run)}/episodes/${encodeURIComponent(problem)}/${seed}`)
+  const runInfo = useApi<RunInfo>(`api/runs/${encodeURIComponent(run)}`)
+  const oracle = useOracle(runInfo.data?.set, runInfo.data?.kind, runInfo.data?.template_seeds)
   const steps = ep.data?.steps ?? []
   const cur = Math.max(0, Math.min(steps.length - 1, Number(q.get('i') ?? 0)))
   const go = useCallback(
@@ -56,7 +59,7 @@ export function Replay() {
   }, [cur, go, steps.length])
 
   const series = useMemo(
-    () => [{ name: '分数', color: 'var(--color-ink)', points: steps.map((s) => ({ x: s.i, y: Number(s.result.after.score ?? 0), label: actionText(s.action, s.obs?.hand ?? s.result.hand_before, s.obs?.drinks, cat) })) }],
+    () => [{ name: '分数', color: 'var(--color-brand-deep)', points: steps.map((s) => ({ x: s.i, y: Number(s.result.after.score ?? 0), label: actionText(s.action, s.obs?.hand ?? s.result.hand_before, s.obs?.drinks, cat) })) }],
     [steps, cat],
   )
 
@@ -67,29 +70,44 @@ export function Replay() {
   const obs0 = steps[0]?.obs
   const types = obs0?.exam.types
 
+  const idol = obs0?.exam.idol ?? e.tags?.idol
+  const best = oracle?.get(`${e.id}#${e.seed_index}`)
+  const ratio = best ? e.final.score / best : null
   return (
     <div>
-      <p className="mb-2 text-[12.5px] text-muted">
-        <Link to={`/sets/${e.set}`} className="hover:text-ink">排行</Link> / <Link to={`/runs/${run}`} className="hover:text-ink">{run}</Link> / 复盘
+      <p className="mb-3 text-[12.5px] text-ink-3">
+        <Link to={`/sets/${e.set}`} className="hover:text-brand-ink">排行</Link> / <Link to={`/runs/${run}`} className="hover:text-brand-ink">{runInfo.data?.label ?? run}</Link> / 复盘
       </p>
-      <PageHeader
-        title={<span className="break-all">{problem} <span className="text-ink-2">#{seed}</span></span>}
-        sub={
-          <span className="text-ink-2">
-            {obs0 && <>{idolName(cat, obs0.exam.idol)} · {PLAN[String(obs0.exam.plan)] ?? ''} · {PRODUCE[obs0.exam.produce] ?? obs0.exam.produce} </>}
-            {e.meta.round_label && `· ${ROUND[e.meta.round_label] ?? e.meta.round_label} `}
-            · 终局 <span className="num font-semibold text-ink">{int(e.final.score)}</span> · {e.final.decisions} 个决策 · 思考 {e.final.think_s.toFixed(1)} s
-            {e.error && <span className="ml-2 text-critical">算法出错：{e.error}</span>}
-          </span>
-        }
-        right={
-          <Link to={`/compare?a=${encodeURIComponent(run)}&problem=${encodeURIComponent(problem)}&seed=${seed}`} className="inline-flex items-center gap-1.5 rounded-md border border-line-strong px-3 py-1.5 text-ink hover:bg-surface-2">
-            <GitCompareArrows size={15} aria-hidden /> 和别的算法对比
+      <header className="mb-5 overflow-hidden rounded-2xl border border-line bg-surface">
+        <div className="stripes flex flex-wrap items-center gap-4 bg-brand-deep px-5 py-3.5 text-white">
+          <IdolThumb id={idol} size={52} className="ring-2 ring-white/70" />
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[19px] font-bold">{idol ? idolName(cat, idol) : e.name ?? problem}</h1>
+            <p className="text-[12.5px] text-white/90">
+              {[obs0 && PLAN[String(obs0.exam.plan)], obs0 && (PRODUCE[obs0.exam.produce] ?? obs0.exam.produce), e.meta.round_label && (ROUND[e.meta.round_label] ?? e.meta.round_label), `${e.name ?? problem} #${seed}`].filter(Boolean).join(' · ')}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {ratio != null && <Grade ratio={ratio} size={48} />}
+            <div className="text-right">
+              <p className="text-[11.5px] text-white/85">{runInfo.data?.label ?? '终局'}{best ? ` · 上限 ${int(best)}` : ''}</p>
+              <p className="disp text-[32px] leading-none">{int(e.final.score)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-2.5 text-[12.5px] text-ink-2">
+          <TurnStrip types={types} current={s?.turn} />
+          <span className="num">{e.final.decisions} 个决策 · 思考 {(e.final.secs ?? 0).toFixed(1)} s</span>
+          {e.err && <span className="text-critical">{e.err}</span>}
+          <Link to={`/compare?a=${encodeURIComponent(run)}&problem=${encodeURIComponent(problem)}&seed=${seed}`} className={cx(btn.small, 'ml-auto')}>
+            <GitCompareArrows size={14} aria-hidden /> 和别的算法对比
           </Link>
-        }
-      />
+        </div>
+      </header>
 
-      <section className="mb-5 rounded-lg border border-line px-3 pt-3 pb-1">
+      <SaveInfo e={e} />
+
+      <section className="mb-5 rounded-xl border border-line bg-surface px-3 pt-3 pb-1">
         <ScoreChart series={series} turnOf={steps.map((x) => x.turn)} types={types} current={cur} onPick={go} />
       </section>
 
@@ -105,15 +123,15 @@ export function Replay() {
 }
 
 function StepNav({ cur, total, go }: { cur: number; total: number; go: (i: number) => void }) {
-  const btn = 'inline-grid size-8 place-items-center rounded-md border border-line-strong text-ink-2 hover:bg-surface-2 disabled:opacity-40'
+  const b = 'inline-grid size-8 place-items-center rounded-full border border-line-strong bg-surface text-ink-2 transition-colors duration-150 hover:border-brand hover:text-brand-ink disabled:opacity-40'
   return (
     <div className="mb-3 flex items-center gap-1.5">
-      <button className={btn} onClick={() => go(0)} disabled={cur === 0} aria-label="第一步"><ChevronsLeft size={16} /></button>
-      <button className={btn} onClick={() => go(cur - 1)} disabled={cur === 0} aria-label="上一步"><ChevronLeft size={16} /></button>
+      <button className={b} onClick={() => go(0)} disabled={cur === 0} aria-label="第一步"><ChevronsLeft size={16} /></button>
+      <button className={b} onClick={() => go(cur - 1)} disabled={cur === 0} aria-label="上一步"><ChevronLeft size={16} /></button>
       <span className="num min-w-24 text-center text-ink">第 {cur + 1} / {total} 步</span>
-      <button className={btn} onClick={() => go(cur + 1)} disabled={cur >= total - 1} aria-label="下一步"><ChevronRight size={16} /></button>
-      <button className={btn} onClick={() => go(total - 1)} disabled={cur >= total - 1} aria-label="最后一步"><ChevronsRight size={16} /></button>
-      <span className="ml-2 text-[12px] text-muted">键盘 ← → 翻步</span>
+      <button className={b} onClick={() => go(cur + 1)} disabled={cur >= total - 1} aria-label="下一步"><ChevronRight size={16} /></button>
+      <button className={b} onClick={() => go(total - 1)} disabled={cur >= total - 1} aria-label="最后一步"><ChevronsRight size={16} /></button>
+      <span className="ml-2 text-[12px] text-ink-3">键盘 ← → 翻步</span>
     </div>
   )
 }
@@ -121,7 +139,7 @@ function StepNav({ cur, total, go }: { cur: number; total: number; go: (i: numbe
 function Section({ title, children, help }: { title: string; children: React.ReactNode; help?: string }) {
   return (
     <div className="border-t border-line py-3 first:border-0 first:pt-0">
-      <h3 className="mb-2 inline-flex items-center text-[12px] font-medium tracking-wide text-muted">{title}{help && <Help tip={help} />}</h3>
+      <h3 className="mb-2 inline-flex items-center gap-1.5 text-[12.5px] font-bold text-ink-2"><span className="inline-block h-3 w-[3px] -skew-x-12 rounded-sm bg-brand" aria-hidden />{title}{help && <Help tip={help} />}</h3>
       {children}
     </div>
   )
@@ -137,14 +155,14 @@ function StepState({ step }: { step: Step }) {
   const attr = o ? o.exam.types[o.exam.turn - 1] : undefined
   const deltas = Object.entries(step.result.delta).filter(([k]) => k !== 'turn_play_count')
   return (
-    <div className="rounded-lg border border-line px-4 py-3">
+    <div className="rounded-xl border border-line bg-surface px-4 py-3">
       {o && (
         <Section title="局面（这一步之前）">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <span className="inline-flex items-center gap-2 text-ink">
               <span className="num font-semibold">回合 {o.exam.turn} / {o.exam.limit}</span>
               {attr && <AttrChip t={attr} />}
-              <span className="num text-[12px] text-muted">倍率 {o.exam.permil.map((p) => (p / 1000).toFixed(1)).join(' / ')}</span>
+              <span className="num text-[12px] text-ink-3">倍率 {o.exam.permil.map((p) => (p / 1000).toFixed(1)).join(' / ')}</span>
             </span>
             <Num label="分数" v={o.num.score} />
             <Num label="体力" v={`${o.num.stamina} / ${o.num.max_stamina}`} />
@@ -176,8 +194,9 @@ function StepState({ step }: { step: Step }) {
       <Section title="这一步">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
           <span className="text-[15px] font-semibold text-ink">{actionText(act, o?.hand ?? step.result.hand_before, o?.drinks, cat)}</span>
-          <span className={cx('num text-[12.5px]', step.over_budget ? 'font-medium text-critical' : 'text-ink-2')}>
-            思考 {ms(step.think_ms)}{step.over_budget && '（超时）'}
+          <span className="font-mono text-[12px] text-ink-3">{step.token}</span>
+          <span className={cx('num text-[12.5px]', step.over ? 'font-medium text-critical' : 'text-ink-2')}>
+            思考 {ms(step.step_ms)}{step.over && '（超时）'}
           </span>
           {step.worlds ? <span className="num text-[12.5px] text-ink-2">采样 {step.worlds} 个世界</span> : null}
         </div>
@@ -212,7 +231,7 @@ function StepState({ step }: { step: Step }) {
 function Num({ label, v }: { label: string; v: React.ReactNode }) {
   return (
     <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-[12px] text-muted">{label}</span>
+      <span className="text-[12px] text-ink-3">{label}</span>
       <span className="num font-semibold text-ink">{typeof v === 'number' ? int(v) : v}</span>
     </span>
   )
@@ -223,14 +242,14 @@ function Piles({ obs }: { obs: Obs }) {
   return (
     <div className="space-y-1">
       {piles.map(([name, cards]) => (
-        <details key={name} className="group">
+        <details key={name} className="group/pile">
           <summary className="flex cursor-pointer list-none items-center gap-2 rounded px-1 py-1 text-ink-2 hover:bg-surface-2">
-            <ChevronRight size={13} className="transition-transform duration-150 group-open:rotate-90" aria-hidden />
+            <ChevronRight size={13} className="transition-transform duration-150 group-open/pile:rotate-90" aria-hidden />
             <span className="text-ink">{name}</span>
-            <span className="num text-muted">{cards.length} 张</span>
+            <span className="num text-ink-3">{cards.length} 张</span>
           </summary>
           <div className="flex flex-wrap gap-2 py-2 pl-6">
-            {cards.length ? cards.map((c, i) => <SkillCard key={i} card={c} size={40} />) : <span className="text-[12px] text-muted">空</span>}
+            {cards.length ? cards.map((c, i) => <SkillCard key={i} card={c} size={40} />) : <span className="text-[12px] text-ink-3">空</span>}
           </div>
         </details>
       ))}
@@ -260,17 +279,17 @@ function AlgoMeta({ meta, step }: { meta: Step['algo_meta']; step: Step }) {
   rows.sort((x, y) => y.w - x.w)
   const rest = Object.entries(meta).filter(([k]) => !['votes', 'expected', 'top'].includes(k))
   return (
-    <div className="mt-3 rounded-md bg-surface-2 px-3 py-2.5">
-      <p className="mb-1.5 text-[12px] font-medium text-muted">算法的说明</p>
+    <div className="mt-3 rounded-lg bg-surface-2 px-3 py-2.5">
+      <p className="mb-1.5 text-[12px] font-medium text-ink-3">算法的说明</p>
       {rows.length > 0 && (
         <table className="w-full max-w-[560px] text-[12.5px]">
           <tbody>
             {rows.map((r, i) => (
               <tr key={i} className={cx(sameAction(step.action, r.a) && 'font-semibold')}>
-                <td className="py-0.5 pr-3 text-ink">{label(r.a)}{sameAction(step.action, r.a) && <span className="ml-1 text-accent-ink">← 选了</span>}</td>
-                <td className="w-24 py-0.5 pr-3"><span className="block h-1.5 rounded-full bg-da/70" style={{ width: `${Math.max(2, r.w * 100)}%` }} aria-hidden /></td>
+                <td className="py-0.5 pr-3 text-ink">{label(r.a)}{sameAction(step.action, r.a) && <span className="ml-1 text-brand-ink">← 选了</span>}</td>
+                <td className="w-24 py-0.5 pr-3"><span className="block h-1.5 rounded-full bg-brand" style={{ width: `${Math.max(2, r.w * 100)}%` }} aria-hidden /></td>
                 <td className="num py-0.5 text-right text-ink">{r.main}</td>
-                {r.sub && <td className="num py-0.5 pl-3 text-right text-muted">{r.sub}</td>}
+                {r.sub && <td className="num py-0.5 pl-3 text-right text-ink-3">{r.sub}</td>}
               </tr>
             ))}
           </tbody>
@@ -280,7 +299,7 @@ function AlgoMeta({ meta, step }: { meta: Step['algo_meta']; step: Step }) {
         <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
           {rest.map(([k, v]) => (
             <div key={k} className="inline-flex gap-1.5">
-              <dt className="text-muted">{k}</dt>
+              <dt className="text-ink-3">{k}</dt>
               <dd className="num text-ink">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</dd>
             </div>
           ))}
@@ -304,7 +323,7 @@ function MoveList({ steps, cur, go }: { steps: Step[]; cur: number; go: (i: numb
   })
   const types = steps[0]?.obs?.exam.types
   return (
-    <div ref={ref} className="max-h-[calc(100dvh-140px)] overflow-y-auto rounded-lg border border-line lg:sticky lg:top-16">
+    <div ref={ref} className="max-h-[calc(100dvh-140px)] overflow-y-auto rounded-xl border border-line bg-surface lg:sticky lg:top-20">
       {turns.map((g) => (
         <div key={`${g.t}-${g.idx[0]}`}>
           <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-ink-2">
@@ -319,19 +338,44 @@ function MoveList({ steps, cur, go }: { steps: Step[]; cur: number; go: (i: numb
                 data-i={i}
                 onClick={() => go(i)}
                 aria-current={i === cur ? 'step' : undefined}
-                className={cx('flex w-full items-baseline gap-2 border-b border-line px-3 py-1.5 text-left text-[12.5px] last:border-0', i === cur ? 'bg-accent-soft' : 'hover:bg-surface-2')}
+                className={cx('flex w-full items-baseline gap-2 border-b border-line px-3 py-1.5 text-left text-[12.5px] last:border-0', i === cur ? 'bg-brand-soft' : 'hover:bg-surface-2')}
               >
-                <span className="num w-6 shrink-0 text-right text-muted">{i + 1}</span>
+                <span className="num w-6 shrink-0 text-right text-ink-3">{i + 1}</span>
                 <span className={cx('min-w-0 flex-1 truncate', i === cur ? 'font-medium text-ink' : 'text-ink')}>
                   {s.action[0] === 'play' && s.obs ? cardName(cat, s.obs.hand[Number(s.action[1])]?.id ?? '', s.obs.hand[Number(s.action[1])]?.u ?? 0) : actionText(s.action, s.obs?.hand ?? s.result.hand_before, s.obs?.drinks, cat)}
                 </span>
-                <span className={cx('num shrink-0', d > 0 ? 'text-ink' : 'text-muted')}>{d > 0 ? `+${int(d)}` : ''}</span>
-                <span className={cx('num w-14 shrink-0 text-right text-[11.5px]', s.over_budget ? 'text-critical' : 'text-muted')}>{ms(s.think_ms)}</span>
+                <span className={cx('num shrink-0', d > 0 ? 'text-ink' : 'text-ink-3')}>{d > 0 ? `+${int(d)}` : ''}</span>
+                <span className={cx('num w-14 shrink-0 text-right text-[11.5px]', s.over ? 'text-critical' : 'text-ink-3')}>{ms(s.step_ms)}</span>
               </button>
             )
           })}
         </div>
       ))}
     </div>
+  )
+}
+
+/** 这一局在审查存档里的位置：题模板、固定种子题、题族，路线记号串，存档下载 */
+function SaveInfo({ e }: { e: Episode }) {
+  const saveId = e.fixed_id ?? e.id
+  return (
+    <section className="mb-5 rounded-xl border border-line bg-surface px-4 py-3 text-[12.5px]">
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1.5">
+        <span className="inline-flex items-center text-ink-3">
+          审查存档
+          <Help tip="题和答按 gkms.audition_save.v2 存：题模板不带种子；固定种子题带种子；同一开局共用题族编号。这一局的路线是第 3 章的记号串，能在任何实现了这个格式的引擎上重放。" />
+        </span>
+        <span>题模板 <code className="font-mono text-ink">{e.id}</code></span>
+        {e.fixed_id && <span>固定种子题 <code className="font-mono text-ink">{e.fixed_id}</code></span>}
+        {e.family && <span>题族 <code className="font-mono text-ink">{e.family}</code></span>}
+        {e.exam_sha && <span>exam_sha <code className="font-mono text-ink-2">{e.exam_sha}</code></span>}
+        <a href={`${BASE}api/saves/${saveId}?download=1`} className="ml-auto inline-flex items-center gap-1 font-semibold text-brand-ink hover:underline">
+          <Download size={13} aria-hidden /> 下载存档（含所有答）
+        </a>
+      </div>
+      <p className="mt-2 break-all font-mono text-[12px] leading-relaxed text-ink-2">
+        <span className="mr-2 font-sans text-ink-3">路线</span>{e.route}
+      </p>
+    </section>
   )
 }
