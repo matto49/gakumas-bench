@@ -42,6 +42,7 @@ shadcn 的语义变量（`background` `foreground` `primary` `muted` `accent` `b
 | `Badge` | `ModeBadge` 用它：`outline` 自报、`brand` 托管、`quiet` 上限 |
 | `Input` | 文本输入框；文件选择框仍用原生 |
 | `toast`（sonner） | 操作结果提示（上传收下 / 失败），右下角 |
+| 首页「数量级标尺」 | `Home.tsx` 的 `ScaleFigure`：对数横轴（10 的 0 到 24 次方）上的范围条和点，说明一局的打法有多少、30 秒搜得了多少。条用 `brand`，「搜得了的」用 `ink` 的圆点；每个标记旁边直接写数值，悬停有说明 |
 | `Empty` | 空状态：浅斜纹底 + 一句话说该做什么 |
 | `.stripes` / `.stripes-soft` | 斜纹底，只用在顶栏、复盘页头、首页头图和空状态 |
 

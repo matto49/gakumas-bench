@@ -7,7 +7,7 @@ import { int } from '../lib/format'
 import { ROUND, STAGE } from '../lib/game'
 import { setBlurbOf, setTitleOf } from '../lib/sets'
 import { idolName, useCatalog } from '../lib/catalog'
-import { btn, Code, CodeBlock, Grade, IdolThumb, RankNum, SectionTitle, Skeleton, TurnStrip } from '../components/ui'
+import { btn, Code, CodeBlock, Grade, IdolThumb, RankNum, SectionTitle, Skeleton, Tip, TurnStrip } from '../components/ui'
 
 type RunItem = { run: string; label: string; kind?: string; privileged?: boolean }
 
@@ -214,41 +214,103 @@ const Pow = ({ n }: { n: number }) => <>10<sup>{n}</sup></>
 /** 基础说明：为什么有这个网站，一局本战有多大。数字是 2026-11 在 hif-live 的本战题上实测的（MacBook Air M4）：
  *  排法数 = 牌堆的排列数；打法数用随机试打估算（Knuth 估计，第二轮 8 题各 4000 局，自助法区间约 ±0.3 个数量级）；
  *  GNRPA 单核 60 秒约 300 到 350 万局整局模拟、8,400 万次出牌推演。脚本在 gakumas-bench-data/scripts/complexity*.py */
+const N = ({ children }: { children: React.ReactNode }) => <span className="num font-semibold text-ink">{children}</span>
+
 function Why() {
-  const rows: [string, React.ReactNode][] = [
-    ['一局要做的决定', <>9 或 12 回合，出牌 20 到 35 次。每次平均有 4 到 6 种选择，最多 10 种。</>],
-    ['看不见的部分', <>牌堆 20 到 25 张，约有 <Pow n={18} /> 到 <Pow n={23} /> 种排法，出牌时不知道是哪一种。</>],
-    ['牌序固定后的打法', <>完整的打法还有约 <Pow n={13} /> 到 <Pow n={17} /> 种，没法穷举。</>],
-    ['相对的「最优解」', <>知道牌序，开局用 GNRPA 把整局路线一次搜完：每局单核 30 秒，约 150 万局整局模拟，相对全部打法只是极小一部分。所以它是限时搜到的最好成绩，不是真正的最优解。</>],
-  ]
   return (
-    <section className="mb-12">
+    <section className="mb-14">
       <SectionTitle>为什么有这个网站</SectionTitle>
-      <div className="grid gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
-        <div className="space-y-3 text-[14.5px] leading-relaxed text-ink-2">
-          <p>
+      <div className="grid items-start gap-x-12 gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        <div className="max-w-[36em] space-y-3.5 text-[14.5px] leading-[1.8] text-ink-2">
+          <p className="text-[16px] leading-[1.7] font-medium text-ink">
             众所周知，学园偶像大师是一款肉鸽卡牌游戏。对局里每一步选哪张卡、用不用道具，都存在最优解；理论上只要计算量够大，总能算出一副牌组的最优打法。
-            但实际上，以 H.I.F 为例：本战第二轮至少有 12 回合，一局要做 23 到 35 次决定，算上饮料，每次平均有 4 到 6 种选择；牌堆有 22 到 25 张牌，光排法就有 <Pow n={20} /> 到 <Pow n={23} /> 种；即使牌序固定，完整的打法也还有 <Pow n={13} /> 到 <Pow n={17} /> 种。
+          </p>
+          <p>
+            但实际上，以 H.I.F 为例：本战第二轮至少有 <N>12 回合</N>，一局要做 <N>23 到 35 次</N>决定，算上饮料，每次平均有 <N>4 到 6 种</N>选择；牌堆有 22 到 25 张牌，光排法就有 <N><Pow n={20} /> 到 <Pow n={23} /> 种</N>；即使牌序固定，完整的打法也还有 <N><Pow n={13} /> 到 <Pow n={17} /> 种</N>。
             每一步的效果结算还要考虑 P 道具、三色属性倍率、支援卡效果，以及好调、好印象、集中、元气、全力等各种 buff 的影响，计算量大得恐怖。
           </p>
           <p>面对这么大的计算量，我们需要性能更高的算法或神经网络，在更短的时间里算出更好的打法，给游戏过程中的选卡、换卡作指引。</p>
           <p>
             所以这个网站收集真实的考试数据，整理成可信的 benchmark，给不同的算法和模型测出高置信的得分和性能，最终设计出最好的算法，交给 bot / AI 自动运行。
-            目前每道考试题都会先用 GNRPA 算法，在知道牌序的前提下，开局一次性把整局的出牌路线搜出来，每局搜 30 秒（MacBook Air M4 单核约 150 万局整局模拟），得到一个相对的「最优解」。收集来的外部算法都以它为锚，评估各自的用时和质量。
+            目前每道考试题都会先用 GNRPA 算法，在知道牌序的前提下，开局一次性把整局的出牌路线搜出来，每局搜 <N>30 秒</N>（MacBook Air M4 单核约 150 万局整局模拟），得到一个相对的「最优解」。收集来的外部算法都以它为锚，评估各自的用时和质量。
           </p>
         </div>
-        <div>
-          <p className="mb-2 text-[13px] font-bold text-ink">H.I.F 本战的一局有多大</p>
-          <dl className="divide-y divide-line rounded-xl border border-line bg-surface text-[13px]">
-            {rows.map(([k, v]) => (
-              <div key={k} className="grid gap-x-4 gap-y-0.5 px-4 py-2.5 sm:grid-cols-[11rem_minmax(0,1fr)]">
-                <dt className="font-semibold text-ink">{k}</dt>
-                <dd className="leading-relaxed text-ink-2">{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
+        <ScaleFigure />
       </div>
     </section>
   )
 }
+
+/** 数量级标尺：横轴是 10 的几次方（0 到 24）。上面两条是「存在多少种」，最下面一个点是「30 秒搜得了多少」 */
+const SCALE_MAX = 24
+const pos = (e: number) => `${(e / SCALE_MAX) * 100}%`
+
+function ScaleRow({ label, sub, from, to, tip, point, gapTo, gapLabel }: { label: string; sub: React.ReactNode; from: number; to?: number; tip: React.ReactNode; point?: boolean; gapTo?: number; gapLabel?: string }) {
+  return (
+    <div className="grid items-center gap-x-4 gap-y-1 sm:grid-cols-[9.5rem_minmax(0,1fr)]">
+      <div className="leading-tight">
+        <p className="text-[13px] font-semibold text-ink">{label}</p>
+        <p className="num mt-0.5 text-[12px] text-ink-2">{sub}</p>
+      </div>
+      {/* @container：条的宽度用 cqw（作图区宽度的百分之几），不受外面那层悬停提示的包裹影响 */}
+      <div className="@container relative h-8">
+        {point && gapTo != null && (
+          <div className="absolute top-1/2 flex -translate-y-1/2 flex-col items-start" style={{ left: pos(from), width: `${((gapTo - from) / SCALE_MAX) * 100}cqw` }} aria-hidden>
+            <span className="-mt-[18px] mb-[3px] ml-3.5 text-[11px] leading-none whitespace-nowrap text-ink-2">{gapLabel}</span>
+            <span className="w-full border-t-[1.5px] border-dashed border-ink-3" />
+          </div>
+        )}
+        <div className="absolute top-1/2 -translate-y-1/2" style={{ left: pos(from) }}>
+          <Tip tip={tip} wide>
+            {point ? (
+              <span tabIndex={0} className="-ml-2 block size-4 rounded-full bg-ink ring-2 ring-surface" />
+            ) : (
+              <span tabIndex={0} className="block h-4 rounded-[4px] bg-brand" style={{ width: `${(((to ?? from) - from) / SCALE_MAX) * 100}cqw` }} />
+            )}
+          </Tip>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ScaleFigure() {
+  const ticks = [0, 6, 12, 18, 24]
+  return (
+    <figure className="rounded-2xl border border-line bg-surface p-5">
+      <figcaption className="mb-4">
+        <p className="text-[14px] font-bold text-ink">H.I.F 本战的一局有多大</p>
+        <p className="mt-0.5 text-[12px] text-ink-3">横轴是数量级，每往右一格大 100 万倍。</p>
+      </figcaption>
+      <div className="relative">
+        {/* 竖的刻度线：只铺在右边的作图区 */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 left-0 sm:left-[calc(9.5rem+1rem)]" aria-hidden>
+          {ticks.map((t) => (
+            <span key={t} className="absolute inset-y-0 w-px bg-line" style={{ left: pos(t) }} />
+          ))}
+        </div>
+        <div className="relative space-y-4 py-2">
+          <ScaleRow label="牌堆的排法" sub={<><Pow n={18} /> 到 <Pow n={23} /> 种</>} from={18} to={23}
+            tip="牌堆 20 到 25 张，洗牌后可能的顺序数。出牌时不知道是哪一种。" />
+          <ScaleRow label="牌序固定后的打法" sub={<><Pow n={13} /> 到 <Pow n={17} /> 种</>} from={13} to={17}
+            tip="牌序定下来以后，从第一步到最后一步的完整打法数。9 或 12 回合，出牌 20 到 35 次，每次平均 4 到 6 种选择。" />
+          <ScaleRow label="30 秒搜得了的" sub="约 150 万局" from={6.18} point gapTo={13} gapLabel="相差 600 万倍以上"
+            tip="GNRPA 知道牌序、单核搜 30 秒，约 150 万局整局模拟（MacBook Air M4）。" />
+        </div>
+        <div className="relative mt-1 h-5 sm:ml-[calc(9.5rem+1rem)]" aria-hidden>
+          {ticks.map((t) => (
+            <span key={t} className={cxTick(t)} style={{ left: pos(t) }}>
+              {t === 0 ? '1' : <Pow n={t} />}
+            </span>
+          ))}
+        </div>
+      </div>
+      <p className="mt-4 border-t border-line pt-3 text-[12.5px] leading-relaxed text-ink-2">
+        30 秒搜过的局数，不到全部打法的百万分之一。所以这里的「最优解」是限时搜到的最好成绩，不是真正的最优解。
+      </p>
+    </figure>
+  )
+}
+
+const cxTick = (t: number) =>
+  'num absolute top-1 text-[11px] text-ink-3 ' + (t === 0 ? '' : t === SCALE_MAX ? '-translate-x-full' : '-translate-x-1/2')
