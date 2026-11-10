@@ -79,19 +79,19 @@ export function Replay() {
         <Link to={`/sets/${e.set}`} className="hover:text-brand-ink">算法排行</Link> / <Link to={`/runs/${run}`} className="hover:text-brand-ink">{runInfo.data?.label ?? run}</Link> / 复盘
       </p>
       <header className="mb-5 overflow-hidden rounded-2xl border border-line bg-surface">
-        <div className="stripes flex flex-wrap items-center gap-4 bg-brand-deep px-5 py-3.5 text-white">
-          <IdolThumb id={idol} size={52} className="ring-2 ring-white/70" />
+        <div className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5">
+          <IdolThumb id={idol} size={52} />
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[19px] font-bold">{idol ? idolName(cat, idol) : e.name ?? problem}</h1>
-            <p className="text-[12.5px] text-white/90">
+            <h1 className="truncate text-[19px] font-bold text-ink">{idol ? idolName(cat, idol) : e.name ?? problem}</h1>
+            <p className="text-[12.5px] text-ink-2">
               {[obs0 && PLAN[String(obs0.exam.plan)], obs0 && (PRODUCE[obs0.exam.produce] ?? obs0.exam.produce), e.meta.round_label && (ROUND[e.meta.round_label] ?? e.meta.round_label), `${e.name ?? problem} #${seed}`].filter(Boolean).join(' · ')}
             </p>
           </div>
           <div className="flex items-center gap-3">
             {ratio != null && <Grade ratio={ratio} size={48} />}
             <div className="text-right">
-              <p className="text-[11.5px] text-white/85">{runInfo.data?.label ?? '终局'}{best ? ` · 上限 ${int(best)}` : ''}</p>
-              <p className="disp text-[32px] leading-none">{int(e.final.score)}</p>
+              <p className="text-[11.5px] text-ink-3">{runInfo.data?.label ?? '终局'}{best ? ` · 上限 ${int(best)}` : ''}</p>
+              <p className="disp text-[32px] leading-none text-ink">{int(e.final.score)}</p>
             </div>
           </div>
         </div>

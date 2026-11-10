@@ -15,7 +15,7 @@ const nav = [
 const pill = ({ isActive }: { isActive: boolean }) =>
   cx(
     'rounded-full px-2.5 py-1 text-[13.5px] font-semibold whitespace-nowrap transition-colors duration-150 sm:px-3',
-    isActive ? 'bg-surface text-brand-ink shadow-[0_1px_0_oklch(0.4_0.15_38/0.4)]' : 'text-white/95 hover:bg-white/15',
+    isActive ? 'bg-surface-2 text-ink shadow-[inset_0_0_0_1px_var(--color-line)]' : 'text-ink-2 hover:bg-surface-2 hover:text-ink',
   )
 
 export function Layout() {
@@ -27,12 +27,18 @@ export function Layout() {
   }, [me.reload])
   return (
     <div className="flex min-h-dvh flex-col overflow-x-clip">
-      <header className="sticky top-0 z-40 bg-brand-deep text-white">
-        <div className="stripes">
+      <header className="sticky top-0 z-40 border-b border-line bg-surface">
+        <div>
           <div className="mx-auto flex h-13 max-w-[1320px] items-center gap-3 px-4 sm:gap-5 sm:px-5">
-            <Link to="/" className="flex shrink-0 items-baseline gap-2 whitespace-nowrap">
+            <Link to="/" className="flex shrink-0 items-baseline gap-2 whitespace-nowrap text-ink">
+              {/* 三色小标：Vo 粉、Da 蓝、Vi 黄 */}
+              <span className="flex gap-[2px] self-center" aria-hidden>
+                <span className="h-4 w-1 -skew-x-12 rounded-[1px] bg-vo" />
+                <span className="h-4 w-1 -skew-x-12 rounded-[1px] bg-da" />
+                <span className="h-4 w-1 -skew-x-12 rounded-[1px] bg-vi" />
+              </span>
               <span className="disp text-[18px] leading-none tracking-wide not-italic sm:text-[21px]">gakumas-bench</span>
-              <span className="hidden text-[12px] text-white/85 md:inline">学マス出牌算法排行</span>
+              <span className="hidden text-[12px] text-ink-3 md:inline">学マス出牌算法排行</span>
             </Link>
             <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1">
               {nav.map((n) => (
@@ -49,7 +55,6 @@ export function Layout() {
             </div>
           </div>
         </div>
-        <div className="h-[3px] bg-[linear-gradient(90deg,var(--color-vo)_0_33.3%,var(--color-da)_33.3%_66.6%,var(--color-vi)_66.6%)]" aria-hidden />
       </header>
       <main className="mx-auto w-full max-w-[1320px] flex-1 px-5 pt-7 pb-16">
         <Outlet />

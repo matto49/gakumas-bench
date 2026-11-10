@@ -7,25 +7,26 @@
 /* 只做浅色：dark: 只在祖先带 .dark 时生效（我们不加），不跟随系统深色模式，否则 shadcn 组件里的 dark: 样式会混进来 */
 @custom-variant dark (&:is(.dark *));
 
-/* 学マス游戏风：暖白底，主色取学マス标志的橙，铺在顶栏、首页头图、名次和选中态上。
+/* 白底、中性灰的字和线；主色取学マス标志的橙，只用在按钮、链接、图里的条和标题前的小斜杠上，不铺大块底色。
+   页面上最亮的是游戏素材本身：偶像头像、评级徽章、三色属性。
    数据色是游戏里的 Vo 粉、Da 蓝、Vi 黄；小字标签用加深的 -strong 版本，白字对比度够 4.5:1。
    分数和名次用粗斜体窄字（Barlow Condensed），只放数字；中文一律系统字体。 */
 @theme {
-  --color-surface: oklch(0.987 0.006 72);
-  --color-surface-2: oklch(0.967 0.011 70);
-  --color-surface-3: oklch(0.94 0.015 68);
-  --color-line: oklch(0.905 0.013 68);
-  --color-line-strong: oklch(0.83 0.016 64);
-  --color-ink: oklch(0.255 0.022 38);
-  --color-ink-2: oklch(0.43 0.02 40);
-  --color-ink-3: oklch(0.56 0.016 45);
+  --color-surface: oklch(1 0 0);
+  --color-surface-2: oklch(0.975 0.002 60);
+  --color-surface-3: oklch(0.95 0.003 60);
+  --color-line: oklch(0.925 0.002 60);
+  --color-line-strong: oklch(0.86 0.003 60);
+  --color-ink: oklch(0.2 0.005 60);
+  --color-ink-2: oklch(0.42 0.005 60);
+  --color-ink-3: oklch(0.55 0.005 60);
 
   --color-brand: oklch(0.7 0.185 48);
   --color-brand-deep: oklch(0.58 0.19 40);
   --color-brand-deeper: oklch(0.52 0.18 37);
   --color-brand-ink: oklch(0.53 0.165 40);
   --color-brand-soft: oklch(0.955 0.038 62);
-  --color-brand-tint: oklch(0.975 0.022 66);
+  --color-brand-tint: oklch(0.972 0.01 62);
 
   --color-vo: oklch(0.67 0.2 358);
   --color-da: oklch(0.6 0.165 252);
@@ -73,23 +74,6 @@ body {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
-}
-
-/* 顶栏和首页头图的斜纹：游戏菜单背景那种细斜线 */
-.stripes {
-  background-image: repeating-linear-gradient(
-    -55deg,
-    oklch(1 0 0 / 0.09) 0 2px,
-    transparent 2px 9px
-  );
-}
-
-.stripes-soft {
-  background-image: repeating-linear-gradient(
-    -55deg,
-    oklch(0.7 0.185 48 / 0.07) 0 2px,
-    transparent 2px 10px
-  );
 }
 
 /* 放在 base 层，组件里的 outline-none 等工具类才能覆盖它 */
@@ -143,7 +127,7 @@ body {
   --popover: var(--color-surface);
   --popover-foreground: var(--color-ink);
   --primary: var(--color-brand-deep);
-  --primary-foreground: oklch(0.995 0.004 72);
+  --primary-foreground: oklch(1 0 0);
   --secondary: var(--color-surface-2);
   --secondary-foreground: var(--color-ink);
   --muted: var(--color-surface-2);

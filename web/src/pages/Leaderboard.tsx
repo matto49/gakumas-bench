@@ -120,12 +120,12 @@ export function Leaderboard() {
             aria-selected={s.set === set}
             className={cx(
               'inline-flex items-center gap-2 rounded-full border py-1 pr-3.5 pl-1 text-[13.5px] font-semibold transition-colors duration-150',
-              s.set === set ? 'border-brand-deep bg-brand-deep text-white' : 'border-line-strong bg-surface text-ink-2 hover:border-brand hover:text-brand-ink',
+              s.set === set ? 'border-ink/60 bg-surface-2 text-ink' : 'border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink',
             )}
           >
             <IdolThumb id={s.idols?.[0]} size={24} title={false} className="rounded-full ring-0" />
             {setTitleOf(sets.data, s.set)}
-            {s.status === 'community' && <span className={cx('text-[11px] font-normal', s.set === set ? 'text-white/80' : 'text-ink-3')}>社区</span>}
+            {s.status === 'community' && <span className={cx('text-[11px] font-normal', 'text-ink-3')}>社区</span>}
           </Link>
         ))}
         <Link to="/exams" className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[13px] text-ink-3 hover:text-brand-ink">

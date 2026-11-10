@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, KeyRound } from 'lucide-react'
 import { useApi } from '../lib/hooks'
 import { api, type Row, type RunInfo, type SetInfo } from '../lib/api'
-import { int, pct } from '../lib/format'
+import { int, ms, pct, pm } from '../lib/format'
 import { ROUND, STAGE } from '../lib/game'
-import { setBlurbOf, setTitleOf } from '../lib/sets'
+import { setBlurbOf, setTitleOf, sortSets } from '../lib/sets'
 import { idolName, useCatalog } from '../lib/catalog'
 import { Badge } from '@/components/ui/badge'
-import { btn, Code, CodeBlock, Grade, IdolThumb, RankNum, Skeleton, Tip, TurnStrip } from '../components/ui'
+import { btn, Code, CodeBlock, Grade, IdolThumb, ModeBadge, RankNum, Skeleton, Tip, TurnStrip, useRowLink } from '../components/ui'
 
 type RunItem = { run: string; label: string; kind?: string; privileged?: boolean }
 
@@ -61,20 +61,20 @@ function FeaturedResult() {
   const stage = data.tags?.stage
   const round = data.tags?.round
   return (
-    <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_40px_-24px_oklch(0.45_0.12_40/0.45)]">
-      <div className="stripes relative bg-brand-deep px-5 pt-4 pb-3 text-white">
-        <p className="text-[12px] font-semibold tracking-wide text-white/90">試験結果 · 实机牌序</p>
+    <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_oklch(0.2_0_0/0.04),0_18px_40px_-26px_oklch(0.2_0_0/0.22)]">
+      <div className="px-5 pt-4 pb-3">
+        <p className="text-[12px] font-semibold text-ink-3">試験結果 · 实机牌序</p>
         <div className="mt-2 flex items-center gap-3">
-          <IdolThumb id={idol} size={44} className="ring-2 ring-white/70" />
+          <IdolThumb id={idol} size={44} />
           <div className="min-w-0">
-            <p className="truncate text-[16px] font-bold">{idol ? idolName(cat, idol) : data.name}</p>
-            <p className="text-[12.5px] text-white/90">
+            <p className="truncate text-[16px] font-bold text-ink">{idol ? idolName(cat, idol) : data.name}</p>
+            <p className="text-[12.5px] text-ink-2">
               {[stage && (STAGE[stage] ?? stage), round && (ROUND[round] ?? round)].filter(Boolean).join(' · ')}
             </p>
           </div>
         </div>
       </div>
-      <div className="border-b border-line bg-surface-2 px-5 py-2.5">
+      <div className="border-y border-line bg-surface-2 px-5 py-2.5">
         <TurnStrip types={data.types} />
       </div>
       <ol className="divide-y divide-line">
@@ -134,66 +134,136 @@ function Stat({ n, label }: { n: React.ReactNode; label: string }) {
   )
 }
 
-/** 题集卡片：题数、每题几种牌序，加上排行的前三名。整张卡点进排行 */
-function SetCard({ s, sets }: { s: SetInfo; sets: SetInfo[] }) {
-  const lb = useApi<Row[]>(`api/leaderboard?set=${encodeURIComponent(s.set)}&kind=template`)
-  const top = useMemo(() => {
-    // 同一个算法跑过几次（题集扩过题）时留题数最多的那次
+/** 一个题集的排行：同一个算法跑过几次（题集扩过题）时留题数最多的那次，按相对上限排 */
+function useBoard(set: string) {
+  const lb = useApi<Row[]>(`api/leaderboard?set=${encodeURIComponent(set)}&kind=template`)
+  return useMemo(() => {
     const best = new Map<string, Row>()
     for (const r of lb.data ?? []) {
-      if (r.privileged) continue
-      const old = best.get(r.label)
-      if (!old || r.problems > old.problems) best.set(r.label, r)
+      const k = `${r.privileged ? 'oracle:' : ''}${r.label}`
+      const old = best.get(k)
+      if (!old || r.problems > old.problems) best.set(k, r)
     }
+    const all = [...best.values()]
     const v = (r: Row) => r.vs_oracle?.geo ?? -1
-    return [...best.values()].sort((a, b) => v(b) - v(a) || b.mean - a.mean).slice(0, 3)
-  }, [lb.data])
-  const hasOracle = top.some((r) => r.vs_oracle)
+    const ranked = all.filter((r) => !r.privileged).sort((a, b) => v(b) - v(a) || b.mean - a.mean)
+    return { loading: lb.loading, ranked, oracle: all.find((r) => r.privileged), hasOracle: ranked.some((r) => r.vs_oracle) }
+  }, [lb.data, lb.loading])
+}
+
+/** 首页「现在的排行」：FEATURE_SET 的榜，相对上限旁边带一根条。完整的列和筛选在排行页 */
+function NowBoard({ sets }: { sets: SetInfo[] | null }) {
+  const { loading, ranked, oracle } = useBoard(FEATURE_SET)
+  const rowLink = useRowLink()
+  const info = sets?.find((s) => s.set === FEATURE_SET)
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-[border-color,box-shadow] duration-150 hover:border-brand hover:shadow-[0_14px_30px_-22px_oklch(0.45_0.12_40/0.5)]">
-      <div className="px-5 pt-4 pb-5">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-[17px] leading-snug font-bold text-ink">
-            <Link to={`/sets/${s.set}`} className="rounded-sm after:absolute after:inset-0 group-hover:text-brand-ink">
-              {setTitleOf(sets, s.set)}
-            </Link>
-          </h3>
-          <SetIdols ids={s.idols} />
-        </div>
-        <p className="mt-1.5 text-ink-2">{setBlurbOf(sets, s.set)}</p>
-        <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
-          <Stat n={s.problems} label="道题" />
-          <Stat n={s.template_seeds ?? 32} label="种随机牌序 / 题" />
-        </dl>
-      </div>
-      <div className="flex-1 border-t border-line bg-surface-2/70">
-        <p className="flex justify-between px-5 pt-2.5 pb-1 text-[12px] text-ink-3">
-          <span>排行 · 前三</span>
-          <span>{hasOracle ? '相对上限' : '平均分'}</span>
-        </p>
-        {lb.loading && <Skeleton className="mx-5 mb-3 h-[108px]" />}
-        {!lb.loading && top.length === 0 && <p className="px-5 pt-1 pb-4 text-ink-3">还没有成绩。</p>}
-        <ol>
-          {top.map((r, i) => (
-            <li key={r.run} className="flex h-10 items-center gap-3 px-5">
-              <RankNum n={i + 1} className="w-4 text-center text-[19px]" />
-              <span className="min-w-0 flex-1 truncate font-semibold text-ink">{r.label}</span>
-              {hasOracle && (
-                <span className="relative z-10 inline-flex">
-                  <Grade ratio={r.vs_oracle?.geo} size={26} />
-                </span>
+    <section className="mb-14">
+      <HomeTitle
+        sub={`${setTitleOf(sets, FEATURE_SET)} · 每题 ${info?.template_seeds ?? 32} 种随机牌序`}
+        right={
+          <Link to={`/sets/${FEATURE_SET}`} className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand-ink hover:underline">
+            完整排行 <ArrowRight size={13} aria-hidden />
+          </Link>
+        }
+      >
+        现在的排行
+      </HomeTitle>
+      {loading ? (
+        <Skeleton className="h-[280px] rounded-2xl" />
+      ) : ranked.length === 0 ? (
+        <p className="text-ink-3">还没有成绩。</p>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-line">
+          <table className="w-full min-w-[560px] border-collapse">
+            <thead>
+              <tr className="border-b border-line bg-surface-2 text-left text-[12.5px] text-ink-3">
+                <th scope="col" className="w-12 px-3 py-2.5 font-medium" aria-label="名次" />
+                <th scope="col" className="px-3 py-2.5 font-medium">算法</th>
+                <th scope="col" className="px-3 py-2.5 font-medium sm:w-[330px]">相对上限</th>
+                <th scope="col" className="w-14 px-3 py-2.5 font-medium">评级</th>
+                <th scope="col" className="px-3 py-2.5 text-right font-medium">平均分</th>
+                <th scope="col" className="px-3 py-2.5 text-right font-medium max-sm:hidden">每步用时</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ranked.map((r, i) => (
+                <tr key={r.run} {...rowLink(`/runs/${r.run}`)} className="cursor-pointer border-b border-line hover:bg-brand-tint">
+                  <td className="px-3 text-center"><RankNum n={i + 1} /></td>
+                  <td className="h-14 px-3">
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <Link to={`/runs/${r.run}`} className="text-[15px] font-semibold text-ink hover:text-brand-ink">{r.label}</Link>
+                      <ModeBadge mode={r.mode} privileged={false} />
+                    </span>
+                  </td>
+                  <td className="px-3">
+                    <span className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-center gap-3">
+                      <span className="whitespace-nowrap">
+                        <span className="disp text-[21px] text-ink">{pct(r.vs_oracle)}</span>{' '}
+                        <span className="num text-[12px] text-ink-3">{pm(r.vs_oracle)}</span>
+                      </span>
+                      <span className="block h-1.5 rounded-full bg-surface-3 max-sm:hidden" aria-hidden>
+                        <span className="block h-1.5 rounded-full bg-brand" style={{ width: `${Math.min(100, Math.max(0, (r.vs_oracle?.geo ?? 0) * 100))}%` }} />
+                      </span>
+                    </span>
+                  </td>
+                  <td className="px-3"><Grade ratio={r.vs_oracle?.geo} size={30} /></td>
+                  <td className="px-3 text-right"><span className="disp text-[21px] text-ink">{int(r.mean)}</span></td>
+                  <td className="num px-3 text-right text-ink-2 max-sm:hidden">{ms(r.p50_ms)}</td>
+                </tr>
+              ))}
+              {oracle && (
+                <tr className="bg-surface-2 text-ink-2">
+                  <td />
+                  <td className="h-12 px-3">
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className="text-[15px]">{oracle.label}</span>
+                      <ModeBadge mode={oracle.mode} privileged />
+                    </span>
+                  </td>
+                  <td className="px-3 text-[12.5px] text-ink-3" colSpan={2}>提前知道牌序的搜索，只当分母，不排名</td>
+                  <td className="px-3 text-right"><span className="disp text-[21px]">{int(oracle.mean)}</span></td>
+                  <td className="num px-3 text-right text-ink-3 max-sm:hidden">30 s / 局</td>
+                </tr>
               )}
-              <span className="disp w-[4.5rem] text-right text-[19px] leading-none text-ink">{hasOracle ? pct(r.vs_oracle) : int(r.mean)}</span>
-            </li>
-          ))}
-        </ol>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
+/** 题集的一行：名字和说明、题数、每题几种牌序、现在的第一名。整行点进排行 */
+function SetRow({ s, sets }: { s: SetInfo; sets: SetInfo[] }) {
+  const { loading, ranked, hasOracle } = useBoard(s.set)
+  const first = ranked[0]
+  return (
+    <li className="group relative grid items-center gap-x-8 gap-y-3 border-b border-line px-1 py-5 hover:bg-surface-2 sm:px-3 md:grid-cols-[minmax(0,1fr)_12rem_11rem_12.5rem]">
+      <div className="min-w-0">
+        <h3 className="text-[17px] leading-snug font-bold text-ink">
+          <Link to={`/sets/${s.set}`} className="rounded-sm after:absolute after:inset-0 group-hover:text-brand-ink">
+            {setTitleOf(sets, s.set)}
+          </Link>
+        </h3>
+        <p className="mt-1 text-ink-2">{setBlurbOf(sets, s.set)}</p>
       </div>
-      <div className="flex items-center justify-end gap-3 border-t border-line px-5 py-2.5 text-[12.5px]">
-        <span className="inline-flex items-center gap-1 font-semibold text-brand-ink" aria-hidden>
-          完整排行 <ArrowRight size={13} />
-        </span>
-      </div>
-    </article>
+      <dl className="flex gap-x-8">
+        <Stat n={s.problems} label="道题" />
+        <Stat n={s.template_seeds ?? 32} label="种随机牌序 / 题" />
+      </dl>
+      <p className="text-[12px] leading-snug text-ink-3">
+        {loading ? '' : first ? (
+          <>
+            <span className="block truncate">现在第一 <span className="font-semibold text-ink">{first.label}</span></span>
+            <span className="disp text-[19px] text-ink">{hasOracle ? pct(first.vs_oracle) : int(first.mean)}</span>{' '}
+            {hasOracle ? '相对上限' : '平均分'}
+          </>
+        ) : '还没有成绩'}
+      </p>
+      <span className="md:justify-self-end">
+        <SetIdols ids={s.idols} />
+      </span>
+    </li>
   )
 }
 
@@ -201,13 +271,13 @@ export function Home() {
   const sets = useApi<SetInfo[]>('api/sets')
   return (
     <div>
-      <section className="stripes-soft mx-[calc(50%-50vw)] -mt-7 mb-12 border-b border-line bg-brand-tint px-5 pt-10 pb-12">
+      <section className="mx-[calc(50%-50vw)] -mt-7 mb-14 border-b border-line px-5 pt-14 pb-16">
         <div className="mx-auto grid max-w-[1120px] items-center gap-10 lg:grid-cols-[minmax(0,1fr)_440px]">
           <div>
-            <h1 className="text-[34px] leading-[1.2] font-bold tracking-tight text-ink sm:text-[40px]">
+            <h1 className="text-[34px] leading-[1.16] font-bold tracking-tight text-ink sm:text-[46px]">
               学マス考试<br />出牌算法排行
             </h1>
-            <p className="mt-4 max-w-[34em] text-[15.5px] leading-relaxed text-ink-2">
+            <p className="mt-5 max-w-[32em] text-[16px] leading-[1.8] text-ink-2">
               所有算法打同一批题，每题同样的 32 种随机牌序，比分数和每步用时。牌序只有裁判知道，每一局都可以点开看每一步出了哪张牌。
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
@@ -223,10 +293,9 @@ export function Home() {
 
       <div className="mx-auto max-w-[1120px]">
         <Why />
-      </div>
+        <NowBoard sets={sets.data} />
 
-      <section className="mx-[calc(50%-50vw)] mb-14 border-y border-line bg-surface-2 px-5 py-12">
-        <div className="mx-auto max-w-[1120px]">
+        <section className="mb-14">
           <HomeTitle
             sub={
               <>
@@ -241,14 +310,12 @@ export function Home() {
           >
             题集
           </HomeTitle>
-          <div className="grid gap-4 md:grid-cols-2">
-            {sets.loading && <Skeleton className="h-[330px] rounded-2xl" />}
-            {sets.data?.map((s) => <SetCard key={s.set} s={s} sets={sets.data ?? []} />)}
-          </div>
-        </div>
-      </section>
+          {sets.loading && <Skeleton className="h-[180px] rounded-2xl" />}
+          <ul className="border-t border-line">
+            {sortSets(sets.data ?? []).map((s) => <SetRow key={s.set} s={s} sets={sets.data ?? []} />)}
+          </ul>
+        </section>
 
-      <div className="mx-auto max-w-[1120px]">
         <section id="join" className="scroll-mt-20">
           <HomeTitle
             sub="算法是一个函数：拿到画面上看得见的信息（和 GKMS UINet 的 UIObs v1 一样），返回一个动作。成绩走托管评测，要先拿令牌。"

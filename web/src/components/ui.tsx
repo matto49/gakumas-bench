@@ -85,7 +85,7 @@ export function ErrorState({ error, onRetry }: { error: Error; onRetry?: () => v
 
 /** 空状态：一句话说该做什么 */
 export function Empty({ children }: { children: ReactNode }) {
-  return <div className="stripes-soft rounded-xl border border-dashed border-line-strong px-6 py-10 text-center text-ink-2">{children}</div>
+  return <div className="rounded-xl border border-dashed border-line-strong bg-surface-2 px-6 py-10 text-center text-ink-2">{children}</div>
 }
 
 export function ModeBadge({ mode, privileged }: { mode?: string; privileged: boolean }) {
