@@ -10,7 +10,7 @@ package main
 //	GET    /api/sets/{set}/problems          每道题带 scene（考试、阶段、轮次、流派、机制、偶像、回合、牌组张数、P 道具、饮料）
 //	POST   /api/sets {title, blurb}          登录用户新建社区集合
 //	PATCH  /api/sets/{set} {title?, blurb?, status?}   提交人或管理员改名字说明；status 只有管理员能改（审核：社区 → 官方）
-//	POST   /api/sets/{set}/problems          上传题：表单字段 files（.gksave.json / JSON Lines，可多个）
+//	POST   /api/sets/{set}/problems          上传题：表单字段 files（开局配置 gkms.hif_loadout.v1 或 .gksave.json，可多个，可 JSON Lines）、name（开局配置的题名）；?wait=1 核对完再返回
 //	DELETE /api/sets/{set}/problems/{id}     提交人或管理员删一道题（官方集合只有管理员能删）
 //
 // 上传的每道题交给引擎核对（worker check_problem：编号、题族、起点、能开局），同一集合里题族编号相同的算重复。
@@ -31,6 +31,7 @@ import (
 
 const (
 	maxUploadDocs     = 500
+	maxWaitDocs       = 20 // ?wait=1 同步核对时一次最多几道
 	maxCommunitySets  = 20
 	maxTitleRunes     = 40
 	maxBlurbRunes     = 300
@@ -314,7 +315,30 @@ func (a *App) handleUploadProblems(w http.ResponseWriter, r *http.Request, u str
 		fail(w, 400, "表单不对："+err.Error())
 		return
 	}
-	var docs []any // 存档对象
+	// docs：存档对象，或者没算过编号的开局配置（gkms.hif_loadout.v1，引擎子进程替它算编号，所以用 curl 就能传，不用装本仓库）。
+	// names：开局配置没有题名，用表单的 name，没给就用文件名；一次传多道时从第二道起加 -2、-3
+	var docs []any
+	var names []string
+	formName := strings.TrimSpace(r.FormValue("name"))
+	add := func(d map[string]any, file string) {
+		name := formName
+		if name == "" {
+			name = file
+			for _, ext := range []string{".jsonl", ".json", ".gksave"} {
+				name = strings.TrimSuffix(name, ext)
+			}
+		}
+		n := 0
+		for _, x := range names {
+			if x == name || strings.HasPrefix(x, name+"-") {
+				n++
+			}
+		}
+		if n > 0 {
+			name = fmt.Sprintf("%s-%d", name, n+1)
+		}
+		docs, names = append(docs, d), append(names, trimRunes(name, 80))
+	}
 	for _, fh := range r.MultipartForm.File["files"] {
 		f, err := fh.Open()
 		if err != nil {
@@ -324,7 +348,7 @@ func (a *App) handleUploadProblems(w http.ResponseWriter, r *http.Request, u str
 		f.Close()
 		var one map[string]any
 		if json.Unmarshal(raw, &one) == nil {
-			docs = append(docs, one)
+			add(one, fh.Filename)
 			continue
 		}
 		for _, line := range strings.Split(string(raw), "\n") {
@@ -337,11 +361,11 @@ func (a *App) handleUploadProblems(w http.ResponseWriter, r *http.Request, u str
 				fail(w, 400, fmt.Sprintf("%s 不是 JSON 或 JSON Lines：%v", fh.Filename, err))
 				return
 			}
-			docs = append(docs, d)
+			add(d, fh.Filename)
 		}
 	}
 	if len(docs) == 0 {
-		fail(w, 400, "没有题：选文件（.gksave.json / JSON Lines）")
+		fail(w, 400, "没有题：表单字段 files 放开局配置或 .gksave.json（可多个，可 JSON Lines）")
 		return
 	}
 	if len(docs) > maxUploadDocs {
@@ -352,11 +376,21 @@ func (a *App) handleUploadProblems(w http.ResponseWriter, r *http.Request, u str
 	a.jobsMu.Lock()
 	a.jobs[job.Job] = job
 	a.jobsMu.Unlock()
-	go a.ingestProblems(job, set, docs)
+	// ?wait=1：核对完再返回最终结果（给 curl 用，不用再轮询）；题多时核对久，会超过代理的等待时间，所以限 20 道
+	if r.URL.Query().Get("wait") != "" {
+		if len(docs) > maxWaitDocs {
+			fail(w, 400, fmt.Sprintf("wait=1 一次最多 %d 道题，更多的去掉 wait，用返回的 job 查 /api/jobs/{job}", maxWaitDocs))
+			return
+		}
+		a.ingestProblems(job, set, docs, names)
+		writeJSONResp(w, 200, job.snapshot())
+		return
+	}
+	go a.ingestProblems(job, set, docs, names)
 	writeJSONResp(w, 202, job.snapshot())
 }
 
-func (a *App) ingestProblems(j *Job, set string, docs []any) {
+func (a *App) ingestProblems(j *Job, set string, docs []any, names []string) {
 	setJob := func(f func()) { j.mu.Lock(); f(); j.mu.Unlock() }
 	reject := func(i int, id, why string) {
 		setJob(func() {
@@ -369,7 +403,7 @@ func (a *App) ingestProblems(j *Job, set string, docs []any) {
 		if m, ok := d.(map[string]any); ok && str(m["id"]) != "" {
 			label = str(m["id"])
 		}
-		rep, _, err := a.pool.Pick().Call(map[string]any{"op": "check_problem", "doc": d})
+		rep, _, err := a.pool.Pick().Call(map[string]any{"op": "check_problem", "doc": d, "name": names[i]})
 		switch {
 		case err != nil:
 			msg := err.Error()

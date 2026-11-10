@@ -6,7 +6,7 @@
 
 ## 写一道题
 
-要往「試験集合」加一道考试，按这一章做就够，后面几章是参考。人和 AI 都按同样的三步：写开局配置、算编号、上传。
+要往「試験集合」加一道考试，按这一章做就够，后面几章是参考。人和 AI 都是两步：写开局配置，用 curl 传上去。
 
 **1. 写开局配置**，一个 JSON 对象，存成 `exam.json`。下面是一道完整的题（H.I.F 選抜 1，篠澤広）：
 
@@ -62,20 +62,25 @@
 - 卡、饮料、P 道具、偶像、定制 P 道具效果、回忆：`GET https://hiro.matto.top/gkbench/api/catalog`（JSON，按编号给名字和效果文字；`cards.<编号>.custom.dirs[].id` 是这张卡能选的定制编号，`levels` 是各档效果），网页版是「考试资源一览」。
 - 现成的题：`GET https://hiro.matto.top/gkbench/api/sets/<集合>/problems`，每项的 `archive.loadout` 就是一份开局配置，可以照着改。支援卡的编号和千分比目录里没有，从这里抄。
 
-**2. 算编号。** 在本仓库目录下运行（只用格式模块，不需要游戏引擎，装法见 README）：
+**2. 上传。** 一条 curl 就行，不用装本仓库，编号由服务器按内容算：
 
-    python -m gkbench save make exam.json --name 题名
+    curl -H "Authorization: Bearer $(cat ~/.config/gkbench/token)" \
+         -F name=题名 -F files=@exam.json \
+         "https://hiro.matto.top/gkbench/api/sets/<集合>/problems?wait=1"
 
-它生成 `AS-编号.gksave.json`。编号是按内容算的，改过内容就要重新生成；直接传手改过的存档会被拒，原因写「编号不符」。改一份现成的 `.gksave.json` 也用这条命令重算。
+- 令牌：先在网页「我的」页生成命令行令牌，存到 `~/.config/gkbench/token`。curl 用不了浏览器的登录状态，认的是这个令牌。
+- 集合：在网页「試験集合」里建，`<集合>` 填它的编号（集合页网址的最后一段）。只能往自己建的集合传，官方集合要管理员。
+- `files` 可以给多个，也可以是 JSON Lines；`name` 是题名，不给就用文件名。
+- `?wait=1` 让它核对完再返回（一次最多 20 道）；不加就立刻返回一个核对任务，用 `GET /gkbench/api/jobs/<job>` 查。
 
-**3. 上传。** 用命令行传（网页上没有上传按钮）。先在网页「我的」页生成命令行令牌，存到 `~/.config/gkbench/token`（或设环境变量 `GKBENCH_TOKEN`），集合在网页「試験集合」里建，或者用 `--new` 顺手建：
+返回的 JSON 里 `accepted` 是收下几道，`added` 是收下的题（编号、题名、题族），`rejected` 里每项写没收的原因：
 
-    python -m gkbench upload-problems AS-编号.gksave.json --set <集合>
-    python -m gkbench upload-problems AS-编号.gksave.json --new "我的集合"      # 先建一个集合再传
+    {"accepted":1,"added":[{"id":"AS-VVFKT9FZ","name":"题名","family":"AF-EKCH96E7"}],"rejected":[],"status":"done","total":1}
+    {"accepted":0,"rejected":[{"id":"第 1 道","reason":"核对没过：无法构建这场考试：'p_card-99-xxx-9_999'"}],"status":"rejected","total":1}
 
-不装本仓库也能传，接口是 `POST /gkbench/api/sets/<集合>/problems`（multipart，字段 `files`，可以多个），返回一个核对任务，轮询 `GET /gkbench/api/jobs/<job>` 看结果：
+装了本仓库的话也可以用 `python -m gkbench upload-problems exam.json --set <集合>`（`--new "我的集合"` 先建集合再传），走的是同一个接口。
 
-    curl -H "Authorization: Bearer $(cat ~/.config/gkbench/token)" -F files=@AS-编号.gksave.json https://hiro.matto.top/gkbench/api/sets/<集合>/problems
+已经有 `.gksave.json`（比如别处导出的存档）也能直接传，但它自带编号，内容改过就对不上，会被拒，原因写「编号不符」；这时用 `python -m gkbench save make 改好的.gksave.json` 重算，或者只把里面的 `loadout` 拿出来当开局配置传。
 
 服务器逐道核对：编号和内容对得上；引擎认得里面的偶像、卡、P 道具，能开局；同一集合里已有同一开局（题族相同）的算重复，不收。没收的每道都写原因。收下后每道题配 32 个保密种子，所有算法打同一组。
 

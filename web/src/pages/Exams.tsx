@@ -364,7 +364,6 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
 
 const FORMAT_DOC = 'https://github.com/matto49/gakumas-bench/blob/develop/docs/format.md#写一道题'
 const FORMAT_RAW = 'https://raw.githubusercontent.com/matto49/gakumas-bench/develop/docs/format.md'
-const README = 'https://github.com/matto49/gakumas-bench#readme'
 /** 说明里的链接一律开新标签页：上传面板里可能已经选了文件 */
 const ext = { target: '_blank', rel: 'noreferrer noopener' } as const
 const link = 'text-brand-ink underline-offset-2 hover:underline'
@@ -379,8 +378,8 @@ function aiBrief(set: string) {
     `2. 现成的题可以当例子，每项的 archive.loadout 就是一份开局配置：${site}api/sets/${set}/problems`,
     `3. 卡、饮料、P 道具、偶像的编号和效果文字，以及每张卡能选的定制：${site}api/catalog`,
     '4. 按我下面的要求写出开局配置（JSON，schema 写 gkms.hif_loadout.v1，不要写 seed），存成 exam.json。编号只用上面查得到的，不要自己编。',
-    '5. 在 gakumas-bench 仓库目录下运行 python -m gkbench save make exam.json --name <题名>，得到 AS-编号.gksave.json。',
-    `6. 运行 python -m gkbench upload-problems AS-编号.gksave.json --set ${set} 上传（令牌文件 ~/.config/gkbench/token；没有就告诉我，我去网页「我的」页生成），把它列出的收下 / 没收原因告诉我。`,
+    `5. 上传，不用装任何东西，编号由服务器算：curl -H "Authorization: Bearer $(cat ~/.config/gkbench/token)" -F name=<题名> -F files=@exam.json "${site}api/sets/${set}/problems?wait=1"`,
+    '6. 把返回的 JSON 告诉我：accepted 是收下几道，rejected 里每项的 reason 是没收的原因；有没收的就按原因改了再传。令牌文件没有的话告诉我，我去网页「我的」页生成。',
     '',
     '我要的考试：<偶像、哪场考试第几轮、牌组、P 道具、饮料、开局体力>',
   ].join('\n')
@@ -392,7 +391,7 @@ function UploadGuide({ set }: { set: string }) {
     <details className="group mb-4 rounded-lg border border-line bg-surface-2 text-[12.5px] leading-relaxed text-ink-2">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-3 py-2 font-medium text-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
         <ChevronRight size={14} aria-hidden className="text-ink-3 motion-safe:transition-transform group-open:rotate-90" />
-        三步：写配置、算编号、上传；传上去会核对什么
+        两步：写开局配置、用 curl 上传；传上去会核对什么
       </summary>
       <div className="border-t border-line px-3 pb-3 pt-2.5 [overflow-wrap:anywhere] *:max-w-[78ch]">
         <ol className="list-decimal space-y-1.5 pl-5">
@@ -403,19 +402,14 @@ function UploadGuide({ set }: { set: string }) {
             也可以拿 <a href={`${BASE}api/sets/${set}/problems`} {...ext} className={link}>这个集合现成的题</a>（JSON，每项的 <Code>archive.loadout</Code>）照着改。
           </li>
           <li>
-            算编号，在 gakumas-bench 仓库目录下运行（不需要游戏引擎，装法见 <a href={README} {...ext} className={link}>README</a>）：
-            <div className="my-1.5"><CodeBlock>{'python -m gkbench save make exam.json --name 题名'}</CodeBlock></div>
-            它生成 <Code>AS-编号.gksave.json</Code>。编号按内容算，改过内容要重新生成，直接传改过的文件会被拒，原因写「编号不符」。
-          </li>
-          <li>
-            上传。令牌在 <a href={`${BASE}me`} {...ext} className={link}>我的</a> 页生成，存到 <Code>~/.config/gkbench/token</Code>，然后运行：
-            <div className="my-1.5"><CodeBlock>{`python -m gkbench upload-problems AS-编号.gksave.json --set ${set}`}</CodeBlock></div>
-            它逐道列出收下的和没收的原因。传完刷新这一页就能看到新题。
+            上传，一条 curl，不用装任何东西，编号由服务器算。令牌在 <a href={`${BASE}me`} {...ext} className={link}>我的</a> 页生成，存到 <Code>~/.config/gkbench/token</Code>：
+            <div className="my-1.5"><CodeBlock>{`curl -H "Authorization: Bearer $(cat ~/.config/gkbench/token)" \\\n     -F name=题名 -F files=@exam.json \\\n     "${location.origin}${BASE}api/sets/${set}/problems?wait=1"`}</CodeBlock></div>
+            返回的 JSON 里 <Code>accepted</Code> 是收下几道，<Code>rejected</Code> 里每项写没收的原因。传完刷新这一页就能看到新题。
           </li>
         </ol>
         <h4 className="mt-3 mb-1 font-semibold text-ink">传上去会核对什么</h4>
         <ul className="list-disc space-y-1 pl-5">
-          <li>编号和内容对得上；引擎认得里面的偶像、卡、P 道具，能开局。</li>
+          <li>引擎认得里面的偶像、卡、P 道具，能开局。传的是自带编号的 <Code>.gksave.json</Code> 时，编号还要和内容对得上。</li>
           <li>这个集合里已经有同一开局（同一题族）的题，算重复，不收。</li>
           <li>带种子的题只收成题模板，种子另记成这道题的固定种子，起点（回合、分数、体力、手牌）要对得上。</li>
           <li>收下后每道题配 32 个保密种子，所有算法打同一组。</li>
@@ -425,7 +419,7 @@ function UploadGuide({ set }: { set: string }) {
   )
 }
 
-/** 上传考试：只走命令行（`gkbench upload-problems`，带令牌），网页上不放上传按钮。这里给格式说明、能直接贴给 AI 的说明和三步做法 */
+/** 上传考试：只走命令行（一条 curl，带令牌；开局配置的编号由服务器算），网页上不放上传按钮。这里给格式说明、能直接贴给 AI 的说明和三步做法 */
 function UploadPanel({ set }: { set: string }) {
   const copyBrief = async () => {
     try {
@@ -439,7 +433,7 @@ function UploadPanel({ set }: { set: string }) {
     <section className="mb-6 rounded-xl border border-line bg-surface p-4">
       <SectionTitle>上传考试</SectionTitle>
       <p className="mb-2.5 max-w-[78ch] text-[13px] text-ink-2">
-        考试用命令行传，一道考试是一个审查存档 <Code>.gksave.json</Code>。怎么写看格式说明的「写一道题」：字段表、一份完整的例子、编号去哪查。
+        考试用一条 curl 传，不用装东西：写一份开局配置（JSON），服务器核对后收下。怎么写看格式说明的「写一道题」：字段表、一份完整的例子、编号去哪查。
         想让 AI 代写代传，把下面那段说明贴给它。
       </p>
       <div className="mb-3 flex flex-wrap items-center gap-2">

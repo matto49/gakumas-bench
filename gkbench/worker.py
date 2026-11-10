@@ -70,7 +70,11 @@ def main():
                 rep["verdict"] = rep.pop("ok")
             elif op == "check_problem":
                 from .problems import check_upload
-                rep = check_upload(req["doc"])
+                doc = req["doc"]
+                if isinstance(doc, dict) and "format" not in doc:   # 没算过编号的开局配置：这里替它算（存档则必须自带对的编号）
+                    from .save import make_template
+                    doc = make_template(doc, name=(req.get("name") or None))
+                rep = check_upload(doc)
             elif op == "replay":
                 rep = replay(req["problem"], int(req["seed"]), req["episode"])
                 rep["verdict"] = rep.pop("ok")
