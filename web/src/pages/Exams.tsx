@@ -73,14 +73,15 @@ export function Exams() {
           {list.length === 0 ? <Empty>还没有。</Empty> : (
             <div className="grid gap-3 md:grid-cols-2">
               {list.map((s) => (
-                <div key={s.set} className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors duration-150 hover:border-brand">
+                <div key={s.set} className="group relative flex cursor-pointer flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors duration-150 hover:border-brand has-[a[data-card]:focus-visible]:border-brand has-[a[data-card]:focus-visible]:ring-2 has-[a[data-card]:focus-visible]:ring-ring">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <Link to={`/exams/${s.set}`} className="inline-flex flex-wrap items-center gap-2 text-[16px] font-bold text-ink hover:text-brand-ink">
+                      {/* 整张卡可点：标题链接的遮罩铺满卡片；卡里另外能点的（算法数提示、算法排行）放在 z-10 */}
+                      <Link to={`/exams/${s.set}`} data-card className="inline-flex flex-wrap items-center gap-2 text-[16px] font-bold text-ink outline-none group-hover:text-brand-ink after:absolute after:inset-0 after:rounded-xl after:content-['']">
                         {setTitleOf(sets, s.set)}
                       </Link>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-ink-3">
-                        <StatusBadge s={s.status} />
+                        <span className="relative z-10 inline-flex cursor-default"><StatusBadge s={s.status} /></span>
                         <span className="font-mono">{s.set}</span>
                         {s.owner && <span>提交人 {s.owner}</span>}
                       </div>
@@ -94,10 +95,9 @@ export function Exams() {
                   <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3 text-[12.5px] text-ink-3">
                     <span><span className="disp text-[16px] text-ink">{s.problems}</span> 题</span>
                     <Tip tip={s.algos?.length ? s.algos.join('、') : '还没有算法跑过'}>
-                      <span tabIndex={0}><span className="disp text-[16px] text-ink">{s.algos?.length ?? 0}</span> 种算法跑过</span>
+                      <span tabIndex={0} className="relative z-10 cursor-default"><span className="disp text-[16px] text-ink">{s.algos?.length ?? 0}</span> 种算法跑过</span>
                     </Tip>
-                    <span className="ml-auto flex gap-2">
-                      <Link to={`/exams/${s.set}`} className={btn.small}>看题</Link>
+                    <span className="relative z-10 ml-auto flex gap-2">
                       <Link to={`/sets/${s.set}`} className={btn.small}>算法排行 <ArrowRight size={13} aria-hidden /></Link>
                     </span>
                   </div>
