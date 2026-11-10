@@ -54,6 +54,11 @@
       python -m gkbench upload-problems --new "我的集合" a.gksave.json b.gksave.json
       python -m gkbench upload-problems --set u-matto-1a2b3c --code 'GKAS1:…'
 
+  自己出题：下载一道现成的题模板改 `loadout`（牌组 `deck_cards`、P 道具 `produce_item_ids`、饮料 `drink_ids`、开局体力 `starting_stamina`……），
+  或者拿 GKMS 的开局配置（`gkms.hif_loadout.v1`），用 `save make` 重算编号后再传（直接传改过的文件会因「编号不符」被拒）。这一步只用格式模块，不需要 GKMS：
+
+      python -m gkbench save make 改好的.gksave.json --name 题名 --out .    # 生成 AS-编号.gksave.json，并打印分享码
+
 ## 两种评测
 
 | | 固定种子 | 保密种子（题模板 · 32 个固定种子） |
@@ -123,6 +128,7 @@
     # 审查存档
     .venv/bin/python -m gkbench save export --set hif-live --runs $GKBENCH_DATA/runs/* --out hif-live.gksave.jsonl
     .venv/bin/python -m gkbench save check hif-live.gksave.jsonl                   # 第 5 章核对 + 重放每条答
+    .venv/bin/python -m gkbench save make 改好的.gksave.json --name 题名            # 自己出题：重算编号，生成可上传的题模板
     .venv/bin/python -m gkbench save share AS-C3Y5EFGV.gksave.json                 # 分享码 GKAS1:…
     .venv/bin/python -m gkbench save unshare 'GKAS1:…' --out problem.gksave.json
 

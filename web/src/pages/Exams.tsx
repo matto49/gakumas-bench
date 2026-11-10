@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowRight, Download, FolderPlus, Layers, Loader2, ShieldCheck, Trash2, Upload } from 'lucide-react'
+import { ArrowRight, ChevronRight, Download, FolderPlus, Layers, Loader2, ShieldCheck, Trash2, Upload } from 'lucide-react'
 import { DeckView } from '../components/DeckView'
 import { toast } from 'sonner'
 import { api, ApiError, BASE, type Job, type Problem, type SetInfo } from '../lib/api'
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select } from '../components/Select'
-import { btn, Code, Empty, ErrorState, Help, IdolThumb, PageHeader, SectionTitle, Skeleton, TableSkeleton, Tip } from '../components/ui'
+import { btn, Code, CodeBlock, Empty, ErrorState, Help, IdolThumb, PageHeader, SectionTitle, Skeleton, TableSkeleton, Tip } from '../components/ui'
 
 /** 試験集合：收集来的考试集合。所有算法排行、托管评测都按集合选题。 */
 
@@ -364,6 +364,51 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
   )
 }
 
+const FORMAT_DOC = 'https://github.com/matto49/gakumas-bench/blob/develop/docs/format.md'
+const README = 'https://github.com/matto49/gakumas-bench#readme'
+
+/** 上传面板里的说明：文件从哪来、传上去核对什么。默认收起 */
+function UploadGuide() {
+  return (
+    <details className="group mb-4 rounded-lg border border-line bg-surface-2 text-[12.5px] leading-relaxed text-ink-2">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-3 py-2 font-medium text-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+        <ChevronRight size={14} aria-hidden className="text-ink-3 motion-safe:transition-transform group-open:rotate-90" />
+        文件从哪来、传上去会核对什么
+      </summary>
+      <div className="grid gap-4 border-t border-line px-3 pb-3 pt-2.5 [overflow-wrap:anywhere] md:grid-cols-2">
+        <div className="min-w-0">
+          <h4 className="mb-1.5 font-semibold text-ink">文件从哪来</h4>
+          <ul className="list-disc space-y-1.5 pl-4">
+            <li>别人发来的分享码：粘到「分享码」框里。</li>
+            <li>
+              改一道现成的题：在题表里点下载（或右上「下载全部题模板」），改 <Code>loadout</Code> 里的字段，比如牌组 <Code>deck_cards</Code>、
+              P 道具 <Code>produce_item_ids</Code>、饮料 <Code>drink_ids</Code>、开局体力 <Code>starting_stamina</Code>。
+              改完要重算编号，在 gakumas-bench 仓库目录下运行：
+              <div className="my-1.5"><CodeBlock>{'python -m gkbench save make 改好的.gksave.json --name 题名'}</CodeBlock></div>
+              <span className="mt-1 block">它会生成 <Code>AS-编号.gksave.json</Code>，同时打印分享码，传这个新文件。直接传改过的文件会被拒，原因写「编号不符」。</span>
+            </li>
+            <li>GKMS 的开局配置（<Code>gkms.hif_loadout.v1</Code>）也用 <Code>save make</Code> 转。</li>
+            <li>
+              这个命令不需要游戏引擎，装法见 <a href={README} className="text-brand-ink underline-offset-2 hover:underline">README</a>；
+              卡、支援卡的写法见 <a href={FORMAT_DOC} className="text-brand-ink underline-offset-2 hover:underline">格式说明</a> 第 1、2 章。
+            </li>
+          </ul>
+        </div>
+        <div className="min-w-0">
+          <h4 className="mb-1.5 font-semibold text-ink">传上去会核对什么</h4>
+          <ul className="list-disc space-y-1.5 pl-4">
+            <li>编号和内容对得上；引擎认得里面的偶像、卡、P 道具，能开局；带种子的题还要对上起点（回合、分数、体力、手牌）。</li>
+            <li>这个集合里已经有同一开局（同一题族）的题，算重复，不收。</li>
+            <li>带种子的题只收成题模板，种子另记成这道题的固定种子。</li>
+            <li>评测时每道题配 32 个保密种子，所有算法打同一组。</li>
+            <li>核对完在下面列出收了几道，没收的每道写原因。</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  )
+}
+
 /** 上传考试：.gksave.json（可多个、可 JSON Lines）或 GKAS1: 分享码；服务器逐道核对 */
 function UploadPanel({ set, onDone }: { set: string; onDone: () => void }) {
   const [files, setFiles] = useState<FileList | null>(null)
@@ -410,9 +455,10 @@ function UploadPanel({ set, onDone }: { set: string; onDone: () => void }) {
   return (
     <section className="mb-6 rounded-xl border border-line bg-surface p-4">
       <SectionTitle>上传考试</SectionTitle>
-      <p className="mb-3 text-[13px] text-ink-2">
-        审查存档 <Code>.gksave.json</Code>（可以多个，也可以是 JSON Lines），或者一行一个 <Code>GKAS1:</Code> 分享码。每道题都会在引擎里核对编号、能不能开局；同一题族已有的算重复。固定种子题会去掉种子收成题模板，种子另外记下。
+      <p className="mb-2 text-[13px] text-ink-2">
+        传审查存档 <Code>.gksave.json</Code>（可以多个，也可以是 JSON Lines），或者一行一个 <Code>GKAS1:</Code> 分享码。
       </p>
+      <UploadGuide />
       <form onSubmit={submit} className="grid gap-3 md:grid-cols-2">
         <label className="block">
           <span className="mb-1 block text-[12.5px] font-medium text-ink">文件</span>

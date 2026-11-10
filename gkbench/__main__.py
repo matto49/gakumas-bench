@@ -18,6 +18,7 @@
 审查存档（gkms.audition_save.v2）
   save export --set NAME [--runs RUN_DIR...] [--no-fixed] [--no-templates] --out FILE.jsonl
   save check FILE... [--no-replay]                             按第 5 章核对，并重放答
+  save make FILE... [--name 名字] [--out DIR]                    自己出题：开局配置或改过的存档 → 可上传的题模板（重算编号）
   save share FILE                                              分享码 GKAS1:…
   save unshare CODE [--out FILE]
 """
@@ -119,6 +120,10 @@ def main(argv=None):
     sc = ss.add_parser("check")
     sc.add_argument("files", nargs="+")
     sc.add_argument("--no-replay", action="store_true")
+    sm = ss.add_parser("make", help="开局配置（gkms.hif_loadout.v1）或改过的存档 → 可上传的题模板，重算编号")
+    sm.add_argument("files", nargs="+")
+    sm.add_argument("--name", default=None, help="题名（写进 name: 标签）；多个文件时只用于第一个")
+    sm.add_argument("--out", default=".", help="输出目录，每题一个 <编号>.gksave.json")
     sh = ss.add_parser("share")
     sh.add_argument("file")
     su = ss.add_parser("unshare")
@@ -207,7 +212,20 @@ def main(argv=None):
             evaluate(a.set, a.algo, a.seeds, a.parallel, a.budget, a.label, a.only.split(",") if a.only else None,
                      a.resume, a.server)
     elif a.cmd == "save":
-        from . import archive, save
+        from . import save
+        if a.scmd == "make":   # 只用格式模块，不需要 GKMS
+            out = Path(absp(a.out))
+            out.mkdir(parents=True, exist_ok=True)
+            for i, f in enumerate(a.files):
+                text = Path(absp(f)).read_text()
+                srcs = [json.loads(line) for line in text.splitlines() if line.strip()] if f.endswith(".jsonl") else [json.loads(text)]
+                for src in srcs:
+                    d = save.make_template(src, name=a.name if i == 0 else None)
+                    (out / f"{d['id']}.gksave.json").write_text(save.dumps(d))
+                    print(f"{d['id']}（题族 {d['meta']['family']}）→ {out / (d['id'] + '.gksave.json')}")
+                    print(f"  分享码 {save.share_code(d)}")
+            return
+        from . import archive
         if a.scmd == "export":
             docs = archive.export(a.set, [absp(r) for r in a.runs], fixed=not a.no_fixed, templates=not a.no_templates)
             out = Path(absp(a.out))

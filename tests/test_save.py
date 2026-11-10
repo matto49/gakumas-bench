@@ -105,3 +105,33 @@ def test_pack_rules():
     t = save.pack_runs([dict(a, step_ms=[5]), dict(a, score=2)])
     assert t[0]["cols"] == ["score", "step_ms", "at", "route"]
     assert t[0]["rows"][1][1] is None
+
+
+# ---------------------------------------------------------------- save make：自己出题
+def test_make_template_keeps_id_of_untouched_template():
+    doc = _fixture("AS-73S73RCH")
+    out = save.make_template(doc)
+    assert out["id"] == "AS-73S73RCH" and out["meta"]["family"] == "AF-Y5H2AZ7B"
+    assert save.read(out)["template"]
+
+
+def test_make_template_from_fixed_seed_and_edit():
+    fixed = _fixture("AS-HM5N7G5Z")
+    out = save.make_template(fixed, name="改过的题")
+    assert out["id"] == "AS-73S73RCH"                 # 去掉种子、核对和答，就是同一开局的题模板
+    assert out["runs"] == [] and out["check"] == {} and out["prefix"] == ""
+    assert "name:改过的题" in out["meta"]["tags"]
+    edited = copy.deepcopy(fixed)
+    edited["loadout"]["stamina"] = edited["loadout"].get("stamina", 30) + 1   # 手改编成：原编号对不上
+    with pytest.raises(save.SaveError, match="编号不符"):
+        save.read(edited)
+    out2 = save.make_template(edited)
+    assert out2["id"] != out["id"] and save.read(out2)["template"]   # 重算后能读
+
+
+def test_make_template_from_loadout_and_rejects_unknown():
+    lo = dict(save.expand_loadout(_fixture("AS-73S73RCH")["loadout"]), schema=save.LOADOUT_SCHEMA)
+    lo["seed"] = 12345
+    assert save.make_template(lo)["id"] == save.archive_id({k: v for k, v in lo.items() if k != "seed"})
+    with pytest.raises(save.SaveError, match="认不出"):
+        save.make_template({"deck": []})

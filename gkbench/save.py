@@ -303,6 +303,32 @@ def make_archive(loadout: dict, *, prefix: str = "", objective: dict | None = No
             "runs": pack_runs(answers or [])}
 
 
+LOADOUT_SCHEMA = "gkms.hif_loadout.v1"
+
+
+def make_template(src: dict, *, name: str | None = None) -> dict:
+    """自己出题用：GKMS 开局配置（gkms.hif_loadout.v1）或手改过的存档 → 可上传的题模板。
+
+    去掉种子、前缀、起点核对和答，按内容重算编号与题族编号（手改存档后编号会对不上，服务器会拒收「编号不符」）。
+    名字取 name，否则沿用原存档的 name: 标签。偶像、阶段等描述不在这里算：服务器收题时用引擎补。"""
+    if not isinstance(src, dict):
+        raise SaveError("应是 JSON 对象")
+    tags: list = []
+    if src.get("format") in FORMATS:
+        lo = expand_loadout(src["loadout"])
+        objective = src.get("objective") or {}
+        tags = [t for t in (src.get("meta") or {}).get("tags") or [] if isinstance(t, str)]
+    elif src.get("schema") == LOADOUT_SCHEMA:
+        lo, objective = dict(src), {}
+    else:
+        raise SaveError(f"认不出：既不是审查存档（format {FORMAT}），也不是开局配置（schema {LOADOUT_SCHEMA}）")
+    lo = {k: v for k, v in lo.items() if k not in ("seed", "source") and not k.startswith("_")}
+    if name:
+        tags = [f"name:{name}"] + [t for t in tags if not t.startswith("name:")]
+    meta = {"source": {"kind": "manual"}, "tags": tags}
+    return make_archive(lo, objective=objective, meta=meta)
+
+
 def is_template(doc: dict) -> bool:
     lo = doc.get("loadout") or {}
     return "seed" not in lo
