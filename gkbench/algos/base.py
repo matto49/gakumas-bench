@@ -8,6 +8,10 @@
   ctx.worlds(k)    k 个「可能的世界」：GKMS 会话，隐藏信息（山札顺序、随机数、种子）已重新随机
   ctx.rng          这一局专用的随机数（和游戏随机数无关）
 
+``needs_gkms``：算法要不要本机的 GKMS 引擎（读主数据、要世界、调 GKMS 的搜索）。缺省 False：只看 ctx.obs 出牌，
+托管跑（``python -m gkbench eval``）只要装好本包、有令牌，不需要 GKMS。调 ctx.worlds(k) 时会自动加载 GKMS，
+所以要世界的算法设 True，开局前就能报出缺什么。
+
 ``privileged = True`` 的算法（理论上限）额外拿到 ctx.true_session 和 ctx.seed，成绩单独标出，不参与排名。
 
 ``about``（可选）：托管 / 评测时随运行提交的算法说明，显示在网站的运行页和算法排行里：
@@ -29,6 +33,7 @@ class Decision:
 class Algorithm:
     name = "base"
     privileged = False
+    needs_gkms = False
     about: dict | None = None
 
     def __init__(self, **params):

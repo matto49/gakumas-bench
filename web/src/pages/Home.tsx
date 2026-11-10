@@ -266,7 +266,9 @@ export function Home() {
             </Way>
           </dl>
           <p className="mt-3 text-[12.5px] text-ink-3">
-            接自己的算法：继承 <Code>gkbench.algos.base.Algorithm</Code>，实现 <Code>decide(ctx)</Code>。格式见仓库里的 <Code>docs/format.md</Code>。
+            接自己的算法：<Code>pip install "gkbench @ git+https://github.com/matto49/gakumas-bench"</Code>（不需要 GKMS），
+            写一个继承 <Code>gkbench.algos.base.Algorithm</Code> 的类，实现 <Code>decide(ctx)</Code>，
+            再用 <Code>--algo my_algo.py:MyAlgo</Code> 托管评测。例子见仓库的 <Code>examples/first_playable.py</Code>，观测格式见 <Code>docs/format.md</Code>。
           </p>
         </section>
       </div>

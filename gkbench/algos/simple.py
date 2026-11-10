@@ -17,6 +17,7 @@ class GreedyAlgo(Algorithm):
     """GKMS 的贪心：出眼前估计加分最多、付得起的牌，没有就结束回合；不喝饮料。
     它只读当前局面，不看山札顺序，所以在随机世界上算，结果和真局面一样。"""
     name = "greedy"
+    needs_gkms = True
 
     def decide(self, ctx):
         from GakumasCLI.scenario.exam_session import greedy_policy

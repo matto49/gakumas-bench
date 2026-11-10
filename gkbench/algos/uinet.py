@@ -15,6 +15,7 @@ REPO = Path(os.environ.get("GKMS_UINET_REPO", Path.home() / "github/_ext/GKMSUIN
 
 class UinetAlgo(Algorithm):
     name = "uinet"
+    needs_gkms = True                           # 要 GKMS 的主数据表
 
     def __init__(self, model=None, threads=4, **kw):
         super().__init__(model=model, threads=threads, **kw)

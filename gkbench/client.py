@@ -57,7 +57,9 @@ class HostedCtx:
 
     def worlds(self, k):
         import base64
+        from . import engine
         from .worlds import import_world
+        engine.setup()                          # 导入世界要本机的 GKMS（只在算法真的要世界时）
         r = self._c.post(f"/api/episodes/{self._eid}/worlds", json={"k": int(k)})
         if r.status_code >= 400:
             raise RuntimeError(f"要世界失败 {r.status_code}：{r.text[:300]}")
@@ -97,7 +99,8 @@ def _play_steps(c, eid, start, algo, budget, rng):
 def hosted(set_name, algo, budget=5.0, label=None, seed_indices=None, only=None, server=None, progress=None):
     """固定种子托管跑：题集里的种子，种子不离开服务器。"""
     from . import engine
-    engine.setup()
+    if getattr(algo, "needs_gkms", False):
+        engine.setup()
     progress = progress or (lambda m: print(m, flush=True))
     desc = algo.describe()
     label = label or desc["name"]
@@ -127,9 +130,10 @@ def evaluate(set_name, algo_spec, seeds=32, parallel=3, budget=5.0, label=None, 
     import threading
     from concurrent.futures import ThreadPoolExecutor, as_completed
     from . import algos, engine
-    engine.setup()                              # 贪心、PIMC 等要用本地的 GKMS 代码
     progress = progress or (lambda m: print(m, flush=True))
     probe = algos.make(algo_spec)
+    if getattr(probe, "needs_gkms", False):
+        engine.setup()                          # 贪心、PIMC、UINet 等要用本地的 GKMS；只看观测的算法不加载
     if probe.privileged:
         raise SystemExit("特权算法（理论上限）不能托管跑；管理员用 gkbench run --template 在本机跑")
     desc = probe.describe()

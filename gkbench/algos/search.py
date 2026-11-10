@@ -21,6 +21,7 @@ def _score(session):
 
 
 class PimcAlgo(Algorithm):
+    needs_gkms = True
     """确定化（PIMC）：把看不见的部分随机补全成 worlds 个世界，每个世界用 GNRPA 搜 seconds 秒。
 
     mode = "vote"：每个世界搜整条路线，按第一步投票（平票比平均预期分）。
@@ -99,6 +100,7 @@ class PimcAlgo(Algorithm):
 
 
 class OracleAlgo(Algorithm):
+    needs_gkms = True
     """理论上限：知道种子，用 GKMS 的正式求解（多次重启 + 末段精确求解）开局算一条整场路线，照着打。
     路线走不通时（理论上不会）在真局面上补搜。只作分母，不参与排名。"""
     name = "oracle"

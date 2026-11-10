@@ -11,3 +11,7 @@ web/node_modules/
 web/dist/
 server/gkbench-server
 *.tsbuildinfo
+
+# pip install . 的产物
+build/
+*.egg-info/

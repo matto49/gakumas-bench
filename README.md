@@ -95,6 +95,12 @@
 
 ## 依赖
 
+**只想交自己的算法（托管评测）**：Python 3.10+，装本包就行，不需要 GKMS：
+
+    pip install "gkbench @ git+https://github.com/matto49/gakumas-bench"
+
+见下面「接自己的算法」。下面这些是跑本地裁判、内置算法（贪心 / PIMC / UINet / 理论上限）和服务器要的：
+
 - GKMSProject 克隆（`GKMS_ROOT`，默认 `~/github/_ext/GKMSProject`，要 `GakumasCLI`、`GKMSUINet`）和编好的原生核心：
 
       cd $GKMS_ROOT/GakumasCLI/native
@@ -102,7 +108,7 @@
           -o build/libgkmscore.dylib api.cpp          # Linux：sh build.sh，产物移到 build/libgkmscore.so
 
 - UINet 公开仓库（`GKMS_UINET_REPO`，默认 `~/github/_ext/GKMSUINet`，MIT）。
-- Python 3.12+：`uv venv .venv && uv pip install --python .venv/bin/python numpy zstandard onnxruntime pyyaml httpx pytest`
+- Python 3.12+：`uv venv .venv && uv pip install --python .venv/bin/python -e '.[gkms,test]'`
 - Go 1.25+，Node 22+ 和 pnpm。
 
 ## 命令
@@ -138,7 +144,19 @@
 
 ### 接自己的算法
 
-- **Python**：继承 `gkbench.algos.base.Algorithm`，实现 `decide(ctx) -> Decision(action, meta)`，在 `gkbench/algos/__init__.py` 注册。`ctx.obs` 是公开观测（UIObs v1），`ctx.worlds(k)` 要「可能的世界」。
+不用改本仓库，也不需要 GKMS：写一个 `.py` 文件，装好本包、拿到令牌，就能托管评测进排行。
+
+1. 装包：`pip install "gkbench @ git+https://github.com/matto49/gakumas-bench"`（Python 3.10+，只装 httpx、zstandard）。
+2. 令牌：网页「我的」页生成，存到 `~/.config/gkbench/token`（或设 `GKBENCH_TOKEN`）。
+3. 写算法：继承 `gkbench.algos.base.Algorithm`，实现 `decide(ctx) -> Decision(action, meta)`。
+   `ctx.obs` 是公开观测（UIObs v1，字段见 `docs/format.md`「公开观测」），返回的动作必须在 `ctx.obs["legal"]` 里。
+   最小例子是 [`examples/first_playable.py`](examples/first_playable.py)。
+4. 跑：`python -m gkbench eval --set hif-live --algo my_algo.py:MyAlgo --parallel 3`
+   （带参数写 `my_algo.py:MyAlgo:depth=2,k=8`；已安装的模块写 `mypkg.algo:MyAlgo`）。断了用 `--resume <评测编号>`。
+
+- **要「可能的世界」的算法**（PIMC 这类）：`ctx.worlds(k)` 向服务器要 k 个重抽了隐藏信息的世界，在本机导入成 GKMS 会话，
+  这一步要本机有 GKMS（`GKMS_ROOT`）。这类算法在类上写 `needs_gkms = True`，开局前就能报出缺什么；只看 `ctx.obs` 的算法保持缺省 `False`，
+  全程不加载 GKMS。内置的贪心、PIMC、UINet、理论上限都是 `True`。
 - **算法说明**：网站的运行页和算法排行会显示算法的大致思路、看得到什么（只看画面 / 看种子）和实现链接。本仓库内置的 random / greedy / pimc / uinet / oracle 由服务器按名字给（`server/algos.go`）；自己的算法在类上写 `about = {"summary": "一句话", "detail": ["分条说明"], "sees": "screen", "links": [{"title": "代码", "url": "https://…"}]}`，托管（`play`）和评测（`eval`）时会随运行提交（接口字段 `about`），没写就显示「提交人未提供」。
 - **别的语言**：从网站下载题集的审查存档（首页「审查存档」），自己的程序打完后，把每局的路线写进存档的算法表，用 `save check` 在本地核对，再 `upload-saves` 或在网页「我的」页上传。服务器按存档编号找题和种子，逐条重放、核对分数，生成完整记录。
 

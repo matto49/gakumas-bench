@@ -20,7 +20,17 @@ NATIVE_LIB = Path(os.environ.get("GKMSCLIGPU_LIB",
 MASTER_DIR = GKMS_ROOT / "GakumasCLI/ro/master/tables"
 
 
+_SETUP = None
+
+
 def setup():
+    """加载 GKMS（裁判、世界、贪心 / PIMC / UINet 要用）。只看观测出牌的算法托管跑时不调它。可重复调用。"""
+    global _SETUP
+    if _SETUP is not None:
+        return _SETUP
+    if not (GKMS_ROOT / "GakumasCLI").is_dir():
+        raise SystemExit(f"这一步要用 GKMS 引擎，但 {GKMS_ROOT} 下没有 GakumasCLI（设 GKMS_ROOT 指向 GKMSProject 克隆）。"
+                         "只看观测出牌的算法托管跑不需要它：算法类里 needs_gkms 保持 False")
     os.environ["GKMSCLIGPU_LIB"] = str(NATIVE_LIB)
     os.environ.setdefault("UINET_NATIVE_LIB", str(NATIVE_LIB))
     for p in (str(GKMS_ROOT), str(GKMS_ROOT / "GKMSUINet")):
@@ -29,6 +39,7 @@ def setup():
     from uinet import engine as ue
     ue.setup()
     _cache_tower_catalog()
+    _SETUP = ue
     return ue
 
 

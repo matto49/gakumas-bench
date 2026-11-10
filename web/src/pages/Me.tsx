@@ -358,9 +358,8 @@ function CliTokens() {
           ))}
         </ul>
       )}
-      <CodeBlock>{`python -m gkbench run --set hif-live --algo uinet
-python -m gkbench upload <运行目录>
-python -m gkbench eval --set hif-live --algo uinet`}</CodeBlock>
+      <CodeBlock>{`pip install "gkbench @ git+https://github.com/matto49/gakumas-bench"
+python -m gkbench eval --set hif-live --algo my_algo.py:MyAlgo --parallel 3`}</CodeBlock>
       <p className="mt-2 text-[12.5px] text-ink-3">服务器默认 https://hiro.matto.top/gkbench，用 <Code>GKBENCH_SERVER</Code> 改。</p>
     </section>
   )

@@ -2,11 +2,20 @@
 name = "gkbench"
 version = "0.1.0"
 description = "学園アイドルマスター考试出牌算法 benchmark"
-requires-python = ">=3.12"
-dependencies = ["numpy", "zstandard", "onnxruntime", "pyyaml", "httpx"]
+requires-python = ">=3.10"
+# 托管评测（自己的算法只看观测出牌）只要这两个；用 GKMS 跑本地裁判 / 世界 / UINet 时装 [gkms]
+dependencies = ["httpx", "zstandard"]
 
 [project.optional-dependencies]
+gkms = ["numpy", "onnxruntime", "pyyaml"]
 test = ["pytest"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["gkbench", "gkbench.algos"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
