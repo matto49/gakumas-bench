@@ -7,6 +7,7 @@ import { cx } from './ui'
 const nav = [
   { to: '/', label: '首页', end: true, wide: true }, // 小屏上藏起来，点 logo 回首页
   { to: '/sets', label: '算法排行' },
+  { to: '/exams', label: '試験集合' },
   { to: '/cards', label: '牌库' },
   { to: '/compare', label: '对比' },
 ]
@@ -33,7 +34,7 @@ export function Layout() {
               <span className="disp text-[18px] leading-none tracking-wide not-italic sm:text-[21px]">gakumas-bench</span>
               <span className="hidden text-[12px] text-white/85 md:inline">学マス出牌算法排行</span>
             </Link>
-            <nav className="flex items-center gap-0.5 sm:gap-1">
+            <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1">
               {nav.map((n) => (
                 <NavLink key={n.to} to={n.to} end={n.end} className={(s) => cx(pill(s), 'wide' in n && 'max-sm:hidden')}>
                   {n.label}

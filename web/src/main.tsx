@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import './index.css'
 import { CatalogProvider } from './lib/catalog'
+import { SetsProvider } from './lib/sets'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { Layout } from './components/Layout'
@@ -12,6 +13,7 @@ import { RunPage } from './pages/Run'
 import { Replay } from './pages/Replay'
 import { Compare } from './pages/Compare'
 import { Cards } from './pages/Cards'
+import { ExamSet, Exams } from './pages/Exams'
 import { Me } from './pages/Me'
 import { NotFound } from './pages/NotFound'
 
@@ -27,6 +29,8 @@ const router = createBrowserRouter(
         { path: '/runs/:run/:problem/:seed', element: <Replay /> },
         { path: '/compare', element: <Compare /> },
         { path: '/cards', element: <Cards /> },
+        { path: '/exams', element: <Exams /> },
+        { path: '/exams/:set', element: <ExamSet /> },
         { path: '/me', element: <Me /> },
         { path: '/leaderboard', element: <Navigate to="/sets" replace /> },
         { path: '*', element: <NotFound /> },
@@ -39,10 +43,12 @@ const router = createBrowserRouter(
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <CatalogProvider>
+      <SetsProvider>
       <TooltipProvider>
         <RouterProvider router={router} />
         <Toaster />
       </TooltipProvider>
+      </SetsProvider>
     </CatalogProvider>
   </StrictMode>,
 )

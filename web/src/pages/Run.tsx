@@ -4,7 +4,8 @@ import { api, type RunInfo } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { useCatalog, idolName, idolShort } from '../lib/catalog'
 import { int, secs, shortCommit, when } from '../lib/format'
-import { KIND_INFO, SET_INFO, TAG_LABEL, tagValueLabel } from '../lib/game'
+import { KIND_INFO, TAG_LABEL, tagValueLabel } from '../lib/game'
+import { useSetTitle } from '../lib/sets'
 import { StripPlot } from '../components/Charts'
 import { Select } from '../components/Select'
 import { cx, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, TableSkeleton, TurnStrip } from '../components/ui'
@@ -38,6 +39,7 @@ export function useOracle(set: string | undefined, kind: string | undefined, tse
 }
 
 export function RunPage() {
+  const setTitle = useSetTitle()
   const { run = '' } = useParams()
   const nav = useNavigate()
   const cat = useCatalog()
@@ -83,7 +85,7 @@ export function RunPage() {
   return (
     <div>
       <PageHeader
-        crumb={<><Link to={`/sets/${r.set}${r.kind === 'template' ? (r.template_seeds ? '' : '?kind=legacy') : '?kind=fixed'}`} className="hover:text-brand-ink">算法排行 · {SET_INFO[r.set]?.title ?? r.set}</Link> / 运行</>}
+        crumb={<><Link to={`/sets/${r.set}${r.kind === 'template' ? (r.template_seeds ? '' : '?kind=legacy') : '?kind=fixed'}`} className="hover:text-brand-ink">算法排行 · {setTitle(r.set)}</Link> / 运行</>}
         title={<span className="inline-flex flex-wrap items-center gap-2.5">{r.label}<ModeBadge mode={r.mode} privileged={privileged} /><span className="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] font-semibold text-ink-2">{KIND_INFO[r.kind === 'template' ? (r.template_seeds ? 'template' : 'legacy') : 'fixed'].title}</span></span>}
         sub={<span className="font-mono text-[12px] text-ink-3">{r.run}</span>}
         right={!privileged && overall != null && (

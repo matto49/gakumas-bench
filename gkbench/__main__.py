@@ -74,6 +74,13 @@ def main(argv=None):
     up.add_argument("run")
     up.add_argument("--server", default=None)
 
+    upp = sub.add_parser("upload-problems", help="往試験集合传考试（题模板 / 分享码）")
+    upp.add_argument("files", nargs="*")
+    upp.add_argument("--set", default=None, help="传进哪个集合（自己建的社区集合；管理员可传官方集合）")
+    upp.add_argument("--new", default=None, metavar="名字", help="先新建一个社区集合再传")
+    upp.add_argument("--code", action="append", default=[], help="GKAS1: 分享码，可多次")
+    upp.add_argument("--server", default=None)
+
     us = sub.add_parser("upload-saves")
     us.add_argument("files", nargs="+")
     us.add_argument("--label", default=None)
@@ -157,6 +164,14 @@ def main(argv=None):
         from .client import upload
         r = upload(absp(a.run), a.server)
         print(f"收下 {r['accepted']} 局 → {r['run']}" + (f"；拒收 {len(r['rejected'])} 局：{r['rejected'][:5]}" if r["rejected"] else ""))
+    elif a.cmd == "upload-problems":
+        from .client import upload_problems
+        if not a.set and not a.new:
+            raise SystemExit("要 --set <集合> 或 --new <名字>")
+        r = upload_problems(a.set, [absp(f) for f in a.files], a.code, a.server, a.new)
+        print(f"集合 {r['set']}：收下 {r['accepted']} 道" + "".join(f"\n  + {x['id']} {x.get('name', '')}" for x in r.get("added") or []))
+        for x in r["rejected"]:
+            print(f"  没收 {x['id']}：{x['reason']}")
     elif a.cmd == "upload-saves":
         from .client import upload_saves
         r = upload_saves([absp(f) for f in a.files], a.server, a.label)

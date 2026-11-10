@@ -31,6 +31,8 @@
 | `$GKBENCH_DATA/problems/<题集>/<AS-编号>.gksave.json` | 题模板，公开。`meta.tags` 约定 `name:<人读的名字>`、`deck:<牌组类型>` |
 | `$GKBENCH_DATA/private/seeds/<题集>.json` | `gkbench.seeds.v2`，私有（600）：`{"problems": {"<题模板编号>": [{"index", "seed", "split", "label", "fixed_id", "check"}]}}` |
 
+`$GKBENCH_DATA/private/sets.json` 是集合信息：`{"<集合>": {title, blurb, owner, status, created, public_seeds}}`，`status` 是 `official` 或 `community`（没写当 `official`）。
+
 `split` 是 `dev`（开发集，可公开）或 `test`（测试集，只托管跑）。`fixed_id` 是这个种子对应的固定种子题编号，`check` 是它的起点核对（都在入库时用引擎算好）。
 
 系统里认题一律用**题模板编号**；一局在哪个种子上打，用 `seed_index`（题集里的固定种子下标，或保密种子的格子号）+ `exam_sha` 标明。

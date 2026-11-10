@@ -34,6 +34,17 @@ export type SetInfo = {
   public_seeds: boolean
   template_seeds?: number
   idols?: string[]
+  title?: string
+  blurb?: string
+  owner?: string
+  /** official 官方；community 社区（用户自己建、自己传） */
+  status?: 'official' | 'community'
+  created?: string
+  /** 场景分布：exam / stage / round / plan / mechanic / idol → 值 → 题数 */
+  scenes?: Record<string, Record<string, number>>
+  /** 跑过的算法（不含理论上限） */
+  algos?: string[]
+  can_edit?: boolean
 }
 
 export type Engine = { engine?: string; gkms_commit?: string; rules_version?: number; master_version?: string | null }
@@ -197,5 +208,9 @@ export type Problem = {
   family: string
   tags: Record<string, string>
   archive: Record<string, unknown>
-  seeds: { index: number; split: string; label: string; exam_sha: string; fixed_id?: string }[]
+  seeds: { index: number; split: string; label: string; exam_sha?: string; fixed_id?: string }[]
+  scene?: Scene
 }
+
+/** 一道题的场景（服务器从编成和 meta 自动算） */
+export type Scene = { exam?: string; stage?: string; round?: string; plan?: string; mechanic?: string; idol?: string; turns?: number; deck?: number; items?: string[]; drinks?: string[] }

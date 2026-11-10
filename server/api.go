@@ -98,22 +98,13 @@ func (a *App) open(fn func(http.ResponseWriter, *http.Request, string)) http.Han
 	}
 }
 
-// 题集设置：$DATA/private/sets.json {"<题集>": {"public_seeds": true}}
-type SetConfig struct {
-	PublicSeeds bool `json:"public_seeds"`
-}
-
-func (s *Store) SetConfigs() map[string]SetConfig {
-	m := map[string]SetConfig{}
-	_ = readJSON(filepath.Join(s.Data, "private", "sets.json"), &m)
-	return m
-}
 
 // ---------------------------------------------------------------- 题库
 
 func (a *App) handleMe(w http.ResponseWriter, r *http.Request, u string) {
 	out := map[string]any{"user": u, "engine": a.engineInfo}
 	out["has_password"] = a.hasPassword(u)
+	out["admin"] = isAdmin(u)
 	if p := a.store.userProfile(u); p != nil {
 		out["github"], out["name"], out["avatar"] = p.Login, p.Name, p.Avatar
 	}
@@ -143,8 +134,11 @@ func (a *App) handleSets(w http.ResponseWriter, r *http.Request, u string) {
 				idols = append(idols, id)
 			}
 		}
+		c := cfg[s]
 		out = append(out, map[string]any{"set": s, "problems": len(a.store.Problems(s)), "seeds": map[string]int{"dev": dev, "test": test},
-			"template_seeds": TemplateSeeds, "idols": idols, "runs": len(a.store.Runs(s)), "public_seeds": cfg[s].PublicSeeds})
+			"template_seeds": TemplateSeeds, "idols": idols, "runs": len(a.store.Runs(s)), "public_seeds": c.PublicSeeds,
+			"title": c.Title, "blurb": c.Blurb, "owner": c.Owner, "status": c.status(), "created": c.Created,
+			"scenes": a.store.sceneCounts(s), "algos": a.store.algosOf(s), "can_edit": canEdit(c, u)})
 	}
 	writeJSONResp(w, 200, out)
 }
@@ -165,7 +159,7 @@ func (a *App) handleProblems(w http.ResponseWriter, r *http.Request, u string) {
 			rows = append(rows, row)
 		}
 		out = append(out, map[string]any{"id": id, "name": nameOf(p), "family": metaOf(p)["family"], "tags": tagsOf(p),
-			"archive": p, "seeds": rows})
+			"scene": a.store.sceneOf(p), "archive": p, "seeds": rows})
 	}
 	writeJSONResp(w, 200, out)
 }
@@ -280,6 +274,7 @@ type Job struct {
 	Accepted int              `json:"accepted"`
 	Rejected []map[string]any `json:"rejected"`
 	Error    string           `json:"error,omitempty"`
+	Added    []map[string]any `json:"added,omitempty"` // 上传题时：收下的题
 	user     string
 	mu       sync.Mutex
 }
@@ -292,7 +287,7 @@ func (j *Job) snapshot() map[string]any {
 		rej = rej[:50]
 	}
 	return map[string]any{"job": j.Job, "run": j.Run, "status": j.Status, "done": j.Done, "total": j.Total,
-		"accepted": j.Accepted, "rejected": rej, "error": j.Error}
+		"accepted": j.Accepted, "rejected": rej, "error": j.Error, "added": j.Added}
 }
 
 func (a *App) handleUpload(w http.ResponseWriter, r *http.Request, u string) {

@@ -197,6 +197,27 @@ def evaluate(set_name, algo_spec, seeds=32, parallel=3, budget=5.0, label=None, 
     return {"eval": ev, "run": run, "ok": ok, "failed": failed}
 
 
+def upload_problems(set_name, paths=(), codes=(), server=None, new_title=None):
+    """往試験集合传考试：题模板 / 固定种子题的 .gksave.json（或 JSON Lines），或 GKAS1: 分享码。
+    new_title 给了就先建一个自己的社区集合，再往里传。返回上传任务的结果（added / rejected）。"""
+    with _client(server) as c:
+        if new_title:
+            r = c.post("/api/sets", json={"title": new_title})
+            if r.status_code >= 400:
+                raise SystemExit(f"建集合失败 {r.status_code}：{r.text[:500]}")
+            set_name = r.json()["set"]
+        files = [("files", (Path(p).name, Path(p).read_bytes(), "application/json")) for p in paths]
+        r = c.post(f"/api/sets/{set_name}/problems", files=files or None, data={"codes": "\n".join(codes)})
+        if r.status_code >= 400:
+            raise SystemExit(f"上传失败 {r.status_code}：{r.text[:2000]}")
+        j = r.json()
+        while j["status"] in ("queued", "running"):
+            time.sleep(1.5)
+            j = c.get(f"/api/jobs/{j['job']}").raise_for_status().json()
+    j["set"] = set_name
+    return j
+
+
 def upload_saves(paths, server=None, label=None):
     """把审查存档（.gksave.json 或 JSON Lines）里的答交给服务器：服务器按编号找到题和种子，重放每条路线，
     生成完整的逐步记录。固定种子题的答直接用编成里的种子；题模板的答要带 exam（明文种子）。"""

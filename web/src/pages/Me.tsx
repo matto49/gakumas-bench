@@ -4,7 +4,7 @@ import { CheckCircle2, CircleAlert, Copy, KeyRound, Loader2, LogOut, Trash2, Upl
 import { api, ApiError, BASE, type Job } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { when } from '../lib/format'
-import { SET_INFO } from '../lib/game'
+import { useSetTitle } from '../lib/sets'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -152,6 +152,7 @@ function TokenLogin({ onDone }: { onDone: () => void }) {
 
 function Dashboard({ me }: { me: MeInfo }) {
   const user = me.user
+  const setTitle = useSetTitle()
   const runs = useApi<MyRun[]>('api/me/runs')
   const [jobs, setJobs] = useState<Job[]>([])
   const refreshJobs = () => api<Job[]>('api/me/jobs').then(setJobs).catch(() => {})
@@ -229,7 +230,7 @@ function Dashboard({ me }: { me: MeInfo }) {
                           <Link to={`/runs/${r.run}`} className="font-semibold text-ink hover:text-brand-ink">{r.label}</Link>
                           <div className="font-mono text-[11px] text-ink-3">{r.run}</div>
                         </td>
-                        <td className="px-3 py-2 text-ink-2">{SET_INFO[r.set]?.title ?? r.set}</td>
+                        <td className="px-3 py-2 text-ink-2">{setTitle(r.set)}</td>
                         <td className="px-3 py-2"><ModeBadge mode={r.mode} privileged={!!r.privileged} /></td>
                         <td className="num px-3 py-2 text-right">
                           {r.verified ? <>{r.verified.accepted}{(r.verified.rejected ?? 0) > 0 && <span className="text-critical"> / 拒 {r.verified.rejected}</span>}</> : r.episodes ?? '—'}

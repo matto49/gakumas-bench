@@ -4,7 +4,8 @@ import { ArrowRight, Download } from 'lucide-react'
 import { useApi } from '../lib/hooks'
 import { api, BASE, type RunInfo, type SetInfo } from '../lib/api'
 import { int } from '../lib/format'
-import { ROUND, SET_INFO, STAGE } from '../lib/game'
+import { ROUND, STAGE } from '../lib/game'
+import { setBlurbOf, setTitleOf } from '../lib/sets'
 import { idolName, useCatalog } from '../lib/catalog'
 import { btn, Code, CodeBlock, Grade, IdolThumb, RankNum, SectionTitle, Skeleton, TurnStrip } from '../components/ui'
 
@@ -131,10 +132,10 @@ export function Home() {
             {sets.data?.map((s) => (
               <Link key={s.set} to={`/sets/${s.set}`} className="group flex flex-col gap-3 rounded-xl border border-line bg-surface px-4 py-3.5 transition-colors duration-150 hover:border-brand">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[16px] font-bold text-ink group-hover:text-brand-ink">{SET_INFO[s.set]?.title ?? s.set}</span>
+                  <span className="text-[16px] font-bold text-ink group-hover:text-brand-ink">{setTitleOf(sets.data ?? null, s.set)}</span>
                   <SetIdols ids={s.idols} />
                 </div>
-                <p className="text-ink-2">{SET_INFO[s.set]?.blurb}</p>
+                <p className="text-ink-2">{setBlurbOf(sets.data ?? null, s.set)}</p>
                 <p className="num text-[12.5px] text-ink-3">
                   <span className="disp text-[16px] text-ink">{s.problems}</span> 题 · <span className="disp text-[16px] text-ink">{s.seeds.dev + s.seeds.test}</span> 个固定种子 · 每题另有 {s.template_seeds ?? 32} 个保密种子 · {s.runs} 次运行
                 </p>
@@ -174,7 +175,7 @@ python -m gkbench upload-saves my.gksave.jsonl --label my-algo`}
           <div className="mt-3 flex flex-wrap gap-2">
             {sets.data?.map((s) => (
               <a key={s.set} href={`${BASE}api/sets/${s.set}/saves?answers=1${s.public_seeds ? '&fixed=1' : ''}`} className={btn.small}>
-                <Download size={14} aria-hidden /> {SET_INFO[s.set]?.title ?? s.set}
+                <Download size={14} aria-hidden /> {setTitleOf(sets.data ?? null, s.set)}
               </a>
             ))}
           </div>

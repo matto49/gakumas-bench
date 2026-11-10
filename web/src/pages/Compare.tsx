@@ -4,7 +4,8 @@ import type { Episode, RunInfo, SetInfo } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { useCatalog, idolName } from '../lib/catalog'
 import { int, ms } from '../lib/format'
-import { SET_INFO, tagValueLabel } from '../lib/game'
+import { tagValueLabel } from '../lib/game'
+import { useSetTitle } from '../lib/sets'
 import { ScoreChart } from '../components/Charts'
 import { actionText } from '../components/GameBits'
 import { Select } from '../components/Select'
@@ -17,6 +18,7 @@ const A_COLOR = 'var(--color-series-a)'
 const B_COLOR = 'var(--color-series-b)'
 
 export function Compare() {
+  const setTitle = useSetTitle()
   const [q, setQ] = useSearchParams()
   const a = q.get('a') ?? ''
   const b = q.get('b') ?? ''
@@ -39,7 +41,7 @@ export function Compare() {
       <div className="mb-5 flex flex-wrap items-end gap-x-4 gap-y-3">
         <Picker label="题集">
           <Select label="题集" value={set} placeholder="选题集" onChange={(v) => update({ set: v, a: '', b: '', problem: '', seed: '' })}
-            options={(sets.data ?? []).map((s) => ({ value: s.set, label: SET_INFO[s.set]?.title ?? s.set, icon: <IdolThumb id={s.idols?.[0]} size={22} title={false} className="rounded-full" /> }))} />
+            options={(sets.data ?? []).map((s) => ({ value: s.set, label: setTitle(s.set), icon: <IdolThumb id={s.idols?.[0]} size={22} title={false} className="rounded-full" /> }))} />
         </Picker>
         <Picker label={<span className="inline-flex items-center gap-1.5"><Swatch c={A_COLOR} />算法 A</span>}>
           <RunSelect label="算法 A" runs={runs.data} value={a} onChange={(v) => update({ a: v })} />

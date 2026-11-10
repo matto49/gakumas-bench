@@ -10,6 +10,7 @@ GKMS 的引擎是 Python + C++，这一层只做转接，不放业务逻辑。
   replay  {problem, seed, episode}             重放核对一局记录，回 ok / reason
   worlds  {sid, k}                             k 个重抽过隐藏信息的世界（export_world，base64），给托管模式的 PIMC 等算法
   replay_route {problem, seed, route, step_ms}  只给路线（审查存档里的一条答），重放出完整的逐步记录
+  check_problem {doc}                          上传的一道题：核对、开局、算场景，回能入库的题模板（problems.check_upload）
 """
 from __future__ import annotations
 
@@ -67,6 +68,13 @@ def main():
             elif op == "replay_route":
                 rep = replay_route(req["problem"]["loadout"], int(req["seed"]), req["route"], req.get("step_ms"))
                 rep["verdict"] = rep.pop("ok")
+            elif op == "check_problem":
+                from .problems import check_upload
+                doc = req["doc"]
+                if isinstance(doc, str):                       # 分享码
+                    from .save import from_share_code
+                    doc = from_share_code(doc.strip())
+                rep = check_upload(doc)
             elif op == "replay":
                 rep = replay(req["problem"], int(req["seed"]), req["episode"])
                 rep["verdict"] = rep.pop("ok")

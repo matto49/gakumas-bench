@@ -42,6 +42,18 @@
 
 我们自己的逐局记录（`gkbench.episode.v2`）比答多存了每一步的观测、算法说明和裁判视角的隐藏状态，用来做复盘页；字段名和存档保持一致，随时能转成答。
 
+## 試験集合
+
+所有算法排行和托管评测都按「試験集合」选题。网页上的「試験集合」页列出全部集合（名称、说明、题数、场景分布、提交人、跑过几种算法），点进去能按场景筛选、分组，看每道题的偶像、牌组、P 道具、饮料、回合数和题族编号，下载题模板。
+
+- **官方集合**：管理员维护，首页和算法排行默认展示（现在是 `hif-live`「H.I.F真实记录测试集」和 `gkms480`「H.I.F随机牌组测试」）。
+- **社区集合**：登录用户自己建、自己传题，有自己的算法排行；管理员审核后可以整个升为官方（`PATCH /api/sets/{set} {"status":"official"}`，网页上集合页的「审核通过」按钮）。管理员名单是环境变量 `GKBENCH_ADMINS`，默认 `matto`。
+- **场景**全部自动算，不靠手填：考试、轮次读编成的 `produce_id`、`round`，阶段、机制、回合数由引擎算（`meta.stage` / `mechanic` / `turns`），流派按偶像卡。以后加 N.I.A、初、塔，只要在 `web/src/lib/game.ts` 的 `EXAM` 补名字。
+- **上传**：`.gksave.json`（可多个，可 JSON Lines）或 `GKAS1:` 分享码。每道题交给引擎核对（编号、题族、起点、能开局；worker 的 `check_problem`），同一集合里题族编号相同的算重复；固定种子题去掉种子收成题模板，种子另记成固定种子。入库后评测时自动配 32 个保密种子。
+
+      python -m gkbench upload-problems --new "我的集合" a.gksave.json b.gksave.json
+      python -m gkbench upload-problems --set u-matto-1a2b3c --code 'GKAS1:…'
+
 ## 两种评测
 
 | | 固定种子 | 保密种子（题模板 · 32 个固定种子） |

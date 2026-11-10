@@ -42,6 +42,38 @@ export const ROUND: Record<string, string> = { mid1: '中間 1', mid2: '中間 2
 
 export const PRODUCE: Record<string, string> = { 'produce-007': '選抜試験', 'produce-008': '本戦' }
 
+/** 試験集合的场景：考试（produce_id）。以后加 N.I.A、初、塔时在这里补名字，没写的显示原编号 */
+export const EXAM: Record<string, string> = { 'produce-007': 'H.I.F 選抜', 'produce-008': 'H.I.F 本戦' }
+
+/** 考试 + 阶段 + 轮次合成一句：「H.I.F 本戦 1 · 中間 1」（阶段名已含選抜 / 本戦，不重复） */
+export function examLine(exam?: string, stage?: string, round?: string) {
+  const ex = exam ? (EXAM[exam] ?? exam) : ''
+  const st = stage ? (STAGE[stage] ?? stage) : ''
+  const series = ex.includes(' ') ? ex.split(' ')[0] : ''
+  const head = st ? (series ? `${series} ${st}` : st) : ex
+  return [head, round && (ROUND[round] ?? round)].filter(Boolean).join(' · ')
+}
+
+export const SCENE_LABEL: Record<string, string> = { exam: '考试', stage: '阶段', round: '轮次', plan: '流派', mechanic: '机制', idol: '偶像' }
+
+export function sceneValueLabel(key: string, v: string, idolName?: (id: string) => string): string {
+  switch (key) {
+    case 'exam':
+      return EXAM[v] ?? v
+    case 'plan':
+      return PLAN[v] ?? v
+    case 'stage':
+      return STAGE[v] ?? v
+    case 'round':
+      return ROUND[v] ?? v
+    case 'mechanic':
+      return MECHANIC[v] ?? v
+    case 'idol':
+      return idolName ? idolName(v) : v
+  }
+  return v
+}
+
 export const DECK: Record<string, string> = { tutorial: '攻略牌组', random: '随机牌组' }
 
 // 状态图标（UIObs status 种类）→ 游戏里的叫法

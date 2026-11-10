@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import { useApi } from '../lib/hooks'
 import type { Row, SetInfo } from '../lib/api'
 import { useCatalog, idolShort } from '../lib/catalog'
 import { compact, int, ms, secs } from '../lib/format'
-import { GRADE_HINT, KIND_INFO, SET_INFO, TAG_LABEL, tagValueLabel, type Kind } from '../lib/game'
+import { GRADE_HINT, KIND_INFO, TAG_LABEL, tagValueLabel, type Kind } from '../lib/game'
+import { setBlurbOf, setTitleOf, sortSets } from '../lib/sets'
 import { Select } from '../components/Select'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -107,7 +108,7 @@ export function Leaderboard() {
   return (
     <div>
       <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="题集">
-        {sets.data?.map((s) => (
+        {sortSets(sets.data ?? []).filter((s) => s.status !== 'community' || s.set === set).map((s) => (
           <Link
             key={s.set}
             to={`/sets/${s.set}${kind !== 'template' ? `?kind=${kind}` : ''}`}
@@ -119,16 +120,20 @@ export function Leaderboard() {
             )}
           >
             <IdolThumb id={s.idols?.[0]} size={24} title={false} className="rounded-full ring-0" />
-            {SET_INFO[s.set]?.title ?? s.set}
+            {setTitleOf(sets.data, s.set)}
+            {s.status === 'community' && <span className={cx('text-[11px] font-normal', s.set === set ? 'text-white/80' : 'text-ink-3')}>社区</span>}
           </Link>
         ))}
+        <Link to="/exams" className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[13px] text-ink-3 hover:text-brand-ink">
+          全部集合 <ArrowRight size={13} aria-hidden />
+        </Link>
       </div>
 
       <PageHeader
-        title={<span className="inline-flex flex-wrap items-center gap-2.5">{SET_INFO[set]?.title ?? set}<Badge variant={kind === 'template' ? 'brand' : 'quiet'}>{KIND_INFO[kind].title}</Badge></span>}
+        title={<span className="inline-flex flex-wrap items-center gap-2.5">{setTitleOf(sets.data, set)}<Badge variant={kind === 'template' ? 'brand' : 'quiet'}>{KIND_INFO[kind].title}</Badge></span>}
         sub={
           <>
-            {SET_INFO[set]?.blurb}
+            {setBlurbOf(sets.data, set)}
             {info && (
               <span className="num ml-1">
                 {info.problems} 题；每题 {Math.round((info.seeds.dev + info.seeds.test) / Math.max(1, info.problems))} 个固定种子{info.public_seeds ? '（公开）' : ''}，另有 {info.template_seeds ?? 32} 个保密种子。
