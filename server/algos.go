@@ -14,7 +14,7 @@ type AlgoLink struct {
 type AlgoDoc struct {
 	Summary string     `json:"summary"`          // 一句话
 	Detail  []string   `json:"detail,omitempty"` // 分条的思路
-	Sees    string     `json:"sees,omitempty"`   // screen：只看画面；seed：看种子
+	Sees    string     `json:"sees,omitempty"`   // screen：只看画面；seed：看牌序（提前知道整局的洗牌和随机结果）
 	Links   []AlgoLink `json:"links,omitempty"`
 	Private []string   `json:"private,omitempty"` // 依赖但不公开的部分（不挂链接）
 	Source  string     `json:"source"`            // builtin 内置说明；submitter 提交人填写
@@ -28,9 +28,9 @@ var builtinAlgos = []struct {
 	doc   AlgoDoc
 }{
 	{[]string{"oracle"}, AlgoDoc{
-		Summary: "看种子的限时整局搜索，只作「相对上限」的分母，不参与排名。",
+		Summary: "提前知道整局牌序的限时搜索，只作「相对上限」的分母，不参与排名。",
 		Detail: []string{
-			"读到这局的种子后，整场的抽牌和随机结果都是确定的，一条出牌路线对应一个确定的终局分。",
+			"它提前知道这一局的牌序：整场的抽牌和随机结果都是确定的，一条出牌路线对应一个确定的终局分。",
 			"开局用 GKMS 的整局求解（GNRPA 多次重启 + 最后一两回合精确求解），在参数 seconds 给的时间里算一条整场路线，之后照着打；路线走不通时在真局面上补搜。",
 			"它不是真正的最优解：给更多时间往往还能更高。开局求解的时间不计入每步耗时。",
 		},
@@ -59,8 +59,8 @@ var builtinAlgos = []struct {
 	{[]string{"uinet"}, AlgoDoc{
 		Summary: "GKMS 公开的出牌神经网络：只看画面，直接给出每个动作的概率，不往前推演，每步几毫秒。",
 		Detail: []string{
-			"输入是画面上能看到的信息（UIObs v1：回合、数值、状态、手牌、牌区组成、饮料等），不读种子、不看山札顺序。",
-			"Set Transformer 网络，输出出牌策略和终局分数的预测；先模仿看种子的全信息搜索的出法，再用强化学习继续训练，导出成 ONNX。",
+			"输入是画面上能看到的信息（UIObs v1：回合、数值、状态、手牌、牌区组成、饮料等），不知道牌序，看不到山札顺序。",
+			"Set Transformer 网络，输出出牌策略和终局分数的预测；先模仿提前知道牌序的全信息搜索的出法，再用强化学习继续训练，导出成 ONNX。",
 			"这里用的是 Ver1.1 模型，4 线程 CPU 推理。",
 		},
 		Sees: "screen",

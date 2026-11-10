@@ -109,7 +109,7 @@ export function Exams() {
       ))}
       <section className="max-w-[46em] text-[12.5px] leading-relaxed text-ink-2">
         <p><span className="font-semibold text-ink">场景怎么分。</span>不靠手填：考试、阶段、轮次从编成的 <Code>produce_id</Code>、<Code>round</Code> 读，流派按偶像卡，机制和回合数由引擎算。</p>
-        <p className="mt-1.5"><span className="font-semibold text-ink">种子。</span>每道题入库后自动配 32 个保密种子，算法托管跑；上传的固定种子题，种子另外记成固定种子。</p>
+        <p className="mt-1.5"><span className="font-semibold text-ink">牌序。</span>每道题入库后随机配 32 种牌序，只有服务器知道，所有算法打同一组，托管跑。</p>
       </section>
     </div>
   )
@@ -302,7 +302,7 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
             <th scope="col" className="px-3 py-2.5 text-right font-semibold">牌组</th>
             <th scope="col" className="px-3 py-2.5 text-left font-semibold">P 道具</th>
             <th scope="col" className="px-3 py-2.5 text-left font-semibold">饮料</th>
-            <th scope="col" className="px-3 py-2.5 text-left font-semibold"><span className="inline-flex items-center">题族<Help tip="题族编号 AF-：同一个开局（编成去掉种子）的编号。上传时按它去重。" /></span></th>
+            <th scope="col" className="px-3 py-2.5 text-left font-semibold"><span className="inline-flex items-center">题族<Help tip="题族编号 AF-：同一个开局的编号，和牌序无关。上传时按它去重。" /></span></th>
             <th scope="col" className="w-24 px-3 py-2.5" />
           </tr>
         </thead>
@@ -412,8 +412,7 @@ function UploadGuide({ set }: { set: string }) {
         <ul className="list-disc space-y-1 pl-5">
           <li>引擎认得里面的偶像、卡、P 道具，能开局。传的是自带编号的 <Code>.gksave.json</Code> 时，编号还要和内容对得上。</li>
           <li>这个集合里已经有同一开局（同一题族）的题，算重复，不收。</li>
-          <li>带种子的题只收成题模板，种子另记成这道题的固定种子，起点（回合、分数、体力、手牌）要对得上。</li>
-          <li>收下后每道题配 32 个保密种子，所有算法打同一组。传完刷新这一页就能看到新题。</li>
+          <li>收下后每道题随机配 32 种牌序，所有算法打同一组。传完刷新这一页就能看到新题。</li>
         </ul>
       </div>
     </details>

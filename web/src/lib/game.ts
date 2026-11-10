@@ -134,30 +134,32 @@ export const SET_INFO: Record<string, { title: string; blurb: string }> = {
   gkms480: { title: 'H.I.F随机牌组测试', blurb: 'GKMS 按主数据生成：6 种机制 × 4 位偶像 × 2 种牌组 × 5 个阶段。' },
 }
 
-/** 种子模式。fixed：固定种子题；template：题模板，每题固定 32 个保密种子；legacy：11-09 以前每次临时抽种子的旧评测 */
+/** 一次运行打的是哪种牌序。网页上不说「种子」，说「牌序」：一道题的一局，洗牌和随机结果定下来就是一种牌序。
+ * template：每题固定 32 种随机牌序，只有服务器知道，排行只看它；fixed：每题另有几种牌序可以本地跑完上传（自测用，网页上不再单列排行）；
+ * legacy：11-09 以前每次临时抽牌序的旧评测 */
 export type Kind = 'fixed' | 'template' | 'legacy'
 
 export const KIND_INFO: Record<Kind, { title: string; hint: string }> = {
   fixed: {
-    title: '固定种子',
-    hint: '每道题配几个公开的种子，大家打同一批，逐局配对比较。可以本地跑完上传，也可以托管跑。',
+    title: '自测',
+    hint: '每道题几种牌序，本地跑完上传，自测和调试用，不进排行。',
   },
   template: {
-    title: '保密种子',
-    hint: '每道题固定 32 个种子，只存在服务器上，所有算法打同一组。只能托管跑，算法看不到种子；逐局记录登录后才能看。',
+    title: '32 种牌序',
+    hint: '每道题随机 32 种牌序，只有服务器知道，所有算法打同一组。只能托管跑，算法事先不知道牌序；逐局记录登录后才能看。',
   },
   legacy: {
     title: '旧版评测',
-    hint: '11 月 9 日以前的题模板评测：每次评测临时抽种子，各算法打的种子不同，只能按题平均后比较，和现在的保密种子成绩不可比。',
+    hint: '11 月 9 日以前的题模板评测：每次评测临时抽牌序，各算法打的牌序不同，只能按题平均后比较，和现在的成绩不可比。',
   },
 }
 
 export function modeLabel(mode: string | undefined, privileged: boolean) {
-  if (privileged) return { text: '上限', hint: '提前知道种子的搜索。只当分母，不排名。' }
-  if (mode === 'hosted') return { text: '托管', hint: '种子留在服务器上，算法每步向服务器要画面、交动作，用时按服务器计。' }
+  if (privileged) return { text: '上限', hint: '提前知道整局牌序的搜索。只当分母，不排名。' }
+  if (mode === 'hosted') return { text: '托管', hint: '牌序只有服务器知道，算法每步向服务器要画面、交动作，用时按服务器计。' }
   if (mode === 'player') return { text: '玩家', hint: '玩家实战记录。' }
   if (mode === 'internal') return { text: '内置', hint: '在服务器或出题方机器上跑的内置算法。' }
-  return { text: '自报', hint: '本地跑完上传，服务器按种子逐局重放核对过分数；但证明不了算法没偷看种子。' }
+  return { text: '自报', hint: '本地跑完上传，服务器逐局重放核对过分数；但证明不了算法没提前看牌序。' }
 }
 
 /** 评级：按「相对上限」划线，用游戏里的培育评级徽章 */

@@ -13,7 +13,7 @@ import { useRowLink, cx, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHead
 
 type RunListItem = { run: string; label: string; set: string; kind?: string; privileged?: boolean; template_seeds?: string }
 
-/** 同一套题、同一种种子上理论上限各局的分数（多个上限运行取最高）。固定种子和保密种子的下标是两套编号，不能混 */
+/** 同一套题、同一种牌序上理论上限各局的分数（多个上限运行取最高）。自测（fixed）和 32 种牌序（template）的下标是两套编号，不能混 */
 export function useOracle(set: string | undefined, kind: string | undefined, tseeds: string | undefined) {
   const [oracle, setOracle] = useState<Map<string, number> | null>(null)
   useEffect(() => {
@@ -122,7 +122,7 @@ export function RunPage() {
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-[14px] font-bold text-ink">
             每局相对上限
-            <Help tip="每个点是一局：这局分数 ÷ 同题同种子理论上限的分数。点一下看复盘。" />
+            <Help tip="每个点是一局：这局分数 ÷ 同题同牌序理论上限的分数。点一下看复盘。" />
           </h2>
           <p className="num text-[12.5px] text-ink-2">
             {eps.length} 局 · 平均分 {int(mean)}
@@ -163,14 +163,14 @@ export function RunPage() {
         </span>
       </div>
 
-      {secret && <p className="mb-3 text-[12.5px] text-ink-3">保密种子：逐局复盘登录后才能看，种子和它的哈希都不公开。</p>}
+      {secret && <p className="mb-3 text-[12.5px] text-ink-3">这些牌序只有服务器知道：逐局复盘登录后才能看。</p>}
 
       <div className="overflow-x-auto rounded-xl border border-line bg-surface">
         <table className="w-full min-w-[900px] border-collapse text-[13px]">
           <thead className="border-b border-line bg-surface-2 text-[12.5px] text-ink-2">
             <tr>
               <th scope="col" className="px-3 py-2.5 text-left font-semibold">题</th>
-              <th scope="col" className="px-3 py-2.5 text-left font-semibold">种子 · 回合属性</th>
+              <th scope="col" className="px-3 py-2.5 text-left font-semibold">牌序 · 回合属性</th>
               <th scope="col" className="px-3 py-2.5 text-right font-semibold">分数</th>
               <th scope="col" className="px-3 py-2.5 text-right font-semibold">相对上限</th>
               <th scope="col" className="px-3 py-2.5 text-right font-semibold">决策</th>

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Download, KeyRound } from 'lucide-react'
+import { ArrowRight, KeyRound } from 'lucide-react'
 import { useApi } from '../lib/hooks'
-import { api, BASE, type Row, type RunInfo, type SetInfo } from '../lib/api'
+import { api, type Row, type RunInfo, type SetInfo } from '../lib/api'
 import { int, pct } from '../lib/format'
 import { ROUND, STAGE } from '../lib/game'
 import { setBlurbOf, setTitleOf } from '../lib/sets'
@@ -14,7 +14,7 @@ type RunItem = { run: string; label: string; kind?: string; privileged?: boolean
 
 const FEATURE_SET = 'hif-live'
 
-/** 首页头图：实机开局第一题、实机种子那一局，各算法打了多少分 */
+/** 首页头图：实机开局第一题、实机那一局的牌序，各算法打了多少分（数据取自每题几种牌序的自测运行） */
 function useFeatured() {
   const [data, setData] = useState<{ name: string; id: string; seed: number; types?: number[]; tags?: Record<string, string>; rows: { run: string; label: string; score: number; ratio: number | null }[]; oracle: number } | null>(null)
   const [failed, setFailed] = useState(false)
@@ -63,7 +63,7 @@ function FeaturedResult() {
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_40px_-24px_oklch(0.45_0.12_40/0.45)]">
       <div className="stripes relative bg-brand-deep px-5 pt-4 pb-3 text-white">
-        <p className="text-[12px] font-semibold tracking-wide text-white/90">試験結果 · 实机种子</p>
+        <p className="text-[12px] font-semibold tracking-wide text-white/90">試験結果 · 实机牌序</p>
         <div className="mt-2 flex items-center gap-3">
           <IdolThumb id={idol} size={44} className="ring-2 ring-white/70" />
           <div className="min-w-0">
@@ -134,7 +134,7 @@ function Stat({ n, label }: { n: React.ReactNode; label: string }) {
   )
 }
 
-/** 题集卡片：题数、种子数，加上保密种子榜的前三名。整张卡点进排行，下载存档是卡片里单独的链接 */
+/** 题集卡片：题数、每题几种牌序，加上排行的前三名。整张卡点进排行 */
 function SetCard({ s, sets }: { s: SetInfo; sets: SetInfo[] }) {
   const lb = useApi<Row[]>(`api/leaderboard?set=${encodeURIComponent(s.set)}&kind=template`)
   const top = useMemo(() => {
@@ -163,13 +163,12 @@ function SetCard({ s, sets }: { s: SetInfo; sets: SetInfo[] }) {
         <p className="mt-1.5 text-ink-2">{setBlurbOf(sets, s.set)}</p>
         <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
           <Stat n={s.problems} label="道题" />
-          <Stat n={s.seeds.dev + s.seeds.test} label="个固定种子" />
-          <Stat n={s.template_seeds ?? 32} label="个保密种子 / 题" />
+          <Stat n={s.template_seeds ?? 32} label="种随机牌序 / 题" />
         </dl>
       </div>
       <div className="flex-1 border-t border-line bg-surface-2/70">
         <p className="flex justify-between px-5 pt-2.5 pb-1 text-[12px] text-ink-3">
-          <span>保密种子 · 前三</span>
+          <span>排行 · 前三</span>
           <span>{hasOracle ? '相对上限' : '平均分'}</span>
         </p>
         {lb.loading && <Skeleton className="mx-5 mb-3 h-[108px]" />}
@@ -189,13 +188,7 @@ function SetCard({ s, sets }: { s: SetInfo; sets: SetInfo[] }) {
           ))}
         </ol>
       </div>
-      <div className="flex items-center justify-between gap-3 border-t border-line px-5 py-2.5 text-[12.5px]">
-        <a
-          href={`${BASE}api/sets/${s.set}/saves?answers=1${s.public_seeds ? '&fixed=1' : ''}`}
-          className="relative z-10 inline-flex items-center gap-1.5 rounded-sm text-ink-2 hover:text-brand-ink hover:underline"
-        >
-          <Download size={13} aria-hidden /> 下载审查存档
-        </a>
+      <div className="flex items-center justify-end gap-3 border-t border-line px-5 py-2.5 text-[12.5px]">
         <span className="inline-flex items-center gap-1 font-semibold text-brand-ink" aria-hidden>
           完整排行 <ArrowRight size={13} />
         </span>
@@ -215,7 +208,7 @@ export function Home() {
               学マス考试<br />出牌算法排行
             </h1>
             <p className="mt-4 max-w-[34em] text-[15.5px] leading-relaxed text-ink-2">
-              所有算法打同一批题、同一批种子，比分数和每步用时。每一局裁判都按种子重放核对过，可以点开看每一步出了哪张牌。
+              所有算法打同一批题，每题同样的 32 种随机牌序，比分数和每步用时。牌序只有裁判知道，每一局都可以点开看每一步出了哪张牌。
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/sets" className={btn.primary}>
@@ -258,7 +251,7 @@ export function Home() {
       <div className="mx-auto max-w-[1120px]">
         <section id="join" className="scroll-mt-20">
           <HomeTitle
-            sub="算法是一个函数：拿到画面上看得见的信息（和 GKMS UINet 的 UIObs v1 一样），返回一个动作。交法有三种，都要先拿令牌。"
+            sub="算法是一个函数：拿到画面上看得见的信息（和 GKMS UINet 的 UIObs v1 一样），返回一个动作。成绩走托管评测，要先拿令牌。"
             right={
               <Link to="/me" className={btn.small}>
                 <KeyRound size={14} aria-hidden /> 去拿令牌
@@ -268,16 +261,8 @@ export function Home() {
             交成绩
           </HomeTitle>
           <dl className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
-            <Way title="固定种子 · 本地跑完上传" tag="上手最快" body="用同一个引擎跑完整套题再上传，服务器按种子逐局重放，对不上的局拒收。成绩标「自报」。">
-              {`python -m gkbench run --set hif-live --algo uinet
-python -m gkbench upload <运行目录>`}
-            </Way>
-            <Way title="保密种子 · 托管评测" tag="进默认排行" strong body="每题 32 个种子只在服务器上，算法每步向服务器要画面、交动作，用时按服务器计。PIMC 这类算法可以向服务器要「可能的世界」。断了用 --resume 接着跑。">
+            <Way title="托管评测" tag="进排行" strong body="每题随机 32 种牌序，只有服务器知道，算法每步向服务器要画面、交动作，用时按服务器计。PIMC 这类算法可以向服务器要「可能的世界」。断了用 --resume 接着跑。">
               {`python -m gkbench eval --set hif-live --algo uinet --parallel 3`}
-            </Way>
-            <Way title="只交路线" tag="不用 Python" body="算法不是 Python 也行：下载审查存档，把每局的出牌路线（如 p0 d1 p2 e）写回去再交，服务器逐条重放。">
-              {`python -m gkbench save check my.gksave.jsonl
-python -m gkbench upload-saves my.gksave.jsonl --label my-algo`}
             </Way>
           </dl>
           <p className="mt-3 text-[12.5px] text-ink-3">

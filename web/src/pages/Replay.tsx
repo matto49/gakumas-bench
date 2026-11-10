@@ -355,7 +355,7 @@ function MoveList({ steps, cur, go }: { steps: Step[]; cur: number; go: (i: numb
   )
 }
 
-/** 这一局在审查存档里的位置：题模板、固定种子题、题族，路线记号串，存档下载 */
+/** 这一局在审查存档里的位置：题模板、指定牌序的题（存档格式里叫固定种子题）、题族，路线记号串，存档下载 */
 function SaveInfo({ e }: { e: Episode }) {
   const saveId = e.fixed_id ?? e.id
   return (
@@ -363,10 +363,10 @@ function SaveInfo({ e }: { e: Episode }) {
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1.5">
         <span className="inline-flex items-center text-ink-3">
           审查存档
-          <Help tip="题和答按 gkms.audition_save.v2 存：题模板不带种子；固定种子题带种子；同一开局共用题族编号。这一局的路线是第 3 章的记号串，能在任何实现了这个格式的引擎上重放。" />
+          <Help tip="题和答按 gkms.audition_save.v2 存：题模板只有开局，不定牌序；指定了牌序的题另有编号；同一开局共用题族编号。这一局的路线是第 3 章的记号串，能在任何实现了这个格式的引擎上重放。" />
         </span>
         <span>题模板 <code className="font-mono text-ink">{e.id}</code></span>
-        {e.fixed_id && <span>固定种子题 <code className="font-mono text-ink">{e.fixed_id}</code></span>}
+        {e.fixed_id && <span>指定牌序的题 <code className="font-mono text-ink">{e.fixed_id}</code></span>}
         {e.family && <span>题族 <code className="font-mono text-ink">{e.family}</code></span>}
         {e.exam_sha && <span>exam_sha <code className="font-mono text-ink-2">{e.exam_sha}</code></span>}
         <a href={`${BASE}api/saves/${saveId}?download=1`} className="ml-auto inline-flex items-center gap-1 font-semibold text-brand-ink hover:underline">

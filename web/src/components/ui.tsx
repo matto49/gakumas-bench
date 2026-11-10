@@ -104,7 +104,7 @@ export function ModeBadge({ mode, privileged }: { mode?: string; privileged: boo
 export function RatioText({ r, digits = 1, strong }: { r: Ratio | null | undefined; digits?: number; strong?: boolean }) {
   if (!r) return <span className="text-ink-3">—</span>
   return (
-    <Tip tip={<>同题同种子配对 {r.n} 局的几何平均，± 是标准误。</>}>
+    <Tip tip={<>同题同牌序配对 {r.n} 局的几何平均，± 是标准误。</>}>
       <span tabIndex={0} className="num whitespace-nowrap">
         <span className={strong ? 'disp text-[17px] text-ink' : 'text-ink'}>{pct(r, digits)}</span>
         <span className="ml-1 text-[12px] text-ink-3">{pm(r, digits)}</span>

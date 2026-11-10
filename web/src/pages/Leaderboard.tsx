@@ -9,7 +9,6 @@ import { GRADE_HINT, KIND_INFO, TAG_LABEL, tagValueLabel, type Kind } from '../l
 import { setBlurbOf, setTitleOf, sortSets } from '../lib/sets'
 import { Select } from '../components/Select'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
 import { useRowLink, Code, cx, Empty, SectionTitle, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, RankNum, RatioText, TableSkeleton, Tip } from '../components/ui'
 
 type SortKey = 'oracle' | 'base' | 'mean' | 'p50' | 'n' | 'label'
@@ -61,9 +60,8 @@ export function Leaderboard() {
   const [q, setQ] = useSearchParams()
   const cat = useCatalog()
   const sets = useApi<SetInfo[]>('api/sets')
-  // 默认看保密种子；?kind=fixed 固定种子，?kind=legacy 旧版评测
-  const rawKind = q.get('kind') ?? ''
-  const kind: Kind = rawKind === 'fixed' || rawKind === 'legacy' ? rawKind : 'template'
+  // 排行只看每题 32 种随机牌序的成绩；?kind=legacy 是旧版评测。以前的 ?kind=fixed（每题几种牌序、本地跑完上传）不再单列排行，旧链接落回默认
+  const kind: Kind = q.get('kind') === 'legacy' ? 'legacy' : 'template'
   const base = q.get('base') ?? ''
   const group = q.get('group') ?? ''
   const sort = ((q.get('sort') as SortKey) || 'oracle') as SortKey
@@ -133,13 +131,13 @@ export function Leaderboard() {
       </div>
 
       <PageHeader
-        title={<span className="inline-flex flex-wrap items-center gap-2.5">{setTitleOf(sets.data, set)}<Badge variant={kind === 'template' ? 'brand' : 'quiet'}>{KIND_INFO[kind].title}</Badge></span>}
+        title={<span className="inline-flex flex-wrap items-center gap-2.5">{setTitleOf(sets.data, set)}{kind === 'legacy' && <Badge variant="quiet">{KIND_INFO.legacy.title}</Badge>}</span>}
         sub={
           <>
             {setBlurbOf(sets.data, set)}
             {info && (
               <span className="num ml-1">
-                {info.problems} 题；每题 {Math.round((info.seeds.dev + info.seeds.test) / Math.max(1, info.problems))} 个固定种子{info.public_seeds ? '（公开）' : ''}，另有 {info.template_seeds ?? 32} 个保密种子。
+                {info.problems} 题，每题随机 {info.template_seeds ?? 32} 种牌序，所有算法打同一组。
               </span>
             )}
           </>
@@ -147,19 +145,11 @@ export function Leaderboard() {
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-        <label className="inline-flex cursor-pointer items-center gap-2 font-semibold text-ink select-none">
-          <Checkbox
-            checked={kind === 'fixed'}
-            onCheckedChange={(c) => update({ kind: c ? 'fixed' : '', mode: '', base: '', sort: '', dir: '' })}
-          />
-          固定种子
-        </label>
-        <Help tip={<>不勾：看保密种子成绩（每题 32 个种子，只在服务器上，所有算法托管跑）。<br />勾上：看固定种子成绩。{KIND_INFO.fixed.hint}</>} />
         <span className="inline-flex items-center gap-2 text-ink-2">
           基准
           <Select label="基准" value={base} onChange={(v) => update({ base: v })} width="14rem"
             options={[{ value: '', label: '不比' }, ...labels.map((l) => ({ value: l, label: l }))]} />
-          <Help tip="选一个算法当基准，表里多两列：同题同种子对它的分数比，和赢它的局数比例。" />
+          <Help tip="选一个算法当基准，表里多两列：同题同牌序对它的分数比，和赢它的局数比例。" />
         </span>
         <span className="inline-flex items-center gap-2 text-ink-2">
           分组
@@ -169,23 +159,23 @@ export function Leaderboard() {
         {kind === 'legacy' ? (
           <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-surface-3 px-3 py-1 text-[12.5px] text-ink-2">
             正在看旧版评测，和现在的成绩不可比
-            <button onClick={() => update({ kind: '', base: '', sort: '', dir: '' })} className="font-semibold text-brand-ink hover:underline">回到保密种子</button>
+            <button onClick={() => update({ kind: '', base: '', sort: '', dir: '' })} className="font-semibold text-brand-ink hover:underline">回到现在的排行</button>
           </span>
-        ) : kind === 'template' ? (
+        ) : (
           <button onClick={() => update({ kind: 'legacy', base: '', sort: '', dir: '' })} className="ml-auto text-[12.5px] text-ink-3 hover:text-brand-ink">
             11 月 9 日以前的旧版评测
           </button>
-        ) : null}
+        )}
       </div>
 
       {lb.error && <ErrorState error={lb.error} onRetry={lb.reload} />}
       {lb.loading && (!lb.data || stale) && <TableSkeleton />}
       {lb.data && !stale && rows.length === 0 && (
         <Empty>
-          <p className="font-semibold text-ink">{kind === 'template' ? '保密种子还没有成绩。' : kind === 'legacy' ? '没有旧版评测。' : '这套题还没有成绩。'}</p>
+          <p className="font-semibold text-ink">{kind === 'legacy' ? '没有旧版评测。' : '这套题还没有成绩。'}</p>
           {kind !== 'legacy' && (
             <p className="mt-1.5">
-              跑一次：<Code>{kind === 'template' ? `python -m gkbench eval --set ${set} --algo greedy` : `python -m gkbench run --set ${set} --algo greedy`}</Code>
+              跑一次：<Code>{`python -m gkbench eval --set ${set} --algo greedy`}</Code>
               ，详见 <Link to="/#join" className="text-brand-ink underline underline-offset-2">交成绩</Link>。
             </p>
           )}
@@ -200,16 +190,16 @@ export function Leaderboard() {
                 <th scope="col" className="w-14 px-3 py-2.5 text-center font-semibold whitespace-nowrap text-ink-2">名次</th>
                 <SortHead k="label" sort={sort} dir={dir} onSort={onSort} align="left">算法</SortHead>
                 {hasOracle && (
-                  <SortHead k="oracle" sort={sort} dir={dir} onSort={onSort} help={<>每局分数 ÷ 同题同种子理论上限的分数，取几何平均；± 是标准误。<br />{GRADE_HINT}</>}>
+                  <SortHead k="oracle" sort={sort} dir={dir} onSort={onSort} help={<>每局分数 ÷ 同题同牌序理论上限的分数，取几何平均；± 是标准误。<br />{GRADE_HINT}</>}>
                     相对上限
                   </SortHead>
                 )}
                 {base && (
-                  <SortHead k="base" sort={sort} dir={dir} onSort={onSort} help={kind === 'legacy' ? `每道题先求平均分，再按题对 ${base} 求分数比（几何平均 ± 标准误）；胜率是平均分更高的题所占比例。` : `同题同种子对 ${base} 的分数比（几何平均 ± 标准误），后面是胜率，平局算一半。`}>
+                  <SortHead k="base" sort={sort} dir={dir} onSort={onSort} help={kind === 'legacy' ? `每道题先求平均分，再按题对 ${base} 求分数比（几何平均 ± 标准误）；胜率是平均分更高的题所占比例。` : `同题同牌序对 ${base} 的分数比（几何平均 ± 标准误），后面是胜率，平局算一半。`}>
                     相对 {base}
                   </SortHead>
                 )}
-                <SortHead k="mean" sort={sort} dir={dir} onSort={onSort} help={kind === 'fixed' ? '所有局的平均分。' : '每道题先求平均，再对题求平均。'}>平均分</SortHead>
+                <SortHead k="mean" sort={sort} dir={dir} onSort={onSort} help="每道题先求平均，再对题求平均。">平均分</SortHead>
                 <SortHead k="p50" sort={sort} dir={dir} onSort={onSort} help="每步思考时间的中位数 / 95 分位。托管按服务器计时。理论上限开局一次算完整场，这里显示它开局求解的时间。">
                   每步
                 </SortHead>
@@ -241,7 +231,7 @@ export function Leaderboard() {
                         {r.runs && r.runs.length > 1 && (
                           <>
                             {' · '}
-                            <Tip tip={<>同一算法的 {r.runs.length} 次运行合成一行，同题同种子取最新那次。点这一行进最新那次：<span className="mt-1 block font-mono text-[11px] whitespace-pre-line">{r.runs.join('\n')}</span></>}>
+                            <Tip tip={<>同一算法的 {r.runs.length} 次运行合成一行，同题同牌序取最新那次。点这一行进最新那次：<span className="mt-1 block font-mono text-[11px] whitespace-pre-line">{r.runs.join('\n')}</span></>}>
                               <span tabIndex={0} className="cursor-help underline decoration-dotted underline-offset-2">合并 {r.runs.length} 次运行</span>
                             </Tip>
                           </>
@@ -275,7 +265,7 @@ export function Leaderboard() {
                     <td className="num px-3 py-3 text-right">{r.privileged && r.params?.seconds != null ? `${String(r.params.seconds)} s` : secs(r.ep_think_s)}</td>
                     <td className="num px-3 py-3 text-right">
                       {r.n}
-                      {kind !== 'fixed' && <div className="text-[11px] text-ink-3">{r.problems} 题</div>}
+                      <div className="text-[11px] text-ink-3">{r.problems} 题</div>
                     </td>
                     <td className="num px-3 py-3 text-right">
                       <span className={r.over ? 'text-ink' : 'text-ink-3'}>{r.over}</span>
@@ -298,8 +288,8 @@ export function Leaderboard() {
       {group && rows.length > 0 && <GroupMatrix rows={rows} group={group} hasOracle={hasOracle} base={base} idol={(id) => idolShort(cat, id)} />}
 
       <section className="mt-8 grid max-w-[1040px] gap-x-10 gap-y-2.5 text-[12.5px] leading-relaxed text-ink-2 md:grid-cols-2">
-        <p><span className="font-semibold text-ink">成对比。</span>比值都是同题同种子两局的分数比，再取几何平均，不是平均分之比。{kind === 'legacy' && '旧版评测各算法种子不同，只能先按题平均再比。'}</p>
-        <p><span className="font-semibold text-ink">上限不排名。</span>理论上限提前知道种子，只当分母。自报的成绩服务器重放核对过，但证明不了没偷看种子；要排除这一点看托管成绩。</p>
+        <p><span className="font-semibold text-ink">成对比。</span>比值都是同题同牌序两局的分数比，再取几何平均，不是平均分之比。{kind === 'legacy' && '旧版评测各算法打的牌序不同，只能先按题平均再比。'}</p>
+        <p><span className="font-semibold text-ink">上限不排名。</span>理论上限提前知道整局牌序，只当分母。牌序只有服务器知道，托管跑的算法每一步只拿得到画面上看得见的信息。</p>
         <p><span className="font-semibold text-ink">规则版本。</span>版本不同的成绩不能直接比；引擎更新后，旧成绩可以按新规则重放重算。</p>
         <p><span className="font-semibold text-ink">时间。</span>每次运行声明每步预算，超时只记数、不扣分。</p>
       </section>

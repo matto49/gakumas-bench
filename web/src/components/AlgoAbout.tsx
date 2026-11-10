@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react'
 import type { AlgoDoc } from '../lib/api'
 import { cx } from './ui'
 
-/** 看得到什么：只看画面（和玩家一样）/ 看种子（只作分母） */
+/** 看得到什么：只看画面（和玩家一样）/ 看牌序（提前知道整局的洗牌和随机结果，只作分母） */
 export function SeesBadge({ sees }: { sees?: AlgoDoc['sees'] }) {
   if (!sees) return null
   const seed = sees === 'seed'
@@ -13,7 +13,7 @@ export function SeesBadge({ sees }: { sees?: AlgoDoc['sees'] }) {
         seed ? 'bg-brand-tint text-brand-ink' : 'bg-surface-3 text-ink-2',
       )}
     >
-      {seed ? '看种子' : '只看画面'}
+      {seed ? '看牌序' : '只看画面'}
     </span>
   )
 }

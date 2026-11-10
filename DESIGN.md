@@ -37,7 +37,7 @@ shadcn 的语义变量（`background` `foreground` `primary` `muted` `accent` `b
 | `Button`（shadcn） | 圆角胶囊；`default` 深橙底白字，底下一道深色阴影像游戏按钮；`outline` 白底细边，悬停变橙；`size="sm"` 小号。链接要长成按钮用 `btn.primary` / `btn.secondary` / `btn.small`（同一套样式的类名） |
 | `Select` | 全站下拉框（`components/Select.tsx`），包了 shadcn 的 Select：传 `options` 数组，选项可带小图（偶像头像）和右侧灰字说明；靠右的用 `align="end"`。不要再用原生 `<select>` |
 | `Tip` / `Help` | 悬停说明，底层 shadcn Tooltip，弹层挂在 body 上，不会被表格滚动区裁掉 |
-| `Checkbox` | 勾选框。排行页的「固定种子」：默认不勾，看保密种子成绩；勾上是 `?kind=fixed` |
+| `Checkbox` | 勾选框（排行页原来的「固定种子」开关已去掉，暂时没用到） |
 | `ToggleGroup variant="segment"` | 分段切换（暂时没用到） |
 | `Badge` | `ModeBadge` 用它：`outline` 自报、`brand` 托管、`quiet` 上限 |
 | `Input` | 文本输入框；文件选择框仍用原生 |
@@ -53,5 +53,7 @@ shadcn 的语义变量（`background` `foreground` `primary` `muted` `accent` `b
 偶像缩略图和评级徽章从游戏缓存导出（`digital-hiro-research/gkmas-assets/tools/export_bench_icons.py`），转成 96px webp 放在 `$GKBENCH_DATA/static/sprites/`。卡牌、饮料小图由 `server/cmd/catalog` 生成。
 
 ## 文案
+
+网页上不说「种子」，说「牌序」：一道题的一局，洗牌和随机结果定下来就是一种牌序。排行是每题随机 32 种牌序，所有算法打同一组。
 
 平实、短。不写三连排比标语、编号卡片、两栏对仗；能用数字或例子就不解释；说明放在需要它的地方（表头的 ? 提示），不堆在页首。

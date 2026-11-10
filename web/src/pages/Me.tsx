@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, CircleAlert, Copy, KeyRound, Loader2, LogOut, Trash2, Upload } from 'lucide-react'
+import { CheckCircle2, CircleAlert, Copy, KeyRound, Loader2, LogOut, Trash2 } from 'lucide-react'
 import { api, ApiError, BASE, type Job } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { when } from '../lib/format'
@@ -211,7 +211,7 @@ function Dashboard({ me }: { me: MeInfo }) {
             {runs.error && <ErrorState error={runs.error} onRetry={runs.reload} />}
             {runs.loading && !runs.data && <TableSkeleton rows={4} />}
             {runs.data && runs.data.length === 0 && (
-              <Empty>还没有成绩。右边可以上传，也可以用命令行交。</Empty>
+              <Empty>还没有成绩。怎么交见 <Link to="/#join" className="text-brand-ink underline underline-offset-2">首页的「交成绩」</Link>。</Empty>
             )}
             {runs.data && runs.data.length > 0 && (
               <div className="overflow-x-auto rounded-xl border border-line bg-surface">
@@ -247,8 +247,6 @@ function Dashboard({ me }: { me: MeInfo }) {
           </section>
         </div>
         <aside className="space-y-8">
-          <SaveUploadForm onStarted={refreshJobs} />
-          <UploadForm onStarted={refreshJobs} />
           <CliTokens />
           <PasswordForm has={!!me.has_password} />
         </aside>
@@ -285,104 +283,6 @@ function JobRow({ j }: { j: Job }) {
         </details>
       )}
     </li>
-  )
-}
-
-function UploadForm({ onStarted }: { onStarted: () => void }) {
-  const [runFile, setRunFile] = useState<File | null>(null)
-  const [epFile, setEpFile] = useState<File | null>(null)
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [busy, setBusy] = useState(false)
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!runFile || !epFile) return
-    setBusy(true)
-    setMsg(null)
-    const fd = new FormData()
-    fd.append('run_json', runFile)
-    fd.append('episodes', epFile)
-    try {
-      const r = await fetch(`${BASE}api/runs`, { method: 'POST', body: fd })
-      const j = await r.json()
-      if (!r.ok) throw new Error(j?.detail ?? `${r.status}`)
-      setMsg(null)
-      toast.success('已收下，正在核对', { description: '进度看左边「上传核对」。' })
-      onStarted()
-    } catch (err) {
-      setMsg({ ok: false, text: `上传失败：${(err as Error).message}` })
-      toast.error('上传失败', { description: (err as Error).message })
-    } finally {
-      setBusy(false)
-    }
-  }
-  const file = 'block w-full text-[12.5px] text-ink-2 file:mr-3 file:h-8 file:rounded-full file:border file:border-line-strong file:bg-surface file:px-3 file:text-ink hover:file:bg-surface-2'
-  return (
-    <section>
-      <SectionTitle>上传本地运行</SectionTitle>
-      <p className="mb-3 text-ink-2">本地跑完后输出目录里的两个文件。服务器按种子逐局重放，对不上的局拒收。</p>
-      <form onSubmit={submit} className="space-y-3">
-        <label className="block">
-          <span className="mb-1 block text-[12.5px] font-medium text-ink"><Code>run.json</Code></span>
-          <input type="file" accept=".json,application/json" onChange={(e) => setRunFile(e.target.files?.[0] ?? null)} className={file} />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-[12.5px] font-medium text-ink"><Code>episodes.jsonl.zst</Code></span>
-          <input type="file" accept=".zst" onChange={(e) => setEpFile(e.target.files?.[0] ?? null)} className={file} />
-        </label>
-        <Button type="submit" disabled={!runFile || !epFile || busy}>
-          {busy ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Upload size={15} aria-hidden />}上传
-        </Button>
-        {msg && <p className={cx('text-[12.5px]', msg.ok ? 'text-ink-2' : 'text-critical')}>{msg.text}</p>}
-      </form>
-    </section>
-  )
-}
-
-/** 上传审查存档（gkms.audition_save.v2）：只要路线，服务器按编号找题和种子、逐条重放生成记录 */
-function SaveUploadForm({ onStarted }: { onStarted: () => void }) {
-  const [files, setFiles] = useState<FileList | null>(null)
-  const [label, setLabel] = useState('')
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [busy, setBusy] = useState(false)
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!files?.length) return
-    setBusy(true)
-    setMsg(null)
-    const fd = new FormData()
-    for (const f of Array.from(files)) fd.append('saves', f)
-    if (label.trim()) fd.append('label', label.trim())
-    try {
-      const r = await fetch(`${BASE}api/saves`, { method: 'POST', body: fd })
-      const j = await r.json()
-      if (!r.ok) throw new Error(j?.detail ?? `${r.status}`)
-      setMsg(null)
-      toast.success('已收下，正在逐条重放', { description: '进度看左边「上传核对」。' })
-      onStarted()
-    } catch (err) {
-      setMsg({ ok: false, text: `上传失败：${(err as Error).message}` })
-      toast.error('上传失败', { description: (err as Error).message })
-    } finally {
-      setBusy(false)
-    }
-  }
-  return (
-    <section>
-      <SectionTitle>上传审查存档</SectionTitle>
-      <p className="mb-3 text-ink-2">
-        <Code>.gksave.json</Code> 或 JSON Lines，每条答只要路线。服务器按编号找到题和种子逐条重放；题模板的答要带 <Code>exam</Code>。一张算法表算一次运行，标「自报」。
-      </p>
-      <form onSubmit={submit} className="space-y-3">
-        <input type="file" multiple accept=".json,.jsonl,application/json" onChange={(e) => setFiles(e.target.files)}
-          className="block w-full text-[12.5px] text-ink-2 file:mr-3 file:h-8 file:rounded-full file:border file:border-line-strong file:bg-surface file:px-3 file:text-ink hover:file:bg-surface-2" />
-        <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="运行名（不填就用算法名）"
-          className="h-9" />
-        <Button type="submit" disabled={!files?.length || busy}>
-          {busy ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Upload size={15} aria-hidden />}上传存档
-        </Button>
-        {msg && <p className={cx('text-[12.5px]', msg.ok ? 'text-ink-2' : 'text-critical')}>{msg.text}</p>}
-      </form>
-    </section>
   )
 }
 

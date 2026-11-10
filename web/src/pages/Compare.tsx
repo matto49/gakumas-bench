@@ -37,7 +37,7 @@ export function Compare() {
 
   return (
     <div>
-      <PageHeader title="对比" sub="同一道题、同一个种子，看两个算法从哪一步走岔。" />
+      <PageHeader title="对比" sub="同一道题、同一种牌序，看两个算法从哪一步走岔。" />
       <div className="mb-5 flex flex-wrap items-end gap-x-4 gap-y-3">
         <Picker label="题集">
           <Select label="题集" value={set} placeholder="选题集" onChange={(v) => update({ set: v, a: '', b: '', problem: '', seed: '' })}
@@ -87,7 +87,7 @@ function RunSelect({ runs, value, onChange, label }: { runs: RunItem[] | null; v
       options={(runs ?? []).map((r) => ({
         value: r.run,
         label: r.label,
-        hint: [r.kind === 'template' ? (r.template_seeds ? '保密种子' : '旧版') : '固定种子', r.privileged ? '上限' : r.mode === 'hosted' ? '托管' : ''].filter(Boolean).join(' · '),
+        hint: [r.kind === 'template' ? (r.template_seeds ? '32 种牌序' : '旧版') : '自测', r.privileged ? '上限' : r.mode === 'hosted' ? '托管' : ''].filter(Boolean).join(' · '),
       }))} />
   )
 }
@@ -113,13 +113,13 @@ function PairList({ a, b, labelA, labelB, onPick }: { a: string; b: string; labe
   if (kindOf(ra.data) === 'legacy' || kindOf(rb.data) === 'legacy') {
     return (
       <Empty>
-        旧版评测每个算法打的种子不同，同一个格子号不是同一局，没法逐局对比。
+        旧版评测每个算法打的牌序不同，同一个格子号不是同一局，没法逐局对比。
         看 <Link to={`/sets/${ra.data.set}?kind=legacy&base=${encodeURIComponent(rb.data.label)}`} className="text-brand-ink underline underline-offset-2">旧版排行</Link> 里按题平均后的比较。
       </Empty>
     )
   }
   if (kindOf(ra.data) !== kindOf(rb.data)) {
-    return <Empty>一个是固定种子、一个是保密种子，打的不是同一批局。选两个同一种的运行。</Empty>
+    return <Empty>一个是自测成绩、一个是排行成绩，打的不是同一批牌序。选两个同一种的运行。</Empty>
   }
   const winA = pairs.filter((p) => p.sa > p.sb).length
   const winB = pairs.filter((p) => p.sb > p.sa).length
@@ -130,13 +130,13 @@ function PairList({ a, b, labelA, labelB, onPick }: { a: string; b: string; labe
         <span className="inline-flex items-baseline gap-2"><Swatch c={B_COLOR} dashed /><span className="font-semibold text-ink">{labelB}</span> 赢 <span className="disp text-[24px] leading-none text-ink">{winB}</span> 局</span>
         <span className="text-ink-2">平 {pairs.length - winA - winB} 局，共 {pairs.length} 局。下面按分差从大到小排。</span>
       </div>
-      {pairs.length === 0 ? <Empty>这两个运行没有同题同种子的局。</Empty> : (
+      {pairs.length === 0 ? <Empty>这两个运行没有同题同牌序的局。</Empty> : (
         <div className="overflow-x-auto rounded-xl border border-line bg-surface">
           <table className="w-full min-w-[760px] border-collapse text-[13px]">
             <thead className="border-b border-line bg-surface-2 text-[12.5px] text-ink-2">
               <tr>
                 <th scope="col" className="px-3 py-2 text-left font-medium">题</th>
-                <th scope="col" className="px-3 py-2 text-left font-medium">种子</th>
+                <th scope="col" className="px-3 py-2 text-left font-medium">牌序</th>
                 <th scope="col" className="px-3 py-2 text-right font-medium">{labelA}</th>
                 <th scope="col" className="px-3 py-2 text-right font-medium">{labelB}</th>
                 <th scope="col" className="px-3 py-2 text-right font-medium">A ÷ B</th>

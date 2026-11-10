@@ -220,7 +220,7 @@ export type Catalog = {
   memories?: Record<string, CatalogThing>
 }
 
-/** /api/sets/{set}/problems 的一项：题模板（审查存档原样）+ 便于展示的字段 + 固定种子的公开信息 */
+/** /api/sets/{set}/problems 的一项：题模板（审查存档原样）+ 便于展示的字段 + 自测牌序的公开信息 */
 export type Problem = {
   id: string
   name: string
