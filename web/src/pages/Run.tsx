@@ -7,6 +7,7 @@ import { int, secs, shortCommit, when } from '../lib/format'
 import { KIND_INFO, TAG_LABEL, tagValueLabel } from '../lib/game'
 import { useSetTitle } from '../lib/sets'
 import { StripPlot } from '../components/Charts'
+import { AlgoAbout } from '../components/AlgoAbout'
 import { Select } from '../components/Select'
 import { cx, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, TableSkeleton, TurnStrip } from '../components/ui'
 
@@ -102,7 +103,7 @@ export function RunPage() {
       <dl className="mb-6 grid rounded-xl border border-line bg-surface px-4 py-3 grid-cols-2 gap-x-8 gap-y-3 text-[13px] sm:grid-cols-3 lg:grid-cols-6">
         <div><dt className="text-ink-3">算法</dt><dd className="mt-0.5 font-mono text-[12px] text-ink">{r.algo}</dd></div>
         <div className="col-span-2"><dt className="text-ink-3">参数</dt><dd className="mt-0.5 font-mono text-[12px] text-ink">{params.length ? params.map(([k, v]) => `${k}=${v}`).join('  ') : '—'}</dd></div>
-        <div><dt className="text-ink-3">预算</dt><dd className="num mt-0.5 text-ink">{r.step_seconds != null ? `每步 ${r.step_seconds} s` : r.seconds != null ? `整局 ${r.seconds} s` : r.budget != null ? `${r.budget.toLocaleString()} 步` : '—'}</dd></div>
+        <div><dt className="text-ink-3">预算</dt><dd className="num mt-0.5 text-ink">{r.step_seconds != null ? `每步 ${r.step_seconds} s` : r.seconds != null ? `开局求解 ${r.seconds} s` : r.budget != null ? `${r.budget.toLocaleString()} 步` : '—'}</dd></div>
         <div><dt className="text-ink-3">引擎</dt><dd className="num mt-0.5 text-ink">规则 v{r.engine?.rules_version ?? '?'} · {shortCommit(r.engine?.gkms_commit)}</dd></div>
         <div>
           <dt className="text-ink-3">提交（by）</dt>
@@ -113,6 +114,8 @@ export function RunPage() {
           </dd>
         </div>
       </dl>
+
+      <AlgoAbout about={r.about} />
 
       <section className="mb-6 rounded-xl border border-line bg-surface px-4 pt-3 pb-2">
         <div className="flex flex-wrap items-baseline justify-between gap-2">

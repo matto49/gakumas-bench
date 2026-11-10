@@ -98,7 +98,6 @@ func (a *App) open(fn func(http.ResponseWriter, *http.Request, string)) http.Han
 	}
 }
 
-
 // ---------------------------------------------------------------- 题库
 
 func (a *App) handleMe(w http.ResponseWriter, r *http.Request, u string) {
@@ -208,6 +207,9 @@ func (a *App) handleRun(w http.ResponseWriter, r *http.Request, u string) {
 		}
 	}
 	info["episodes"] = idx
+	if d := algoDoc(info); d != nil {
+		info["about"] = d
+	}
 	writeJSONResp(w, 200, info)
 }
 

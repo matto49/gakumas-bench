@@ -131,6 +131,7 @@
 ### 接自己的算法
 
 - **Python**：继承 `gkbench.algos.base.Algorithm`，实现 `decide(ctx) -> Decision(action, meta)`，在 `gkbench/algos/__init__.py` 注册。`ctx.obs` 是公开观测（UIObs v1），`ctx.worlds(k)` 要「可能的世界」。
+- **算法说明**：网站的运行页和算法排行会显示算法的大致思路、看得到什么（只看画面 / 看种子）和实现链接。本仓库内置的 random / greedy / pimc / uinet / oracle 由服务器按名字给（`server/algos.go`）；自己的算法在类上写 `about = {"summary": "一句话", "detail": ["分条说明"], "sees": "screen", "links": [{"title": "代码", "url": "https://…"}]}`，托管（`play`）和评测（`eval`）时会随运行提交（接口字段 `about`），没写就显示「提交人未提供」。
 - **别的语言**：从网站下载题集的审查存档（首页「审查存档」），自己的程序打完后，把每局的路线写进存档的算法表，用 `save check` 在本地核对，再 `upload-saves` 或在网页「我的」页上传。服务器按存档编号找题和种子，逐条重放、核对分数，生成完整记录。
 
 ## 服务器接口

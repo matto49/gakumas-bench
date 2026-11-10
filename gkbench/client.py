@@ -113,7 +113,8 @@ def hosted(set_name, algo, budget=5.0, label=None, seed_indices=None, only=None,
                     continue
                 start = c.post("/api/episodes", json={"set": set_name, "id": p["id"], "seed_index": srow["index"],
                                                       "label": label, "step_seconds": budget, "algo": f"external:{desc['name']}",
-                                                      "params": desc.get("params")}).raise_for_status().json()
+                                                      "params": desc.get("params"),
+                                                      "about": getattr(algo, "about", None)}).raise_for_status().json()
                 f = _play(c, start, algo, budget, random.Random(f"{p['id']}/{srow['index']}/algo"))
                 progress(f"{p.get('name', p['id'])} #{srow['index']}  {f['score']:>10,}  决策 {f['decisions']:>3}  服务器计时 {f['secs']:7.2f}s")
 
@@ -145,7 +146,7 @@ def evaluate(set_name, algo_spec, seeds=32, parallel=3, budget=5.0, label=None, 
         else:
             r = c.post("/api/evals", json={"set": set_name, "label": label, "step_seconds": budget,
                                            "algo": f"external:{desc['name']}", "params": desc.get("params"),
-                                           "seeds": seeds, "only": only or []})
+                                           "about": getattr(probe, "about", None), "seeds": seeds, "only": only or []})
             if r.status_code >= 400:
                 raise SystemExit(f"开评测失败 {r.status_code}：{r.text[:500]}")
             j = r.json()

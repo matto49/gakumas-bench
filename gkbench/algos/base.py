@@ -9,6 +9,11 @@
   ctx.rng          这一局专用的随机数（和游戏随机数无关）
 
 ``privileged = True`` 的算法（理论上限）额外拿到 ctx.true_session 和 ctx.seed，成绩单独标出，不参与排名。
+
+``about``（可选）：托管 / 评测时随运行提交的算法说明，显示在网站的运行页和算法排行里：
+  {"summary": "一句话思路", "detail": ["分条说明", ...], "sees": "screen",   # screen 只看画面；seed 看种子
+   "links": [{"title": "代码仓库", "url": "https://..."}]}
+本仓库内置的算法（random / greedy / pimc / uinet / oracle）不用填，服务器按名字给说明。
 """
 from __future__ import annotations
 
@@ -24,6 +29,7 @@ class Decision:
 class Algorithm:
     name = "base"
     privileged = False
+    about: dict | None = None
 
     def __init__(self, **params):
         self.params = params

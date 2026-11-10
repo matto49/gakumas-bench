@@ -54,6 +54,16 @@ export type Group = { n: number; mean: number; vs_oracle: Ratio | null; vs_base?
 /** 审查存档表 6 的表头 mode：internal 内置、self 自报、hosted 托管、player 玩家实战 */
 export type Mode = 'internal' | 'self' | 'hosted' | 'player'
 
+/** 算法说明：内置算法由服务器按名字给；外部算法托管 / 评测时可以自己提交 */
+export type AlgoDoc = {
+  summary: string
+  detail?: string[]
+  sees?: 'screen' | 'seed'
+  links?: { title: string; url: string }[]
+  private?: string[]
+  source: 'builtin' | 'submitter'
+}
+
 export type Row = {
   run: string
   label: string
@@ -79,6 +89,7 @@ export type Row = {
   vs_base?: Ratio | null
   groups?: Record<string, Group>
   engine: Engine
+  about?: AlgoDoc
 }
 
 export type EpisodeSummary = {
@@ -125,6 +136,7 @@ export type RunInfo = {
   template_seeds?: string
   episodes: EpisodeSummary[]
   mean_score?: number
+  about?: AlgoDoc
 }
 
 export type Card = { id: string; u?: number; c?: [string, number][]; g?: string[]; p?: number }

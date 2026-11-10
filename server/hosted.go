@@ -84,6 +84,7 @@ func (a *App) handleHostedStart(w http.ResponseWriter, r *http.Request, u string
 		Algo        string  `json:"algo"`
 		StepSeconds float64 `json:"step_seconds"`
 		Params      any     `json:"params"`
+		About       any     `json:"about"` // 可选：算法说明 {summary, detail, sees, links}
 	}
 	if json.NewDecoder(r.Body).Decode(&body) != nil {
 		fail(w, 400, "请求体不是 JSON")
@@ -116,6 +117,7 @@ func (a *App) handleHostedStart(w http.ResponseWriter, r *http.Request, u string
 	run := slug(fmt.Sprintf("hosted-%s-%s-%s", body.Set, label, u))
 	h := &Hosted{User: u, Label: label, Set: body.Set, Run: run, Problem: prob, Row: *row, Budget: budget,
 		RunInfo: a.runHeader(run, label, body.Set, "fixed", body.Algo, body.Params, budget, u)}
+	withAbout(h.RunInfo, body.About)
 	out, err := a.openHosted(h)
 	if err != nil {
 		fail(w, 503, err.Error())

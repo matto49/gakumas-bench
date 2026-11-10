@@ -207,7 +207,7 @@ export function Leaderboard() {
                   </SortHead>
                 )}
                 <SortHead k="mean" sort={sort} dir={dir} onSort={onSort} help={kind === 'fixed' ? '所有局的平均分。' : '每道题先求平均，再对题求平均。'}>平均分</SortHead>
-                <SortHead k="p50" sort={sort} dir={dir} onSort={onSort} help="每步思考时间的中位数 / 95 分位。托管按服务器计时。理论上限开局一次算完，所以接近 0。">
+                <SortHead k="p50" sort={sort} dir={dir} onSort={onSort} help="每步思考时间的中位数 / 95 分位。托管按服务器计时。理论上限开局一次算完整场，这里显示它开局求解的时间。">
                   每步
                 </SortHead>
                 <th scope="col" className="px-3 py-2.5 text-right font-semibold text-ink-2">每局思考</th>
@@ -231,6 +231,7 @@ export function Leaderboard() {
                           {r.label}
                         </Link>
                         <ModeBadge mode={r.mode} privileged={r.privileged} />
+                        {r.about && <Help tip={<>{r.about.summary}<span className="mt-1 block text-ink-3">点算法名看完整说明和实现链接。</span></>} />}
                       </span>
                       <div className="truncate text-[11.5px] text-ink-3">
                         {[params, r.step_seconds != null && `每步 ${r.step_seconds} s`, r.by].filter(Boolean).join(' · ')}
@@ -254,9 +255,13 @@ export function Leaderboard() {
                     )}
                     <td className="px-3 py-3 text-right"><span className="disp text-[17px] text-ink">{int(r.mean)}</span></td>
                     <td className="num px-3 py-3 text-right whitespace-nowrap">
-                      {ms(r.p50_ms)} <span className="text-ink-3">/ {ms(r.p95_ms)}</span>
+                      {r.privileged && r.params?.seconds != null ? (
+                        <span className="text-ink-3">开局求解 {String(r.params.seconds)} s</span>
+                      ) : (
+                        <>{ms(r.p50_ms)} <span className="text-ink-3">/ {ms(r.p95_ms)}</span></>
+                      )}
                     </td>
-                    <td className="num px-3 py-3 text-right">{secs(r.ep_think_s)}</td>
+                    <td className="num px-3 py-3 text-right">{r.privileged && r.params?.seconds != null ? `${String(r.params.seconds)} s` : secs(r.ep_think_s)}</td>
                     <td className="num px-3 py-3 text-right">
                       {r.n}
                       {kind !== 'fixed' && <div className="text-[11px] text-ink-3">{r.problems} 题</div>}

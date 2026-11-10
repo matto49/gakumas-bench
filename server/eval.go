@@ -31,6 +31,7 @@ type Eval struct {
 	N       int                `json:"seeds_per_problem"`
 	Seeds   map[string][]int64 `json:"seeds"` // 私有
 	Created string             `json:"created"`
+	About   any                `json:"about,omitempty"` // 提交人填的算法说明
 }
 
 var evalMu sync.Mutex
@@ -59,6 +60,7 @@ func (a *App) handleEvalStart(w http.ResponseWriter, r *http.Request, u string) 
 		Params any      `json:"params"`
 		Seeds  int      `json:"seeds"`
 		Only   []string `json:"only"`
+		About  any      `json:"about"` // 可选：算法说明 {summary, detail, sees, links}
 	}
 	if json.NewDecoder(r.Body).Decode(&body) != nil {
 		fail(w, 400, "请求体不是 JSON")
@@ -87,7 +89,7 @@ func (a *App) handleEvalStart(w http.ResponseWriter, r *http.Request, u string) 
 	}
 	id := newID(6)
 	ev := &Eval{ID: id, User: u, Set: body.Set, Label: label, Algo: body.Algo, Budget: body.Budget, Params: body.Params, N: n,
-		Seeds: map[string][]int64{}, Created: now(),
+		Seeds: map[string][]int64{}, Created: now(), About: body.About,
 		Run: slug(fmt.Sprintf("template-%s-%s-%s-%s", body.Set, label, u, id))}
 	type slot struct {
 		ID   string `json:"id"`
@@ -179,6 +181,7 @@ func (a *App) handleEvalEpisode(w http.ResponseWriter, r *http.Request, u string
 	h := &Hosted{User: u, Label: ev.Label, Set: ev.Set, Run: ev.Run, Problem: prob, Budget: ev.Budget,
 		Row:     SeedRow{Index: body.Slot, Seed: seeds[body.Slot], Split: "template", Label: "保密"},
 		RunInfo: a.runHeader(ev.Run, ev.Label, ev.Set, "template", ev.Algo, ev.Params, ev.Budget, u)}
+	withAbout(h.RunInfo, ev.About)
 	h.RunInfo["eval"], h.RunInfo["seeds_per_problem"], h.RunInfo["started"] = ev.ID, ev.N, ev.Created
 	h.RunInfo["template_seeds"] = TemplateSeedsVersion
 	out, err := a.openHosted(h)

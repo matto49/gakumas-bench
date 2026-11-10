@@ -43,6 +43,7 @@ type Row struct {
 	Groups          map[string]*Group `json:"groups,omitempty"`
 	Engine          any               `json:"engine"`
 	Algo            any               `json:"algo"`
+	About           *AlgoDoc          `json:"about,omitempty"`
 }
 
 // Group 按题目标签分组后的成绩：相对上限（有上限时）、相对基准（选了基准时）、平均分
@@ -217,6 +218,7 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 		row.Uploader, _ = r.info["by"].(string)
 		row.Kind, _ = r.info["kind"].(string)
 		row.Params = r.info["params"]
+		row.About = algoDoc(r.info)
 		var think []float64
 		var vsO, vsB [][2]float64
 		sum, epThink := 0.0, 0.0
