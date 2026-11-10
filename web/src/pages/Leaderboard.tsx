@@ -54,6 +54,9 @@ function SortHead({ k, children, sort, dir, onSort, align = 'right', help }: { k
   )
 }
 
+/** 游戏官方 AI 的算法名（gkbench/algos/official_ai.py） */
+const OFFICIAL_AI = 'external:official-ai'
+
 export function Leaderboard() {
   const rowLink = useRowLink()
   const { set } = useParams()
@@ -95,7 +98,7 @@ export function Leaderboard() {
   }, [lb.data, stale, sort, dir])
 
   if (!set) {
-    if (sets.data?.length) return <Navigate to={`/sets/${sets.data[0].set}`} replace />
+    if (sets.data?.length) return <Navigate to={`/sets/${sortSets(sets.data)[0].set}`} replace />
     if (sets.error) return <ErrorState error={sets.error} onRetry={sets.reload} />
     return <TableSkeleton />
   }
@@ -216,7 +219,7 @@ export function Leaderboard() {
                 if (!r.privileged) rank++
                 const params = r.params ? Object.entries(r.params).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${v}`).join(' ') : ''
                 return (
-                  <tr key={r.run} {...rowLink(`/runs/${r.run}`)} className={cx('cursor-pointer border-b border-line last:border-0', r.privileged ? 'bg-surface-2 text-ink-2 hover:bg-surface-3' : 'hover:bg-brand-tint')}>
+                  <tr key={r.run} {...rowLink(`/runs/${r.run}`)} className={cx('cursor-pointer border-b border-line last:border-0', r.privileged ? 'bg-surface-2 text-ink-2 hover:bg-surface-3' : r.algo === OFFICIAL_AI ? 'bg-brand-soft hover:bg-brand-tint' : 'hover:bg-brand-tint')}>
                     <td className="px-3 py-3 text-center">{r.privileged ? <span className="text-[12px] whitespace-nowrap text-ink-3">分母</span> : <RankNum n={rank} />}</td>
                     <td className="max-w-[300px] px-3 py-3">
                       <span className="flex items-center gap-2">
@@ -224,6 +227,16 @@ export function Leaderboard() {
                           {r.label}
                         </Link>
                         <ModeBadge mode={r.mode} privileged={r.privileged} />
+                        {r.algo === OFFICIAL_AI && (
+                          <Tip tip="学マス客户端自带的出牌 AI：比赛自动打、考试里高亮推荐卡用的就是它（GKMS 从安卓 3.2.1 客户端还原）。">
+                            <Badge tabIndex={0} variant="default" className="whitespace-nowrap">游戏官方 AI</Badge>
+                          </Tip>
+                        )}
+                        {r.sees_seed && (
+                          <Tip tip="它在真实局面上往前搜，等于提前知道接下来几回合抽到什么（游戏里本来就这样算）。排名照算，但和只看画面的算法不是同一起跑线。">
+                            <Badge tabIndex={0} variant="outline" className="whitespace-nowrap border-critical/60 text-critical">看种子</Badge>
+                          </Tip>
+                        )}
                         {r.about && <Help tip={<>{r.about.summary}<span className="mt-1 block text-ink-3">点算法名看完整说明和实现链接。</span></>} />}
                       </span>
                       <div className="truncate text-[11.5px] text-ink-3">

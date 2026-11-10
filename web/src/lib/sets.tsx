@@ -38,7 +38,16 @@ export function useSetTitle() {
   return (id: string) => setTitleOf(sets, id)
 }
 
-/** 官方集合排在前面，各组里按名字 */
+/** 官方集合的固定顺序：真实记录在前（排行页默认打开它），没列出的排在后面 */
+const SET_ORDER = ['hif-live', 'gkms480']
+
+function setRank(id: string) {
+  const i = SET_ORDER.indexOf(id)
+  return i < 0 ? SET_ORDER.length : i
+}
+
+/** 官方集合排在前面，各组里按 SET_ORDER，再按名字 */
 export function sortSets(xs: SetInfo[]) {
-  return [...xs].sort((a, b) => Number(a.status === 'community') - Number(b.status === 'community') || a.set.localeCompare(b.set))
+  return [...xs].sort((a, b) => Number(a.status === 'community') - Number(b.status === 'community')
+    || setRank(a.set) - setRank(b.set) || a.set.localeCompare(b.set))
 }
