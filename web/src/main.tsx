@@ -15,6 +15,7 @@ import { Compare } from './pages/Compare'
 import { Cards } from './pages/Cards'
 import { ExamSet, Exams } from './pages/Exams'
 import { Me } from './pages/Me'
+import { CliLogin } from './pages/CliLogin'
 import { NotFound } from './pages/NotFound'
 
 const router = createBrowserRouter(
@@ -32,6 +33,7 @@ const router = createBrowserRouter(
         { path: '/exams', element: <Exams /> },
         { path: '/exams/:set', element: <ExamSet /> },
         { path: '/me', element: <Me /> },
+        { path: '/cli-login', element: <CliLogin /> },
         { path: '/leaderboard', element: <Navigate to="/sets" replace /> },
         { path: '*', element: <NotFound /> },
       ],

@@ -6,7 +6,7 @@
 
 ## 写一道题
 
-要往「試験集合」加一道考试，按这一章做就够，后面几章是参考。人和 AI 都是两步：写开局配置，用 curl 传上去。
+要往「試験集合」加一道考试，按这一章做就够，后面几章是参考。人和 AI 都是两步：写开局配置，用命令行工具 `gkbench` 传上去。
 
 **1. 写开局配置**，一个 JSON 对象，存成 `exam.json`。下面是一道完整的题（H.I.F 選抜 1，篠澤広）：
 
@@ -62,14 +62,25 @@
 - 卡、饮料、P 道具、偶像、定制 P 道具效果、回忆：`GET https://hiro.matto.top/gkbench/api/catalog`（JSON，按编号给名字和效果文字；`cards.<编号>.custom.dirs[].id` 是这张卡能选的定制编号，`levels` 是各档效果；卡和饮料的 `unlock` 是解锁 P 等级，没有这一项就是不靠等级解锁），网页版是「游戏资源一览」。
 - 现成的题：`GET https://hiro.matto.top/gkbench/api/sets/<集合>/problems`，每项的 `archive.loadout` 就是一份开局配置，可以照着改。支援卡的编号和千分比目录里没有，从这里抄。
 
-**2. 上传。** 一条 curl 就行，不用装本仓库，编号由服务器按内容算：
+**2. 上传。** 用命令行工具 `gkbench`（一个可执行文件，源码在 `server/cmd/gkbench`），编号由服务器按内容算：
+
+    curl -fsSL https://hiro.matto.top/gkbench/install.sh | sh     # 装到 ~/.local/bin；Windows：irm https://hiro.matto.top/gkbench/install.ps1 | iex
+    gkbench login                                                 # 打开浏览器，在网页上点「授权」，令牌存到 ~/.config/gkbench/token
+    gkbench upload exam.json --set <集合> --name 题名              # 逐道列出收下的和没收的原因
+
+- `gkbench login` 打印一个网址和一个代码，网页上（已登录的话）核对代码、点授权，命令行就拿到令牌；不用手抄。`gkbench logout` 吊销，网页「我的」页也能吊销。
+- 集合：`gkbench sets` 列出来，带 ✓ 的是你能传的；`gkbench new 名字` 新建；`upload` 不写 `--set` 时会让你选（只有一个能传的就直接用它）。只能往自己建的集合传，官方集合要管理员。
+- 文件可以给多个，也可以是 JSON Lines；`--name` 是题名，不给就用文件名；`--json` 输出给程序读的结果。全部收下时退出码是 0，有没收的是 1。
+- `gkbench example` 打印上面那份例子，`gkbench help` 列出所有命令。
+
+不想装工具，用 curl 直接调接口也行（`gkbench` 调的就是它）：
 
     curl -H "Authorization: Bearer $(cat ~/.config/gkbench/token)" \
          -F name=题名 -F files=@exam.json \
          "https://hiro.matto.top/gkbench/api/sets/<集合>/problems?wait=1"
 
-- 令牌：先在网页「我的」页生成命令行令牌，存到 `~/.config/gkbench/token`。curl 用不了浏览器的登录状态，认的是这个令牌。
-- 集合：在网页「試験集合」里建，`<集合>` 填它的编号（集合页网址的最后一段）。只能往自己建的集合传，官方集合要管理员。
+- 令牌：curl 用不了浏览器的登录状态，认的是令牌。用 `gkbench login` 拿，或者在网页「我的」页生成后存到 `~/.config/gkbench/token`。
+- `<集合>` 填集合的编号（集合页网址的最后一段）。
 - `files` 可以给多个，也可以是 JSON Lines；`name` 是题名，不给就用文件名。
 - `?wait=1` 让它核对完再返回（一次最多 20 道）；不加就立刻返回一个核对任务，用 `GET /gkbench/api/jobs/<job>` 查。
 
@@ -78,7 +89,7 @@
     {"accepted":1,"added":[{"id":"AS-VVFKT9FZ","name":"题名","family":"AF-EKCH96E7"}],"rejected":[],"status":"done","total":1}
     {"accepted":0,"rejected":[{"id":"第 1 道","reason":"核对没过：无法构建这场考试：'p_card-99-xxx-9_999'"}],"status":"rejected","total":1}
 
-装了本仓库的话也可以用 `python -m gkbench upload-problems exam.json --set <集合>`（`--new "我的集合"` 先建集合再传），走的是同一个接口。
+仓库里的 Python 版 `python -m gkbench upload-problems exam.json --set <集合>` 走的也是同一个接口，令牌文件共用。
 
 已经有 `.gksave.json`（比如别处导出的存档）也能直接传，但它自带编号，内容改过就对不上，会被拒，原因写「编号不符」；这时用 `python -m gkbench save make 改好的.gksave.json` 重算，或者只把里面的 `loadout` 拿出来当开局配置传。
 

@@ -378,49 +378,52 @@ function aiBrief(set: string) {
     `2. 现成的题可以当例子，每项的 archive.loadout 就是一份开局配置：${site}api/sets/${set}/problems`,
     `3. 卡、饮料、P 道具、偶像的编号和效果文字，以及每张卡能选的定制：${site}api/catalog`,
     '4. 按我下面的要求写出开局配置（JSON，schema 写 gkms.hif_loadout.v1，不要写 seed），存成 exam.json。编号只用上面查得到的，不要自己编。',
-    `5. 上传，不用装任何东西，编号由服务器算：curl -H "Authorization: Bearer $(cat ~/.config/gkbench/token)" -F name=<题名> -F files=@exam.json "${site}api/sets/${set}/problems?wait=1"`,
-    '6. 把返回的 JSON 告诉我：accepted 是收下几道，rejected 里每项的 reason 是没收的原因；有没收的就按原因改了再传。令牌文件没有的话告诉我，我去网页「我的」页生成。',
+    `5. 用命令行工具 gkbench 上传。没装就先装（一个可执行文件，装到 ~/.local/bin）：curl -fsSL ${site}install.sh | sh。运行 gkbench whoami 看有没有登录；没登录就运行 gkbench login，它会打印一个网址和一个代码，把它们告诉我，我在浏览器里点授权，你等它自己返回。`,
+    `6. 运行 gkbench upload exam.json --set ${set} --name <题名> --json，把结果告诉我：accepted 是收下几道，rejected 里每项的 reason 是没收的原因；有没收的就按原因改了再传。`,
     '',
     '我要的考试：<偶像、哪场考试第几轮、牌组、P 道具、饮料、开局体力>',
   ].join('\n')
 }
 
-/** 上传面板里的说明：文件怎么来、怎么传、传上去核对什么。默认收起 */
+/** 上传面板里的说明：开局配置怎么写、别的命令、传上去核对什么。默认收起 */
 function UploadGuide({ set }: { set: string }) {
   return (
-    <details className="group mb-4 rounded-lg border border-line bg-surface-2 text-[12.5px] leading-relaxed text-ink-2">
+    <details className="group rounded-lg border border-line bg-surface-2 text-[12.5px] leading-relaxed text-ink-2">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-3 py-2 font-medium text-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
         <ChevronRight size={14} aria-hidden className="text-ink-3 motion-safe:transition-transform group-open:rotate-90" />
-        两步：写开局配置、用 curl 上传；传上去会核对什么
+        开局配置怎么写、别的命令、传上去会核对什么
       </summary>
       <div className="border-t border-line px-3 pb-3 pt-2.5 [overflow-wrap:anywhere] *:max-w-[78ch]">
-        <ol className="list-decimal space-y-1.5 pl-5">
-          <li>
-            写开局配置：偶像、哪场考试、牌组 <Code>deck_cards</Code>、P 道具 <Code>produce_item_ids</Code>、饮料 <Code>drink_ids</Code>、开局体力这些，
-            字段表和一份完整的例子在 <a href={FORMAT_DOC} {...ext} className={link}>格式说明</a>。
-            编号在 <a href={`${BASE}cards`} {...ext} className={link}>游戏资源一览</a> 查，
-            也可以拿 <a href={`${BASE}api/sets/${set}/problems`} {...ext} className={link}>这个集合现成的题</a>（JSON，每项的 <Code>archive.loadout</Code>）照着改。
-          </li>
-          <li>
-            上传，一条 curl，不用装任何东西，编号由服务器算。令牌在 <a href={`${BASE}me`} {...ext} className={link}>我的</a> 页生成，存到 <Code>~/.config/gkbench/token</Code>：
-            <div className="my-1.5"><CodeBlock>{`curl -H "Authorization: Bearer $(cat ~/.config/gkbench/token)" \\\n     -F name=题名 -F files=@exam.json \\\n     "${location.origin}${BASE}api/sets/${set}/problems?wait=1"`}</CodeBlock></div>
-            返回的 JSON 里 <Code>accepted</Code> 是收下几道，<Code>rejected</Code> 里每项写没收的原因。传完刷新这一页就能看到新题。
-          </li>
-        </ol>
+        <h4 className="mb-1 font-semibold text-ink">开局配置</h4>
+        <p>
+          一个 JSON 文件：偶像、哪场考试、牌组 <Code>deck_cards</Code>、P 道具 <Code>produce_item_ids</Code>、饮料 <Code>drink_ids</Code>、开局体力这些。
+          <Code>gkbench example &gt; exam.json</Code> 给一份完整的例子，照着改；字段表在 <a href={FORMAT_DOC} {...ext} className={link}>格式说明</a>。
+          编号在 <a href={`${BASE}cards`} {...ext} className={link}>游戏资源一览</a> 查，
+          也可以拿 <a href={`${BASE}api/sets/${set}/problems`} {...ext} className={link}>这个集合现成的题</a>（JSON，每项的 <Code>archive.loadout</Code>）照着改。编号由服务器按内容算，不用自己算。
+        </p>
+        <h4 className="mt-3 mb-1 font-semibold text-ink">别的命令</h4>
+        <ul className="list-disc space-y-1 pl-5">
+          <li><Code>gkbench sets</Code> 列出集合，带 ✓ 的是你能传的；<Code>gkbench new 名字</Code> 新建一个自己的集合。</li>
+          <li><Code>gkbench upload a.json b.json</Code> 一次传多道；不写 <Code>--set</Code> 会让你选；<Code>--name 题名</Code> 起名，<Code>--json</Code> 输出给程序读的结果。</li>
+          <li><Code>gkbench whoami</Code> 看登录的是谁，<Code>gkbench logout</Code> 吊销这台电脑的令牌。令牌也能在 <a href={`${BASE}me`} {...ext} className={link}>我的</a> 页吊销。</li>
+          <li>不想装工具：用 curl 直接调接口也行，写法在格式说明里。</li>
+        </ul>
         <h4 className="mt-3 mb-1 font-semibold text-ink">传上去会核对什么</h4>
         <ul className="list-disc space-y-1 pl-5">
           <li>引擎认得里面的偶像、卡、P 道具，能开局。传的是自带编号的 <Code>.gksave.json</Code> 时，编号还要和内容对得上。</li>
           <li>这个集合里已经有同一开局（同一题族）的题，算重复，不收。</li>
           <li>带种子的题只收成题模板，种子另记成这道题的固定种子，起点（回合、分数、体力、手牌）要对得上。</li>
-          <li>收下后每道题配 32 个保密种子，所有算法打同一组。</li>
+          <li>收下后每道题配 32 个保密种子，所有算法打同一组。传完刷新这一页就能看到新题。</li>
         </ul>
       </div>
     </details>
   )
 }
 
-/** 上传考试：只走命令行（一条 curl，带令牌；开局配置的编号由服务器算），网页上不放上传按钮。这里给格式说明、能直接贴给 AI 的说明和三步做法 */
+/** 上传考试：只走命令行工具 gkbench（一条命令安装，gkbench login 借网页的登录状态），网页上不放上传按钮。
+ * 这里给三条命令、格式说明、能直接贴给 AI 的说明 */
 function UploadPanel({ set }: { set: string }) {
+  const site = `${location.origin}${BASE}`
   const copyBrief = async () => {
     try {
       await navigator.clipboard.writeText(aiBrief(set))
@@ -433,8 +436,15 @@ function UploadPanel({ set }: { set: string }) {
     <section className="mb-6 rounded-xl border border-line bg-surface p-4">
       <SectionTitle>上传考试</SectionTitle>
       <p className="mb-2.5 max-w-[78ch] text-[13px] text-ink-2">
-        考试用一条 curl 传，不用装东西：写一份开局配置（JSON），服务器核对后收下。怎么写看格式说明的「写一道题」：字段表、一份完整的例子、编号去哪查。
-        想让 AI 代写代传，把下面那段说明贴给它。
+        考试用命令行工具 <Code>gkbench</Code> 传：装一次、登录一次，之后一条命令。登录时它打开浏览器，在网页上点一下授权就行，不用抄令牌。
+      </p>
+      <div className="mb-3 max-w-[78ch]">
+        <CodeBlock>{`curl -fsSL ${site}install.sh | sh        # 装到 ~/.local/bin（Windows：irm ${site}install.ps1 | iex）
+gkbench login                            # 打开浏览器，点「授权」
+gkbench upload exam.json --set ${set}    # 传；逐道列出收下的和没收的原因`}</CodeBlock>
+      </div>
+      <p className="mb-2.5 max-w-[78ch] text-[13px] text-ink-2">
+        <Code>exam.json</Code> 是一份开局配置，怎么写看格式说明的「写一道题」：字段表、一份完整的例子、编号去哪查。想让 AI 代写代传，把下面那段说明贴给它。
       </p>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <a href={FORMAT_DOC} {...ext} className={btn.small}><BookOpen size={14} aria-hidden />格式说明<ExternalLink size={12} aria-hidden className="text-ink-3" /></a>

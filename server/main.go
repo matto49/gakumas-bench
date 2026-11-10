@@ -86,6 +86,13 @@ func cacheFor(h http.Handler, seconds int) http.Handler {
 	})
 }
 
+func noCache(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache")
+		h.ServeHTTP(w, r)
+	})
+}
+
 func setPublicSeeds(data, set string, on bool) error {
 	path := filepath.Join(data, "private", "sets.json")
 	m := map[string]SetConfig{}
@@ -153,6 +160,23 @@ func main() {
 	mux.HandleFunc("GET /api/auth/github/callback", app.handleGithubCallback)
 	mux.HandleFunc("POST /api/auth/register", app.handleRegister)
 	mux.HandleFunc("POST /api/auth/login", app.handlePasswordLogin)
+	mux.HandleFunc("POST /api/cli/login", app.handleCLILoginStart)
+	mux.HandleFunc("GET /api/cli/login/{code}", O(app.handleCLILoginInfo))
+	mux.HandleFunc("POST /api/cli/login/{code}/approve", A(app.handleCLILoginApprove))
+	mux.HandleFunc("POST /api/cli/login/token", app.handleCLILoginToken)
+	// 命令行工具：安装脚本和各平台的可执行文件放在 $DATA/static/cli/（server/cmd/gkbench/build.sh 生成）
+	cli := filepath.Join(static, "cli")
+	mux.HandleFunc("GET /install.sh", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/x-shellscript; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		http.ServeFile(w, r, filepath.Join(cli, "install.sh"))
+	})
+	mux.HandleFunc("GET /install.ps1", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		http.ServeFile(w, r, filepath.Join(cli, "install.ps1"))
+	})
+	mux.Handle("GET /cli/", http.StripPrefix("/cli/", noCache(http.FileServer(http.Dir(cli)))))
 	mux.Handle("GET /sprites/", http.StripPrefix("/sprites/", cacheFor(http.FileServer(http.Dir(filepath.Join(static, "sprites"))), 7*86400)))
 	// 要令牌
 	mux.HandleFunc("GET /api/me", A(app.handleMe))

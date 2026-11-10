@@ -33,7 +33,8 @@ const GithubMark = () => (
   </svg>
 )
 
-function Login({ onDone }: { onDone: () => void }) {
+/** 登录表单。next：GitHub 登录回来后落到哪一页（站内路径） */
+export function Login({ onDone, next = '/me' }: { onDone: () => void; next?: string }) {
   const auth = useApi<{ github: boolean }>('api/auth')
   const [err, setErr] = useState(() => new URLSearchParams(location.search).get('login_error') ?? '')
   return (
@@ -42,7 +43,7 @@ function Login({ onDone }: { onDone: () => void }) {
       {err && <p className="mb-4 rounded-lg bg-surface-2 px-3 py-2 text-critical">{err}</p>}
       {auth.data?.github !== false && (
         <>
-          <a href={`${BASE}api/auth/github?next=/me`} className={cx(btn.primary, 'h-10 w-full')}>
+          <a href={`${BASE}api/auth/github?next=${encodeURIComponent(next)}`} className={cx(btn.primary, 'h-10 w-full')}>
             <GithubMark /> 用 GitHub 登录
           </a>
           <p className="mt-2 text-[12.5px] text-ink-3">推荐。第一次登录自动建账号，用户名取 GitHub 名，只读公开信息。</p>
