@@ -75,8 +75,6 @@ export type Row = {
   kind: 'fixed' | 'template'
   by: string
   privileged: boolean
-  /** 看牌序但照常排名（游戏官方 AI） */
-  sees_seed?: boolean
   step_seconds: number | null
   n: number
   problems: number
@@ -94,7 +92,7 @@ export type Row = {
   groups?: Record<string, Group>
   engine: Engine
   about?: AlgoDoc
-  /** 在真实局面上搜索（等于知道之后抽什么）的算法 */
+  /** 在真实牌局上搜索、等于知道之后抽什么的算法（游戏官方 AI）：看牌序，但照常排名 */
   sees_seed?: boolean
   /** 评测机在固定的一台 Mac 上跑的提交：耗时互相可比 */
   fixed_machine?: boolean
