@@ -172,6 +172,9 @@
         -cards <素材>/skill_cards,<补的卡面目录> -drinks <素材>/drinks -out $GKBENCH_DATA/static
     # 新卡没图时：从游戏资源导出（digital-hiro-research/gkmas-assets/tools/export_card_icons.py <资源名>…），
     # 把导出目录加进 -cards；已有的小图不会重做。
+    # 只更新文字（效果、定制方向）时可以不带 -cards / -drinks：-out 下已有的小图照用。
+    # 目录里每张卡带它自己的定制方向（custom：各方向各档的 P 点和效果）；主数据没有定制的说明文字，
+    # 数值类的按效果类型拼（cmd/catalog 的 growValueText），加 / 换效果的用那条效果自己的说明。
 
 线上 nginx 的 hiro 站点（443 那个 server 块）开了 gzip（JSON / JS / CSS），卡牌目录约 1 MB → 100 KB。
 

@@ -5,7 +5,7 @@
 //
 // 输出
 //
-//	catalog.json       cards / drinks / items / enchants / idols：编号 -> 日文名、稀有度、效果文字、小图名
+//	catalog.json       cards / drinks / items / enchants / idols：编号 -> 日文名、稀有度、效果文字、小图名；卡带定制方向（custom）
 //	sprites/<asset>.png  96px 小图（只生成用得到的）
 package main
 
@@ -67,8 +67,10 @@ var tagRe = regexp.MustCompile(`<[^>]*>`)
 // 效果文字：produceDescriptions 里的 text 片段拼起来，去掉标签
 var multiNL = regexp.MustCompile(`\s*\n\s*`)
 
-func describe(r row) string {
-	ds, _ := r["produceDescriptions"].([]any)
+func describe(r row) string { return describeKey(r, "produceDescriptions") }
+
+func describeKey(r row, key string) string {
+	ds, _ := r[key].([]any)
 	var b strings.Builder
 	for _, d := range ds {
 		m, _ := d.(map[string]any)
@@ -96,6 +98,130 @@ type Card struct {
 	Category string            `json:"category"`
 	Asset    string            `json:"asset,omitempty"`
 	Up       map[int]CardLevel `json:"up"`
+	Custom   *CardCustom       `json:"custom,omitempty"`
+}
+
+// 卡的定制（カスタマイズ）：每张卡有自己的几个方向，每个方向 1～3 档，各档花 P 点；一张卡总共能定制 Max 次。
+// 各档的效果是「到这一档为止」的总量，不是增量。
+type CardCustom struct {
+	Max  int         `json:"max"`
+	Dirs []CustomDir `json:"dirs"`
+}
+
+type CustomDir struct {
+	ID     string        `json:"id"`
+	Levels []CustomLevel `json:"levels"`
+}
+
+type CustomLevel struct {
+	PP   int    `json:"pp"`
+	Text string `json:"text"`
+}
+
+// 成长效果里只带一个数值的类型 → 文字（%d 是数值）。主数据没有这些的说明文字，按游戏里的叫法写。
+var growValueText = map[string]string{
+	"LESSON_ADD": "パラメータ+%d", "LESSON_REDUCE": "パラメータ-%d", "LESSON_COUNT_ADD": "パラメータ上昇回数+%d", "LESSON_COUNT_REDUCE": "パラメータ上昇回数-%d",
+	"BLOCK_ADD": "元気+%d", "BLOCK_REDUCE": "元気-%d", "AGGRESSIVE_ADD": "やる気+%d", "REVIEW_ADD": "好印象+%d", "LESSON_BUFF_ADD": "集中+%d",
+	"FULL_POWER_POINT_ADD": "全力値+%d", "FULL_POWER_POINT_REDUCE": "全力値-%d",
+	"PARAMETER_BUFF_TURN_ADD": "好調+%dターン", "PARAMETER_BUFF_MULTIPLE_PER_TURN_ADD": "絶好調+%dターン", "STAMINA_CONSUMPTION_DOWN_TURN_ADD": "消費体力減少+%dターン",
+	"COST_REDUCE": "コスト-%d", "COST_ADD": "コスト+%d", "COST_PENETRATE_REDUCE": "体力消費-%d", "COST_PENETRATE_ADD": "体力消費+%d",
+	"COST_AGGRESSIVE_REDUCE": "やる気消費-%d", "COST_AGGRESSIVE_ADD": "やる気消費+%d", "COST_REVIEW_REDUCE": "好印象消費-%d", "COST_REVIEW_ADD": "好印象消費+%d",
+	"COST_LESSON_BUFF_REDUCE": "集中消費-%d", "COST_LESSON_BUFF_ADD": "集中消費+%d", "COST_FULL_POWER_POINT_REDUCE": "全力値消費-%d", "COST_FULL_POWER_POINT_ADD": "全力値消費+%d",
+	"COST_PARAMETER_BUFF_REDUCE": "好調消費-%dターン", "COST_PARAMETER_BUFF_ADD": "好調消費+%dターン", "COST_PARAMETER_BUFF_MULTIPLE_PER_TURN_REDUCE": "絶好調消費-%dターン",
+}
+
+// 数值是千分比的类型：「○○の N% 分パラメータ上昇」里的 N 加多少
+var growPermilText = map[string]string{
+	"LESSON_DEPEND_BLOCK_ADD": "元気分パラメータ+%s%%", "LESSON_DEPEND_EXAM_REVIEW_ADD": "好印象分パラメータ+%s%%", "LESSON_DEPEND_EXAM_CARD_PLAY_AGGRESSIVE_ADD": "やる気分パラメータ+%s%%",
+}
+
+var growChangeText = map[string]string{
+	"EFFECT_ADD": "効果追加", "EFFECT_CHANGE": "効果変更", "CARD_STATUS_ENCHANT_CHANGE": "成長変更",
+	"PLAY_TRIGGER_CHANGE": "使用条件変更", "PLAY_EFFECT_TRIGGER_CHANGE": "効果の発動条件変更",
+	"INITIAL_ADD": "レッスン開始時手札に入る", "PLAY_MOVE_POSITION_TYPE_CHANGE": "使用後の置き場変更",
+}
+
+type growTables struct {
+	grow, effect, trigger, cardEnchant map[string]row
+}
+
+func byID(rows []row) map[string]row {
+	m := map[string]row{}
+	for _, r := range rows {
+		m[str(r, "id")] = r
+	}
+	return m
+}
+
+func permil(v int) string {
+	if v%10 == 0 {
+		return fmt.Sprint(v / 10)
+	}
+	return fmt.Sprintf("%d.%d", v/10, v%10)
+}
+
+// 一条成长效果 → (文字, 是不是「数值类」)。数值类自己就是完整的说明；其余的是「换 / 加了哪条效果」，文字是那条效果的说明
+func (t growTables) text(id string) (string, bool) {
+	g := t.grow[id]
+	typ := short("PRODUCE_CARD_GROW_EFFECT_TYPE_", enumName(g, "effectType"))
+	v := 0
+	if f, ok := g["value"].(float64); ok {
+		v = int(f)
+	}
+	if f, ok := growValueText[typ]; ok {
+		return fmt.Sprintf(f, v), true
+	}
+	if f, ok := growPermilText[typ]; ok {
+		return fmt.Sprintf(f, permil(v)), true
+	}
+	detail := ""
+	if e, ok := t.effect[str(g, "playProduceExamEffectId")]; ok {
+		if detail = describeKey(e, "customizeProduceDescriptions"); detail == "" {
+			detail = describe(e)
+		}
+	} else if e, ok := t.cardEnchant[str(g, "produceCardStatusEnchantId")]; ok {
+		detail = describe(e)
+	} else if e, ok := t.trigger[str(g, "playProduceExamTriggerId")]; ok {
+		detail = describe(e)
+	} else if e, ok := t.trigger[str(g, "playEffectProduceExamTriggerId")]; ok {
+		detail = describe(e)
+	}
+	return strings.TrimRight(strings.ReplaceAll(detail, "\n", " "), "、"), false
+}
+
+// 定制的一档 → 文字。主数据给了短标签（description，如「元気追加」）就用它开头，后面跟具体效果
+func (t growTables) level(r row) string {
+	label := strings.ReplaceAll(strings.ReplaceAll(str(r, "description"), "\\n", ""), "\n", "")
+	ids, _ := r["produceCardGrowEffectIds"].([]any)
+	var parts []string
+	kind := ""
+	for _, x := range ids {
+		id, _ := x.(string)
+		s, plain := t.text(id)
+		if !plain && kind == "" {
+			kind = growChangeText[short("PRODUCE_CARD_GROW_EFFECT_TYPE_", enumName(t.grow[id], "effectType"))]
+		}
+		if s != "" {
+			dup := false
+			for _, p := range parts {
+				dup = dup || p == s
+			}
+			if !dup {
+				parts = append(parts, s)
+			}
+		}
+	}
+	if label == "" {
+		label = kind
+	}
+	body := strings.Join(parts, "\n")
+	switch {
+	case label == "":
+		return body
+	case body == "":
+		return label
+	}
+	return label + "：" + body
 }
 
 type CardLevel struct {
@@ -157,6 +283,13 @@ func main() {
 			have[strings.TrimSuffix(filepath.Base(f), ".png")] = f
 		}
 	}
+	// 已经缩好的小图也算有：只更新文字时可以不带素材目录
+	olds, _ := filepath.Glob(filepath.Join(spr, "*.png"))
+	for _, f := range olds {
+		if a := strings.TrimSuffix(filepath.Base(f), ".png"); have[a] == "" {
+			have[a] = f
+		}
+	}
 	used := map[string]bool{}
 	variants := map[string]string{} // 按角色分图的卡（asset-amao 等）：取字母序第一张
 	for a := range have {
@@ -199,6 +332,44 @@ func main() {
 			c.Asset = sprite(str(r, "assetId"))
 		}
 		c.Up[u] = CardLevel{Name: str(r, "name"), Text: describe(r)}
+		if ids, _ := r["produceCardCustomizeIds"].([]any); len(ids) > 0 && c.Custom == nil {
+			c.Custom = &CardCustom{}
+			if v, ok := r["maxCustomizeCount"].(float64); ok {
+				c.Custom.Max = int(v)
+			}
+			for _, x := range ids {
+				id, _ := x.(string)
+				c.Custom.Dirs = append(c.Custom.Dirs, CustomDir{ID: id})
+			}
+		}
+	}
+	gt := growTables{grow: byID(readTable(*master, "ProduceCardGrowEffect")), effect: byID(readTable(*master, "ProduceExamEffect")),
+		trigger: byID(readTable(*master, "ProduceExamTrigger")), cardEnchant: byID(readTable(*master, "ProduceCardStatusEnchant"))}
+	custom := map[string][]CustomLevel{} // 定制编号 → 各档（按档次排好）
+	for _, r := range readTable(*master, "ProduceCardCustomize") {
+		n := 1
+		if v, ok := r["customizeCount"].(float64); ok {
+			n = int(v)
+		}
+		pp := 0
+		if v, ok := r["producePoint"].(float64); ok {
+			pp = int(v)
+		}
+		id := str(r, "id")
+		for len(custom[id]) < n {
+			custom[id] = append(custom[id], CustomLevel{})
+		}
+		custom[id][n-1] = CustomLevel{PP: pp, Text: gt.level(r)}
+	}
+	nCustom := 0
+	for _, c := range cards {
+		if c.Custom == nil {
+			continue
+		}
+		nCustom++
+		for i := range c.Custom.Dirs {
+			c.Custom.Dirs[i].Levels = custom[c.Custom.Dirs[i].ID]
+		}
 	}
 
 	drinks := map[string]Thing{}
@@ -270,7 +441,7 @@ func main() {
 	if err := os.WriteFile(filepath.Join(*out, "catalog.json"), b, 0o644); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("回忆 %d；", len(memories))
+	fmt.Printf("回忆 %d；能定制的卡 %d；", len(memories), nCustom)
 	fmt.Printf("目录：卡 %d、饮料 %d、P 道具 %d、持续效果 %d、偶像 %d；小图 %d 张（新生成 %d），catalog.json %d KB\n",
 		len(cards), len(drinks), len(items), len(enchants), len(idols), len(used), n, len(b)/1024)
 }
