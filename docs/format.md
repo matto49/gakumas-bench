@@ -73,6 +73,10 @@
     python -m gkbench upload-problems AS-编号.gksave.json --set <集合>
     python -m gkbench upload-problems AS-编号.gksave.json --new "我的集合"      # 先建一个集合再传
 
+不装本仓库也能传，接口是 `POST /gkbench/api/sets/<集合>/problems`（multipart，字段 `files`，可以多个），返回一个核对任务，轮询 `GET /gkbench/api/jobs/<job>` 看结果：
+
+    curl -H "Authorization: Bearer $(cat ~/.config/gkbench/token)" -F files=@AS-编号.gksave.json https://hiro.matto.top/gkbench/api/sets/<集合>/problems
+
 服务器逐道核对：编号和内容对得上；引擎认得里面的偶像、卡、P 道具，能开局；同一集合里已有同一开局（题族相同）的算重复，不收。没收的每道都写原因。收下后每道题配 32 个保密种子，所有算法打同一组。
 
 ## 1. 审查存档（题）

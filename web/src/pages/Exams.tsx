@@ -407,7 +407,11 @@ function UploadGuide({ set }: { set: string }) {
             <div className="my-1.5"><CodeBlock>{'python -m gkbench save make exam.json --name 题名'}</CodeBlock></div>
             它生成 <Code>AS-编号.gksave.json</Code>。编号按内容算，改过内容要重新生成，直接传改过的文件会被拒，原因写「编号不符」。
           </li>
-          <li>在下面选这个文件，点上传。</li>
+          <li>
+            在下面选这个文件，点上传。也可以用命令行传（令牌在 <a href={`${BASE}me`} {...ext} className={link}>我的</a> 页生成，存到 <Code>~/.config/gkbench/token</Code>）：
+            <div className="my-1.5"><CodeBlock>{`python -m gkbench upload-problems AS-编号.gksave.json --set ${set}`}</CodeBlock></div>
+            结果一样逐道列出收下的和没收的原因。
+          </li>
         </ol>
         <h4 className="mt-3 mb-1 font-semibold text-ink">传上去会核对什么</h4>
         <ul className="list-disc space-y-1 pl-5">
