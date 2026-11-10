@@ -17,6 +17,20 @@ const PLAN_ORDER = ['PLAN1', 'PLAN2', 'PLAN3', 'COMMON']
 /** P 等级筛选：只看到这个制作人等级为止能拿到的（解锁等级不超过它，或不靠等级解锁） */
 const LV_STEPS = [10, 20, 30, 40, 50, 60, 70]
 const withinLv = (unlock: number | undefined, lv: number) => !lv || !unlock || unlock <= lv
+/** 技能卡分三组：基础卡（通用，按解锁 P 等级，开局就有的算 0）→ 角色卡（偶像固有）→ 特殊卡（支援卡事件、传说、トラブル） */
+const GROUPS = [
+  { key: 'base', title: '基础卡', note: '按解锁 P 等级排，开局就有的在最前' },
+  { key: 'idol', title: '角色卡', note: '偶像固有' },
+  { key: 'special', title: '特殊卡', note: '支援卡事件、传说、トラブル' },
+] as const
+function groupOf(id: string, c: CatalogCard): { g: number; sub: number } {
+  if (c.category === 'TROUBLE') return { g: 2, sub: 2 }
+  if (c.rarity === 'LEGEND') return { g: 2, sub: 1 }
+  const src = sourceOf(id)
+  if (src === 'support') return { g: 2, sub: 0 }
+  if (src === 'idol') return { g: 1, sub: 0 }
+  return { g: 0, sub: 0 }
+}
 const opt = (all: string, entries: [string, string][]) => [{ value: '', label: all }, ...entries.map(([value, label]) => ({ value, label }))]
 
 export function Cards() {
@@ -46,12 +60,14 @@ export function Cards() {
       )
       .map(([id, c]) => {
         const lv = c.up[String(up)] ?? c.up['0'] ?? { name: c.name, text: '' }
-        return { id, c, name: lv.name, text: lv.text }
+        return { id, c, name: lv.name, text: lv.text, ...groupOf(id, c) }
       })
       .filter((x) => !text || x.name.toLowerCase().includes(text) || x.text.toLowerCase().includes(text))
       .sort((a, b) =>
-        RARITY_ORDER.indexOf(a.c.rarity) - RARITY_ORDER.indexOf(b.c.rarity) ||
+        a.g - b.g || a.sub - b.sub ||
+        (a.g === 0 ? (a.c.unlock ?? 0) - (b.c.unlock ?? 0) : 0) ||
         PLAN_ORDER.indexOf(a.c.plan) - PLAN_ORDER.indexOf(b.c.plan) ||
+        RARITY_ORDER.indexOf(b.c.rarity) - RARITY_ORDER.indexOf(a.c.rarity) ||
         a.id.localeCompare(b.id),
       )
   }, [cat, q])
@@ -126,8 +142,21 @@ export function Cards() {
 
       {cat && tab === 'cards' && (
         cards.length === 0 ? <Empty>没有符合条件的技能卡，换个关键词或放宽筛选。</Empty> : (
-          <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
-            {cards.map(({ id, c, name, text: t }) => <CardTile key={id} id={id} c={c} name={name} text={t} onOpen={() => update({ card: id })} />)}
+          <div className="space-y-6">
+            {GROUPS.map((grp, gi) => {
+              const list = cards.filter((x) => x.g === gi)
+              if (list.length === 0) return null
+              return (
+                <section key={grp.key} aria-labelledby={`grp-${grp.key}`}>
+                  <h2 id={`grp-${grp.key}`} className="mb-2 flex items-baseline gap-2 text-[14px] font-bold text-ink">
+                    {grp.title}<span className="num text-[12px] font-normal text-ink-3">{list.length} 张 · {grp.note}</span>
+                  </h2>
+                  <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+                    {list.map(({ id, c, name, text: t }) => <CardTile key={id} id={id} c={c} name={name} text={t} onOpen={() => update({ card: id })} />)}
+                  </div>
+                </section>
+              )
+            })}
           </div>
         )
       )}
