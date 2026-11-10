@@ -65,7 +65,9 @@ export type AlgoDoc = {
 }
 
 export type Row = {
+  /** 最新那次运行；同一算法的多次运行在服务器合成一行，runs 是全部（新的在前，只有一次时没有） */
   run: string
+  runs?: string[]
   label: string
   algo: string
   params?: Record<string, unknown>

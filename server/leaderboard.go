@@ -6,6 +6,7 @@ package main
 //   耗时      每步思考的中位、95 分位、最长；每局思考总时长；超时步数
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
@@ -19,7 +20,8 @@ type Ratio struct {
 }
 
 type Row struct {
-	Run             string            `json:"run"`
+	Run             string            `json:"run"`            // 合并后：最新那次运行
+	Runs            []string          `json:"runs,omitempty"` // 合进这一行的全部运行，新的在前（只有一次时省略）
 	Label           string            `json:"label"`
 	Mode            string            `json:"mode"`
 	Uploader        string            `json:"by"`
@@ -159,11 +161,7 @@ func perProblem(idx []EpisodeSummary) map[key]EpisodeSummary {
 //	template  题模板，每题固定 32 个保密种子：同题同种子配对，和 fixed 一样；平均分是先按题平均再对题平均
 //	legacy    2026-11-09 以前的题模板评测（每次临时抽种子）：各算法种子不同，只能按题平均后比较
 func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
-	type run struct {
-		info  map[string]any
-		eps   map[key]EpisodeSummary
-		count int
-	}
+	type run = lbRun
 	legacy := kind == "legacy"
 	tmpl := kind == "template" || kind == "random" || legacy
 	var runs []run
@@ -188,8 +186,9 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 				m[key{e.ID, e.SeedIndex}] = e
 			}
 		}
-		runs = append(runs, run{info, m, len(idx)})
+		runs = append(runs, run{info: info, eps: m, count: len(idx), names: []string{name}})
 	}
+	runs = mergeRuns(runs, legacy)
 	oracle := map[key]float64{}
 	for _, r := range runs {
 		if privileged(r.info) {
@@ -203,7 +202,7 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 	var baseEps map[key]EpisodeSummary
 	if base != "" {
 		for _, r := range runs {
-			if r.info["label"] == base || r.info["run"] == base {
+			if r.info["label"] == base || r.info["run"] == base || contains(r.names, base) {
 				baseEps = r.eps
 			}
 		}
@@ -213,6 +212,11 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 		row := Row{Privileged: privileged(r.info), BudgetS: r.info["step_seconds"], N: r.count, Problems: len(r.eps),
 			Engine: r.info["engine"], Algo: r.info["algo"], SeedsPerProblem: r.info["seeds_per_problem"]}
 		row.Run, _ = r.info["run"].(string)
+		if len(r.names) > 1 {
+			for i := len(r.names) - 1; i >= 0; i-- {
+				row.Runs = append(row.Runs, r.names[i])
+			}
+		}
 		row.Label, _ = r.info["label"].(string)
 		row.Mode, _ = r.info["mode"].(string)
 		row.Uploader, _ = r.info["by"].(string)
@@ -316,4 +320,78 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 		return rows[i].Mean > rows[j].Mean
 	})
 	return rows, nil
+}
+
+// lbRun：排行里的一行在合并前后的样子。names 是合进来的运行，旧的在前。
+type lbRun struct {
+	info  map[string]any
+	eps   map[key]EpisodeSummary
+	count int
+	names []string
+}
+
+// runTime：运行的完成时间（没有就用开始 / 上传时间），用来决定合并时谁新。时间是 ISO 字符串，按字典序比就是按时间比。
+func runTime(info map[string]any) string {
+	for _, k := range []string{"finished", "uploaded", "started"} {
+		if v, ok := info[k].(string); ok && v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// mergeKey：同一个算法 = 评测种类、算法、参数、每步预算、提交人、来源、理论上限与否、规则版本都相同。
+// 规则版本不同的成绩不能直接比，不合并。
+func mergeKey(info map[string]any) string {
+	rules := any(nil)
+	if e, ok := info["engine"].(map[string]any); ok {
+		rules = e["rules_version"]
+	}
+	b, _ := json.Marshal([]any{info["kind"], info["algo"], info["label"], info["params"], info["step_seconds"],
+		info["by"], info["mode"], privileged(info), rules})
+	return string(b)
+}
+
+// mergeRuns：同一个算法的多次运行合成一行。按时间从旧到新叠：同一题同一种子以最新那次为准，
+// 表头信息（引擎、说明……）也取最新那次。局数：新版按合并后的局算；旧版评测每题只有一条平均，局数把各次加起来。
+func mergeRuns(runs []lbRun, legacy bool) []lbRun {
+	sort.SliceStable(runs, func(i, j int) bool {
+		ti, tj := runTime(runs[i].info), runTime(runs[j].info)
+		if ti != tj {
+			return ti < tj
+		}
+		return runs[i].names[0] < runs[j].names[0]
+	})
+	var out []lbRun
+	at := map[string]int{}
+	for _, r := range runs {
+		k := mergeKey(r.info)
+		i, ok := at[k]
+		if !ok {
+			at[k] = len(out)
+			out = append(out, lbRun{info: r.info, eps: map[key]EpisodeSummary{}, names: nil})
+			i = len(out) - 1
+		}
+		g := &out[i]
+		for kk, e := range r.eps {
+			g.eps[kk] = e
+		}
+		g.info = r.info
+		g.names = append(g.names, r.names...)
+		if legacy {
+			g.count += r.count
+		} else {
+			g.count = len(g.eps)
+		}
+	}
+	return out
+}
+
+func contains(xs []string, x string) bool {
+	for _, y := range xs {
+		if y == x {
+			return true
+		}
+	}
+	return false
 }

@@ -236,6 +236,14 @@ export function Leaderboard() {
                       </span>
                       <div className="truncate text-[11.5px] text-ink-3">
                         {[params, r.step_seconds != null && `每步 ${r.step_seconds} s`, r.by].filter(Boolean).join(' · ')}
+                        {r.runs && r.runs.length > 1 && (
+                          <>
+                            {' · '}
+                            <Tip tip={<>同一算法的 {r.runs.length} 次运行合成一行，同题同种子取最新那次。点这一行进最新那次：<span className="mt-1 block font-mono text-[11px] whitespace-pre-line">{r.runs.join('\n')}</span></>}>
+                              <span tabIndex={0} className="cursor-help underline decoration-dotted underline-offset-2">合并 {r.runs.length} 次运行</span>
+                            </Tip>
+                          </>
+                        )}
                       </div>
                     </td>
                     {hasOracle && (
