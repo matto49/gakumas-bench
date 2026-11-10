@@ -203,7 +203,7 @@ export function Leaderboard() {
                   </SortHead>
                 )}
                 <SortHead k="mean" sort={sort} dir={dir} onSort={onSort} help="每道题先求平均，再对题求平均。">平均分</SortHead>
-                <SortHead k="p50" sort={sort} dir={dir} onSort={onSort} help="每步思考时间的中位数 / 95 分位。托管按服务器计时。理论上限开局一次算完整场，这里显示它开局求解的时间。">
+                <SortHead k="p50" sort={sort} dir={dir} onSort={onSort} help="每步思考时间的中位数 / 95 分位。只有标「固定机器」的成绩在同一台机器上跑，耗时互相可比；托管按服务器计时，含网络往返。理论上限开局一次算完整场，这里显示它开局求解的时间。">
                   每步
                 </SortHead>
                 <th scope="col" className="px-3 py-2.5 text-right font-semibold text-ink-2">每局思考</th>
@@ -237,10 +237,15 @@ export function Leaderboard() {
                             <Badge tabIndex={0} variant="outline" className="whitespace-nowrap border-critical/60 text-critical">看牌序</Badge>
                           </Tip>
                         )}
+                        {r.fixed_machine && (
+                          <Tip tip={<>算法提交到仓库后，由固定的评测机跑：{r.machine || '作者的 Mac'}，同一个 Python 环境、沙盒里单独进程、机器空闲时才跑。只有这类成绩的耗时互相可比。</>}>
+                            <Badge tabIndex={0} variant="outline" className="whitespace-nowrap">固定机器</Badge>
+                          </Tip>
+                        )}
                         {r.about && <Help tip={<>{r.about.summary}<span className="mt-1 block text-ink-3">点算法名看完整说明和实现链接。</span></>} />}
                       </span>
                       <div className="truncate text-[11.5px] text-ink-3">
-                        {[params, r.step_seconds != null && `每步 ${r.step_seconds} s`, r.by].filter(Boolean).join(' · ')}
+                        {[params, r.step_seconds != null && `每步 ${r.step_seconds} s`, r.author || r.by].filter(Boolean).join(' · ')}
                         {r.runs && r.runs.length > 1 && (
                           <>
                             {' · '}

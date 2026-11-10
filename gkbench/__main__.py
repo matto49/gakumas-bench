@@ -15,6 +15,9 @@
   hosted --set NAME --algo SPEC [--budget 秒] [...]            固定种子托管跑（hosted）
   eval --set NAME --algo SPEC [--seeds 32] [--parallel 3] [--resume 评测编号]
                                                                保密种子评测：每个题模板 32 个固定种子，只在服务器（hosted）
+评测机（固定一台 Mac 跑仓库里提交的算法，见 gkbench/bench_runner.py）
+  submissions check                                            检查 submissions/ 下每个提交的格式（PR 的 CI 用）
+  runner [--once] [--pull] [--dry-run] [--now] [--only 标签,...] [--no-upload] [--install-launchd]
 审查存档（gkms.audition_save.v2）
   save export --set NAME [--runs RUN_DIR...] [--no-fixed] [--no-templates] --out FILE.jsonl
   save check FILE... [--no-replay]                             按第 5 章核对，并重放答
@@ -93,6 +96,19 @@ def main(argv=None):
     hp.add_argument("--label", default=None)
     hp.add_argument("--server", default=None)
 
+    sm = sub.add_parser("submissions")
+    sm.add_argument("scmd", choices=["check"])
+    rn = sub.add_parser("runner")
+    rn.add_argument("--once", action="store_true", help="跑一轮就退出（launchd 定时叫）")
+    rn.add_argument("--pull", action="store_true", help="先拉 develop")
+    rn.add_argument("--dry-run", action="store_true", help="只列出要跑的提交")
+    rn.add_argument("--now", action="store_true", help="不等机器空闲（调试用，计时不算数）")
+    rn.add_argument("--only", default=None, help="只跑这些 label，逗号分隔")
+    rn.add_argument("--no-upload", action="store_true")
+    rn.add_argument("--min-idle", type=float, default=600.0, help="多少秒没动键鼠才开跑")
+    rn.add_argument("--max-load", type=float, default=3.0)
+    rn.add_argument("--interval", type=float, default=900.0, help="不加 --once 时每轮间隔秒数；--install-launchd 的间隔")
+    rn.add_argument("--install-launchd", action="store_true", help="装成 launchd 定时任务")
     ep = sub.add_parser("eval")
     ep.add_argument("--set", required=False)
     ep.add_argument("--algo", required=True)
@@ -203,6 +219,30 @@ def main(argv=None):
         else:
             evaluate(a.set, a.algo, a.seeds, a.parallel, a.budget, a.label, a.only.split(",") if a.only else None,
                      a.resume, a.server)
+    elif a.cmd == "submissions":
+        from .bench_runner import load_submissions
+        subs = load_submissions()
+        bad = [x for x in subs if x.get("error")]
+        for x in subs:
+            print(f"{'✗' if x.get('error') else '✓'} {x['name']}: {x.get('error') or x.get('label')}")
+        if not subs:
+            print("submissions/ 下还没有提交")
+        sys.exit(1 if bad else 0)
+    elif a.cmd == "runner":
+        from . import bench_runner as BR
+        if a.install_launchd:
+            print(f"已装好：{BR.install_launchd(a.interval)}（停用：launchctl unload 这个文件）")
+            return
+        only = set(a.only.split(",")) if a.only else None
+        kw = dict(pull=a.pull, dry_run=a.dry_run, min_idle=a.min_idle, max_load=a.max_load, only=only, now=a.now,
+                  upload=not a.no_upload)
+        if a.once or a.dry_run:
+            BR.run_once(**kw)
+        else:
+            import time as _t
+            while True:
+                BR.run_once(**kw)
+                _t.sleep(a.interval)
     elif a.cmd == "save":
         from . import save
         if a.scmd == "make":   # 只用格式模块，不需要 GKMS

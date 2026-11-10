@@ -47,6 +47,10 @@ type Row struct {
 	Engine          any               `json:"engine"`
 	Algo            any               `json:"algo"`
 	About           *AlgoDoc          `json:"about,omitempty"`
+	// 评测机（gkbench runner）在固定的一台 Mac 上跑的提交：只有这类运行的耗时互相可比
+	FixedMachine bool   `json:"fixed_machine,omitempty"`
+	Machine      string `json:"machine,omitempty"`
+	Author       string `json:"author,omitempty"` // 提交人（评测机由管理员上传，by 是管理员）
 }
 
 // Group 按题目标签分组后的成绩：相对上限（有上限时）、相对基准（选了基准时）、平均分
@@ -225,6 +229,13 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 		row.Params = r.info["params"]
 		row.SeesSeed, _ = r.info["sees_seed"].(bool)
 		row.About = algoDoc(r.info)
+		if r.info["fixed_machine"] == true {
+			row.FixedMachine = true
+			row.Machine, _ = r.info["machine"].(string)
+			if s, ok := r.info["submission"].(map[string]any); ok {
+				row.Author, _ = s["author"].(string)
+			}
+		}
 		var think []float64
 		var vsO, vsB [][2]float64
 		sum, epThink := 0.0, 0.0
@@ -350,7 +361,7 @@ func mergeKey(info map[string]any) string {
 		rules = e["rules_version"]
 	}
 	b, _ := json.Marshal([]any{info["kind"], info["algo"], info["label"], info["params"], info["step_seconds"],
-		info["by"], info["mode"], privileged(info), rules})
+		info["by"], info["mode"], privileged(info), rules, info["fixed_machine"] == true})
 	return string(b)
 }
 

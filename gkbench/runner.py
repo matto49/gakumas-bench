@@ -119,8 +119,9 @@ def play_episode(problem, seed_row, algo, budget, keep_obs=True):
 
 
 def run(set_name, algo, budget=5.0, seed_indices=None, only=None, label=None, keep_obs=True, out_root=None,
-        progress=None, by=None, template=False):
-    """template=True：在题模板的固定保密种子上跑（只给理论上限这类内部运行用，种子要在本机 private/ 里）"""
+        progress=None, by=None, template=False, extra=None, between=None):
+    """template=True：在题模板的固定保密种子上跑（只给理论上限这类内部运行用，种子要在本机 private/ 里）
+    extra：并进 run.json 的额外字段（评测机写机器、沙盒、提交来源）；between()：每局开始前调用（评测机在这里等机器空闲）"""
     progress = progress or (lambda m: print(m, flush=True))
     probs = load_set(set_name, only, template=template)
     engine.setup()
@@ -134,7 +135,7 @@ def run(set_name, algo, budget=5.0, seed_indices=None, only=None, label=None, ke
             **run_header(algo, budget, by or getpass.getuser()), "privileged": bool(algo.privileged),
             "sees_seed": bool(getattr(algo, "sees_seed", False)),
             "seed_indices": seed_indices, "only": only, "engine": engine.provenance(),
-            "started": datetime.now(timezone.utc).isoformat()}
+            "started": datetime.now(timezone.utc).isoformat(), **(extra or {})}
     if template:
         from .problems import TEMPLATE_SEEDS_VERSION
         info.update(template_seeds=TEMPLATE_SEEDS_VERSION, seeds_per_problem=max(len(s) for _, s in probs))
@@ -147,6 +148,8 @@ def run(set_name, algo, budget=5.0, seed_indices=None, only=None, label=None, ke
             for row in seeds:
                 if seed_indices is not None and int(row["index"]) not in seed_indices:
                     continue
+                if between is not None:
+                    between()
                 ep = play_episode(p, row, algo, budget, keep_obs)
                 ep["run"] = run_id
                 tw.write(json.dumps(ep, ensure_ascii=False) + "\n")

@@ -94,6 +94,13 @@ export type Row = {
   groups?: Record<string, Group>
   engine: Engine
   about?: AlgoDoc
+  /** 在真实局面上搜索（等于知道之后抽什么）的算法 */
+  sees_seed?: boolean
+  /** 评测机在固定的一台 Mac 上跑的提交：耗时互相可比 */
+  fixed_machine?: boolean
+  machine?: string
+  /** 提交人（评测机的运行由管理员上传，by 是管理员） */
+  author?: string
 }
 
 export type EpisodeSummary = {

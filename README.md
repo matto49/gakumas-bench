@@ -146,7 +146,12 @@
 
 ### 接自己的算法
 
-不用改本仓库，也不需要 GKMS：写一个 `.py` 文件，装好本包、拿到令牌，就能托管评测进排行。
+**进排行看耗时**：把算法提交到 [`submissions/`](submissions/README.md)（开 PR）。合并后由固定的评测机（作者的 Mac：Apple M4，16 GB）
+在空闲时用保密种子跑完、上传，排行标「固定机器」：所有提交同一台机器、同一个 Python 环境，算法在 `sandbox-exec` 沙盒的单独进程里跑
+（断网、读不到种子和机器上的其他文件，裁判在另一个进程，见 `gkbench/sandbox.py`），所以耗时可以互相比。
+评测机：`python -m gkbench runner --once --pull`，launchd 每 15 分钟叫一次（`--install-launchd` 装），见 `gkbench/bench_runner.py`。
+
+**自己跑（托管评测，耗时不可比）**：不用改本仓库，也不需要 GKMS：写一个 `.py` 文件，装好本包、拿到令牌，就能托管评测进排行。
 
 1. 装包：`pip install "gkbench @ git+https://github.com/matto49/gakumas-bench"`（Python 3.10+，只装 httpx、zstandard）。
 2. 令牌：网页「我的」页生成，存到 `~/.config/gkbench/token`（或设 `GKBENCH_TOKEN`）。

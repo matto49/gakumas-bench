@@ -1,0 +1,8 @@
+{
+  "label": "first-playable",
+  "entry": "algo.py:FirstPlayable",
+  "params": {},
+  "author": "your-github-name",
+  "sets": ["hif-live"],
+  "step_seconds": 5
+}

@@ -26,3 +26,19 @@ func TestMergeRunsSameAlgo(t *testing.T) {
 		t.Fatalf("同题同种子应取最新那次、其余并起来：count=%d B=%v A=%v", m.count, m.eps[key{"B", 0}].Score, m.eps[key{"A", 0}].Score)
 	}
 }
+
+func TestMergeRunsKeepsFixedMachineSeparate(t *testing.T) {
+	info := func(run string, fixed bool) map[string]any {
+		m := map[string]any{"run": run, "finished": "2026-11-10T00:00:00Z", "kind": "template", "algo": "external:x", "label": "x",
+			"step_seconds": 5, "by": "matto", "mode": "self", "engine": map[string]any{"rules_version": 55}}
+		if fixed {
+			m["fixed_machine"] = true
+		}
+		return m
+	}
+	a := lbRun{info: info("fixed", true), names: []string{"fixed"}, eps: map[key]EpisodeSummary{{"A", 0}: {Score: 1}}}
+	b := lbRun{info: info("own", false), names: []string{"own"}, eps: map[key]EpisodeSummary{{"A", 0}: {Score: 2}}}
+	if out := mergeRuns([]lbRun{a, b}, false); len(out) != 2 {
+		t.Fatalf("固定机器和自己机器的运行耗时不可比，不能合成一行：得到 %d 行", len(out))
+	}
+}

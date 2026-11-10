@@ -261,7 +261,11 @@ export function Home() {
             交成绩
           </HomeTitle>
           <dl className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
-            <Way title="托管评测" tag="进排行" strong body="每题随机 32 种牌序，只有服务器知道，算法每步向服务器要画面、交动作，用时按服务器计。PIMC 这类算法可以向服务器要「可能的世界」。断了用 --resume 接着跑。">
+            <Way title="提交到仓库" tag="固定机器" strong body="把算法放进仓库的 submissions/ 开 PR，合并后由固定的评测机（作者的 Mac，Apple M4）在空闲时跑完上传。所有提交同一台机器、同一个环境、沙盒里单独进程，所以耗时可以互相比。">
+              {`submissions/<你的算法>/algo.py
+submissions/<你的算法>/submission.json`}
+            </Way>
+            <Way title="托管评测" tag="自测" body="每题随机 32 种牌序，只有服务器知道，算法每步向服务器要画面、交动作，用时按服务器计。PIMC 这类算法可以向服务器要「可能的世界」。断了用 --resume 接着跑。">
               {`python -m gkbench eval --set hif-live --algo uinet --parallel 3`}
             </Way>
           </dl>
