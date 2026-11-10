@@ -15,7 +15,9 @@ def _registry():
     from .uinet import UinetAlgo
     from .official_ai import OfficialAIAlgo
     from .hiro import HiroRulesAlgo
-    return {"random": RandomAlgo, "greedy": GreedyAlgo, "uinet": UinetAlgo, "pimc": PimcAlgo, "oracle": OracleAlgo, "official-ai": OfficialAIAlgo, "hiro-rules": HiroRulesAlgo}
+    from .evo import EvoAlgo, HybridAlgo, OlmcAlgo
+    return {"random": RandomAlgo, "greedy": GreedyAlgo, "uinet": UinetAlgo, "pimc": PimcAlgo, "oracle": OracleAlgo, "official-ai": OfficialAIAlgo, "hiro-rules": HiroRulesAlgo,
+            "evo": EvoAlgo, "olmc": OlmcAlgo, "hybrid": HybridAlgo}
 
 
 def _value(v):
