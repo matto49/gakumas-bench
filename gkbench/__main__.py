@@ -105,6 +105,8 @@ def main(argv=None):
     ep.add_argument("--label", default=None)
     ep.add_argument("--resume", default=None, help="接着跑某次评测没打完的局")
     ep.add_argument("--server", default=None)
+    ep.add_argument("--hosted", action="store_true",
+                    help="强制托管跑。默认：本机有这套题的保密种子文件（管理员）就在本机跑完再上传，没有就托管")
 
     sv = sub.add_parser("save")
     ss = sv.add_subparsers(dest="scmd", required=True)
@@ -187,8 +189,23 @@ def main(argv=None):
         from .client import evaluate
         if not a.set and not a.resume:
             sys.exit("要 --set（新评测）或 --resume（接着跑）")
-        evaluate(a.set, a.algo, a.seeds, a.parallel, a.budget, a.label, a.only.split(",") if a.only else None,
-                 a.resume, a.server)
+        from .problems import template_seeds_path
+        if not a.hosted and not a.resume and template_seeds_path(a.set).is_file():
+            # 管理员本机有保密种子：整局在本机跑（不走网络、不受服务器重启影响），跑完上传，服务器按它的种子逐局核对
+            from .algos import make
+            from .client import upload
+            from .runner import run
+            algo = make(a.algo)
+            if algo.privileged:
+                sys.exit("理论上限用 gkbench run --template")
+            print(f"本机有 {a.set} 的保密种子，在本机跑（要托管跑加 --hosted）", flush=True)
+            out = run(a.set, algo, a.budget, list(range(a.seeds)), a.only.split(",") if a.only else None,
+                      a.label, keep_obs=True, template=True)
+            r = upload(out, a.server)
+            print(f"上传完成：{r}")
+        else:
+            evaluate(a.set, a.algo, a.seeds, a.parallel, a.budget, a.label, a.only.split(",") if a.only else None,
+                     a.resume, a.server)
     elif a.cmd == "save":
         from . import archive, save
         if a.scmd == "export":

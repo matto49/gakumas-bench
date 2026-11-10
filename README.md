@@ -68,6 +68,8 @@
 
 2026-11-09 以前的题模板评测是每次临时抽种子，各算法种子不同，和现在的成绩不可比；运行里没有 `template_seeds` 字段，排行里单独列在「旧版评测」（`kind=legacy`）。
 
+在哪台机器上跑：算法总在跑评测的那台机器上算。托管时裁判（推进对局、生成「可能的世界」）在服务器上，每一步都要来回一次网络；所以**管理员默认在自己机器上整局跑完再上传**：本机有 `private/seeds/<题集>.template.json` 时，`gkbench eval` 直接在本机跑保密种子（不受网络和服务器重启影响），跑完上传，服务器按它自己的保密种子逐局重放核对，记为「内置」（`mode=internal`）。要托管跑加 `--hosted`；没有种子文件的普通用户只能托管。只有管理员能上传保密种子运行和理论上限。
+
 理论上限（管理员）：把服务器的 `private/template-seed.key` 和 `private/seeds/<题集>.template.json` 拷到本机（600），`gkbench run --set <题集> --algo oracle:seconds=30 --template --label oracle-30s`，再把运行目录放到服务器的 `runs/` 下。
 
 托管跑时，需要「可能的世界」的算法（PIMC 等）可以向服务器要：服务器把山札顺序、随机数、种子都重抽后导出发给客户端（约 3 KB / 个）；`tests/test_worlds.py` 检查导出数据里没有真种子。

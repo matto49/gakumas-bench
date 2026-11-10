@@ -317,8 +317,19 @@ func (a *App) handleUpload(w http.ResponseWriter, r *http.Request, u string) {
 		fail(w, 400, "run.json 格式不对（要 gkbench.run.v2）")
 		return
 	}
+	// 保密种子的运行：只有管理员（手里有保密种子、在自己机器上跑）能整次上传；别人只能托管跑
 	if info["kind"] == "template" {
-		fail(w, 400, "题模板（保密种子）的成绩只能托管跑，不能上传整次运行")
+		if !isAdmin(u) {
+			fail(w, 403, "题模板（保密种子）的成绩只能托管跑（gkbench eval），不能上传整次运行")
+			return
+		}
+		if info["template_seeds"] != TemplateSeedsVersion {
+			fail(w, 400, "保密种子运行要带 template_seeds="+TemplateSeedsVersion)
+			return
+		}
+	}
+	if privileged(info) && !isAdmin(u) {
+		fail(w, 403, "看种子的理论上限只能由管理员上传")
 		return
 	}
 	runID := slug(fmt.Sprintf("%v-%s", info["run"], u))
@@ -369,7 +380,21 @@ func (a *App) verify(j *Job, info map[string]any, tmp string, u string) {
 		return
 	}
 	setJob(func() { j.Total = len(eps) })
+	template := info["kind"] == "template"
 	seeds := a.store.Seeds(set)
+	if template { // 按服务器上的保密种子核对：格子号就是种子在这组里的下标
+		ts, err := a.store.TemplateSeeds(set)
+		if err != nil {
+			setJob(func() { j.Status, j.Error = "error", "读不了保密种子："+err.Error() })
+			return
+		}
+		seeds = map[string][]SeedRow{}
+		for pid, l := range ts {
+			for i, s := range l.Seeds {
+				seeds[pid] = append(seeds[pid], SeedRow{Index: i, Seed: s, Split: "template", Label: "保密"})
+			}
+		}
+	}
 	ok := make([]bool, len(eps))
 	reasons := make([]string, len(eps))
 	// 多个引擎子进程并行核对
@@ -410,11 +435,20 @@ func (a *App) verify(j *Job, info map[string]any, tmp string, u string) {
 		setJob(func() { j.Status = "rejected" })
 		return
 	}
-	// 上传的成绩一律是 self（自报）：服务器核对过分数，但证明不了算法没偷看种子；by 以令牌为准
-	if info["mode"] != "self" && info["mode"] != nil {
+	// 上传的成绩一律是 self（自报）：服务器核对过分数，但证明不了算法没偷看种子；by 以令牌为准。
+	// 例外：管理员在自己机器上跑的保密种子运行记为 internal（内置）；看种子的理论上限也是 internal
+	mode := "self"
+	if template || privileged(info) {
+		mode = "internal"
+	}
+	if info["mode"] != mode && info["mode"] != nil {
 		info["claimed_mode"] = info["mode"]
 	}
-	info["run"], info["by"], info["mode"], info["uploaded"], info["kind"] = j.Run, u, "self", now(), "fixed"
+	kind := "fixed"
+	if template {
+		kind = "template"
+	}
+	info["run"], info["by"], info["mode"], info["uploaded"], info["kind"] = j.Run, u, mode, now(), kind
 	info["verified"] = map[string]any{"accepted": len(accepted), "rejected": len(eps) - len(accepted), "engine": a.engineInfo}
 	a.store.mu.Lock()
 	err := a.store.WriteRun(j.Run, info, accepted)

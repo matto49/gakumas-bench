@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -103,5 +104,31 @@ func TestStoreProblemDedupe(t *testing.T) {
 	}
 	if w := do("DELETE", "/api/sets/s1/problems/AS-AAAAAAAA", "", "boss"); w.Code != 200 || len(app.store.Problems("s1")) != 0 {
 		t.Fatalf("管理员删题失败 %d", w.Code)
+	}
+}
+
+func TestUploadPermissions(t *testing.T) {
+	app, _ := collApp(t)
+	tokA, _ := app.store.issueToken("alice", "cli", "", 0)
+	try := func(info string) int {
+		var b strings.Builder
+		mw := multipart.NewWriter(&b)
+		fw, _ := mw.CreateFormFile("run_json", "run.json")
+		fw.Write([]byte(info))
+		fw, _ = mw.CreateFormFile("episodes", "episodes.jsonl.zst")
+		fw.Write([]byte("x"))
+		mw.Close()
+		r := httptest.NewRequest("POST", "/api/runs", strings.NewReader(b.String()))
+		r.Header.Set("Content-Type", mw.FormDataContentType())
+		r.Header.Set("Authorization", "Bearer "+tokA)
+		w := httptest.NewRecorder()
+		app.auth(app.handleUpload)(w, r)
+		return w.Code
+	}
+	if c := try(`{"schema":"gkbench.run.v2","run":"x","set":"official-set","kind":"template","template_seeds":"fixed32.v1"}`); c != 403 {
+		t.Fatalf("普通用户上传了保密种子运行：%d", c)
+	}
+	if c := try(`{"schema":"gkbench.run.v2","run":"y","set":"official-set","kind":"fixed","privileged":true}`); c != 403 {
+		t.Fatalf("普通用户上传了理论上限：%d", c)
 	}
 }
