@@ -134,7 +134,7 @@ func resize(src, dst string, size int) error {
 
 func main() {
 	master := flag.String("master", "", "GKMS 主数据目录（ro/master/tables）")
-	cardsDir := flag.String("cards", "", "技能卡小图目录，多个用逗号隔开")
+	cardsDir := flag.String("cards", "", "技能卡、P 道具小图目录，多个用逗号隔开")
 	drinksDir := flag.String("drinks", "", "饮料小图目录")
 	out := flag.String("out", "", "输出目录")
 	size := flag.Int("size", 96, "小图边长")
@@ -209,7 +209,7 @@ func main() {
 	items := map[string]Thing{}
 	for _, r := range readTable(*master, "ProduceItem") {
 		items[str(r, "id")] = Thing{Name: str(r, "name"), Rarity: short("PRODUCE_ITEM_RARITY_", enumName(r, "rarity")),
-			Plan: short("PRODUCE_PLAN_TYPE_", enumName(r, "planType")), Text: describe(r)}
+			Plan: short("PRODUCE_PLAN_TYPE_", enumName(r, "planType")), Text: describe(r), Asset: sprite(str(r, "assetId"))}
 	}
 	chars := map[string]string{}
 	for _, r := range readTable(*master, "Character") {

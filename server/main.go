@@ -144,7 +144,8 @@ func main() {
 	mux.HandleFunc("GET /api/sets/{set}/saves", O(app.handleSetSaves))
 	static := filepath.Join(data, "static")
 	mux.HandleFunc("GET /api/catalog", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=3600")
+		// 每次都问一下有没有更新（没变时回 304，不重新下载），换了目录马上生效
+		w.Header().Set("Cache-Control", "public, no-cache")
 		http.ServeFile(w, r, filepath.Join(static, "catalog.json"))
 	})
 	mux.HandleFunc("GET /api/auth", O(app.handleAuthInfo))

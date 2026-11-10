@@ -305,7 +305,6 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
         <tbody>
           {rows.map((p) => {
             const sc = p.scene ?? {}
-            const items = (sc.items ?? []).map((id) => cat?.items[id]?.name ?? id)
             return (
               <tr key={p.id} className="border-b border-line last:border-0 hover:bg-brand-tint">
                 <td className="max-w-[320px] px-3 py-2">
@@ -324,7 +323,15 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
                 <td className="num px-3 py-2 text-right">{sc.turns ?? '—'}</td>
                 <td className="num px-3 py-2 text-right">{sc.deck ?? '—'} 张</td>
                 <td className="px-3 py-2">
-                  {items.length ? <Tip tip={<span className="block whitespace-pre-line">{items.join('\n')}</span>} wide><span tabIndex={0} className="text-ink-2">{items.length} 个</span></Tip> : <span className="text-ink-3">—</span>}
+                  <span className="flex flex-wrap gap-1">
+                    {(sc.items ?? []).map((id, i) => {
+                      const it = cat?.items[id]
+                      return it?.asset
+                        ? <Tip key={i} tip={<><b>{it.name}</b><br /><span className="whitespace-pre-line">{it.text}</span></>} wide><img tabIndex={0} src={spriteUrl(it.asset)} alt={it.name} width={22} height={22} className="size-[22px] object-contain" /></Tip>
+                        : <span key={i} className="text-[11.5px] text-ink-3">{it?.name ?? id}</span>
+                    })}
+                    {!sc.items?.length && <span className="text-ink-3">—</span>}
+                  </span>
                 </td>
                 <td className="px-3 py-2">
                   <span className="flex gap-1">
