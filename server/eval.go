@@ -19,7 +19,6 @@ import (
 	"sync"
 )
 
-
 type Eval struct {
 	ID      string             `json:"id"`
 	User    string             `json:"user"`

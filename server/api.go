@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -28,6 +27,7 @@ type App struct {
 	hosted   map[string]*Hosted
 
 	engineInfo any
+	github     githubConf
 }
 
 // ---------------------------------------------------------------- 工具
@@ -71,14 +71,7 @@ func (a *App) userOf(r *http.Request) (string, string) {
 	if tok == "" {
 		return "", ""
 	}
-	var tokens map[string]struct {
-		User string `json:"user"`
-	}
-	if readJSON(filepath.Join(a.store.Data, "private", "tokens.json"), &tokens) != nil {
-		return "", ""
-	}
-	h := sha256.Sum256([]byte(tok))
-	return tokens[hex.EncodeToString(h[:])].User, tok
+	return a.store.lookupToken(tok), tok
 }
 
 // auth 包一层：没有有效令牌返回 401；带 ?token= 时写进 cookie，浏览器之后不用再带
@@ -119,7 +112,11 @@ func (s *Store) SetConfigs() map[string]SetConfig {
 // ---------------------------------------------------------------- 题库
 
 func (a *App) handleMe(w http.ResponseWriter, r *http.Request, u string) {
-	writeJSONResp(w, 200, map[string]any{"user": u, "engine": a.engineInfo})
+	out := map[string]any{"user": u, "engine": a.engineInfo}
+	if p := a.store.userProfile(u); p != nil {
+		out["github"], out["name"], out["avatar"] = p.Login, p.Name, p.Avatar
+	}
+	writeJSONResp(w, 200, out)
 }
 
 func (a *App) handleSets(w http.ResponseWriter, r *http.Request, u string) {

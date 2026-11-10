@@ -16,7 +16,7 @@ const pill = ({ isActive }: { isActive: boolean }) =>
   )
 
 export function Layout() {
-  const me = useApi<{ user: string }>('api/me')
+  const me = useApi<{ user: string; avatar?: string }>('api/me')
   return (
     <div className="flex min-h-dvh flex-col overflow-x-clip">
       <header className="sticky top-0 z-40 bg-brand-deep text-white">
@@ -35,7 +35,7 @@ export function Layout() {
             </nav>
             <div className="ml-auto">
               <NavLink to="/me" className={(s) => cx(pill(s), 'inline-flex items-center gap-1.5')}>
-                <UserRound size={14} aria-hidden />
+                {me.data?.avatar ? <img src={me.data.avatar} alt="" width={18} height={18} className="size-[18px] rounded-full" /> : <UserRound size={14} aria-hidden />}
                 {me.data?.user ?? '登录'}
               </NavLink>
             </div>

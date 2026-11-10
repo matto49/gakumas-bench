@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, CircleAlert, Loader2, LogOut, Upload } from 'lucide-react'
+import { CheckCircle2, CircleAlert, Copy, KeyRound, Loader2, LogOut, Trash2, Upload } from 'lucide-react'
 import { api, ApiError, BASE, type Job } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { when } from '../lib/format'
@@ -8,21 +8,30 @@ import { SET_INFO } from '../lib/game'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { Code, CodeBlock, cx, Empty, ErrorState, ModeBadge, PageHeader, SectionTitle, TableSkeleton } from '../components/ui'
+import { btn, Code, CodeBlock, cx, Empty, ErrorState, ModeBadge, PageHeader, SectionTitle, TableSkeleton } from '../components/ui'
 
 type MyRun = { run: string; label: string; set: string; kind?: string; mode?: string; uploaded?: string; finished?: string; started?: string; episodes?: number; verified?: { accepted: number; rejected?: number }; privileged?: boolean }
 
+type MeInfo = { user: string; github?: string; name?: string; avatar?: string; engine: { rules_version?: number } }
+
 export function Me() {
-  const me = useApi<{ user: string; engine: { rules_version?: number } }>('api/me')
+  const me = useApi<MeInfo>('api/me')
   if (me.loading && !me.data) return <TableSkeleton rows={4} />
   if (me.error instanceof ApiError && me.error.status === 401) return <Login onDone={me.reload} />
   if (me.error) return <ErrorState error={me.error} onRetry={me.reload} />
-  return <Dashboard user={me.data!.user} />
+  return <Dashboard me={me.data!} />
 }
 
+const GithubMark = () => (
+  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden fill="currentColor">
+    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+  </svg>
+)
+
 function Login({ onDone }: { onDone: () => void }) {
+  const auth = useApi<{ github: boolean }>('api/auth')
   const [tok, setTok] = useState('')
-  const [err, setErr] = useState('')
+  const [err, setErr] = useState(() => new URLSearchParams(location.search).get('login_error') ?? '')
   const [busy, setBusy] = useState(false)
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,31 +47,40 @@ function Login({ onDone }: { onDone: () => void }) {
     }
   }
   return (
-    <div className="max-w-[560px] py-6">
-      <PageHeader title="登录" sub="看排行和复盘不用登录。交成绩、托管跑要令牌。" />
-      <form onSubmit={submit} className="space-y-3">
-        <label className="block">
-          <span className="mb-1 block font-medium text-ink">令牌</span>
+    <div className="max-w-[480px] py-6">
+      <PageHeader title="登录" sub="看排行和复盘不用登录。交成绩、托管跑要登录。" />
+      {err && <p className="mb-4 rounded-lg bg-surface-2 px-3 py-2 text-critical">{err}</p>}
+      {auth.data?.github !== false && (
+        <div className="rounded-xl border border-line bg-surface p-5">
+          <a href={`${BASE}api/auth/github?next=/me`} className={cx(btn.primary, 'w-full')} aria-disabled={!auth.data}>
+            <GithubMark /> 用 GitHub 登录
+          </a>
+          <p className="mt-3 text-[12.5px] text-ink-3">第一次登录会自动建账号，用户名取你的 GitHub 名。只读公开信息，不要仓库权限。</p>
+        </div>
+      )}
+      <details className="mt-5 group/tok">
+        <summary className="cursor-pointer text-[13px] text-ink-2 hover:text-brand-ink">已经有命令行令牌？粘贴登录</summary>
+        <form onSubmit={submit} className="mt-3 space-y-3">
           <Input
             type="password"
             autoComplete="off"
+            aria-label="令牌"
             value={tok}
             onChange={(e) => setTok(e.target.value)}
             className="h-10 font-mono"
             placeholder="粘贴令牌"
           />
-        </label>
-        {err && <p className="text-critical">{err}</p>}
-        <Button type="submit" disabled={!tok.trim() || busy}>
-          {busy && <Loader2 size={15} className="animate-spin" aria-hidden />}登录
-        </Button>
-        <p className="text-[12.5px] text-ink-3">令牌存在这个浏览器的 cookie 里，180 天有效。没有令牌找管理员要。</p>
-      </form>
+          <Button type="submit" variant="outline" disabled={!tok.trim() || busy}>
+            {busy && <Loader2 size={15} className="animate-spin" aria-hidden />}登录
+          </Button>
+        </form>
+      </details>
     </div>
   )
 }
 
-function Dashboard({ user }: { user: string }) {
+function Dashboard({ me }: { me: MeInfo }) {
+  const user = me.user
   const runs = useApi<MyRun[]>('api/me/runs')
   const [jobs, setJobs] = useState<Job[]>([])
   const refreshJobs = () => api<Job[]>('api/me/jobs').then(setJobs).catch(() => {})
@@ -91,7 +109,13 @@ function Dashboard({ user }: { user: string }) {
   return (
     <div>
       <PageHeader
-        title={`我的 · ${user}`}
+        title={
+          <span className="inline-flex items-center gap-2.5">
+            {me.avatar && <img src={me.avatar} alt="" width={30} height={30} className="size-[30px] rounded-full ring-1 ring-line" />}
+            我的 · {user}
+            {me.github && me.github.toLowerCase() !== user && <span className="text-[13px] font-normal text-ink-3">GitHub @{me.github}</span>}
+          </span>
+        }
         right={
           <Button variant="outline" size="sm" onClick={logout}>
             <LogOut size={14} aria-hidden />退出
@@ -151,14 +175,7 @@ function Dashboard({ user }: { user: string }) {
         <aside className="space-y-8">
           <SaveUploadForm onStarted={refreshJobs} />
           <UploadForm onStarted={refreshJobs} />
-          <section>
-            <SectionTitle>命令行</SectionTitle>
-            <p className="mb-2 text-ink-2">令牌存进 <Code>~/.config/gkbench/token</Code>（权限 600）：</p>
-            <CodeBlock>{`python -m gkbench run --set hif-live --algo uinet
-python -m gkbench upload <运行目录>
-python -m gkbench eval --set hif-live --algo uinet`}</CodeBlock>
-            <p className="mt-2 text-[12.5px] text-ink-3">服务器默认 https://hiro.matto.top/gkbench，用 <Code>GKBENCH_SERVER</Code> 改。</p>
-          </section>
+          <CliTokens />
         </aside>
       </div>
     </div>
@@ -290,6 +307,86 @@ function SaveUploadForm({ onStarted }: { onStarted: () => void }) {
         </Button>
         {msg && <p className={cx('text-[12.5px]', msg.ok ? 'text-ink-2' : 'text-critical')}>{msg.text}</p>}
       </form>
+    </section>
+  )
+}
+
+type CliToken = { id: string; name: string; kind: string; created?: string }
+
+/** 命令行令牌：自己生成、自己吊销；明文只在生成时显示一次 */
+function CliTokens() {
+  const list = useApi<CliToken[]>('api/me/tokens')
+  const [name, setName] = useState('')
+  const [fresh, setFresh] = useState<{ token: string; name: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const create = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      const r = await api<{ token: string; name: string }>('api/me/tokens', { method: 'POST', body: JSON.stringify({ name: name.trim() }) })
+      setFresh(r)
+      setName('')
+      list.reload()
+    } catch (err) {
+      toast.error('生成失败', { description: (err as Error).message })
+    } finally {
+      setBusy(false)
+    }
+  }
+  const revoke = async (t: CliToken) => {
+    if (!confirm(`吊销「${t.name}」？用它的命令行会立刻失效。`)) return
+    try {
+      await api(`api/me/tokens/${t.id}`, { method: 'DELETE' })
+      toast.success(`已吊销「${t.name}」`)
+      list.reload()
+    } catch (err) {
+      toast.error('吊销失败', { description: (err as Error).message })
+    }
+  }
+  const copy = async () => {
+    if (!fresh) return
+    await navigator.clipboard.writeText(fresh.token)
+    toast.success('已复制')
+  }
+  return (
+    <section>
+      <SectionTitle>命令行令牌</SectionTitle>
+      <p className="mb-3 text-ink-2">本地跑分、托管评测用。存进 <Code>~/.config/gkbench/token</Code>（权限 600）。</p>
+      {fresh && (
+        <div className="mb-3 rounded-xl border border-brand/50 bg-brand-tint p-3">
+          <p className="mb-2 text-[12.5px] font-semibold text-brand-ink">「{fresh.name}」的令牌只显示这一次，现在保存：</p>
+          <div className="flex items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded-lg bg-surface px-2 py-1.5 font-mono text-[12px] text-ink ring-1 ring-line">{fresh.token}</code>
+            <Button size="sm" variant="outline" onClick={copy}><Copy size={13} aria-hidden />复制</Button>
+          </div>
+          <CodeBlock>{`mkdir -p ~/.config/gkbench && pbpaste > ~/.config/gkbench/token && chmod 600 ~/.config/gkbench/token`}</CodeBlock>
+          <button onClick={() => setFresh(null)} className="mt-1 text-[12px] text-ink-3 hover:text-brand-ink">我存好了，收起</button>
+        </div>
+      )}
+      <form onSubmit={create} className="mb-3 flex gap-2">
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="用途，比如：笔记本" aria-label="令牌用途" className="h-8" maxLength={40} />
+        <Button type="submit" size="sm" disabled={busy}>
+          {busy ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <KeyRound size={14} aria-hidden />}生成
+        </Button>
+      </form>
+      {list.data && list.data.length > 0 && (
+        <ul className="divide-y divide-line rounded-xl border border-line bg-surface">
+          {list.data.map((t) => (
+            <li key={t.id} className="flex items-center gap-2 px-3 py-2">
+              <KeyRound size={14} className="shrink-0 text-ink-3" aria-hidden />
+              <span className="min-w-0 flex-1 truncate text-ink">{t.name || (t.kind ? '未命名' : '管理员发放')}</span>
+              <span className="num text-[12px] text-ink-3">{when(t.created)}</span>
+              <Button size="icon-sm" variant="ghost" aria-label={`吊销 ${t.name}`} onClick={() => revoke(t)}>
+                <Trash2 size={14} aria-hidden />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <CodeBlock>{`python -m gkbench run --set hif-live --algo uinet
+python -m gkbench upload <运行目录>
+python -m gkbench eval --set hif-live --algo uinet`}</CodeBlock>
+      <p className="mt-2 text-[12.5px] text-ink-3">服务器默认 https://hiro.matto.top/gkbench，用 <Code>GKBENCH_SERVER</Code> 改。</p>
     </section>
   )
 }

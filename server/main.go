@@ -19,9 +19,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
@@ -45,15 +43,13 @@ func addToken(data, name, out string) error {
 	b := make([]byte, 24)
 	_, _ = rand.Read(b)
 	tok := base64.RawURLEncoding.EncodeToString(b)
-	path := filepath.Join(data, "private", "tokens.json")
-	tokens := map[string]any{}
-	_ = readJSON(path, &tokens)
-	h := sha256.Sum256([]byte(tok))
-	tokens[hex.EncodeToString(h[:])] = map[string]any{"user": name, "created": now()}
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return err
-	}
-	if err := writeJSON(path, tokens, 0o600); err != nil {
+	s := &Store{Data: data}
+	tokMu.Lock()
+	m := s.loadTokens()
+	m[hashToken(tok)] = TokenInfo{User: name, Kind: "cli", Name: "管理员发放", Created: now()}
+	err := s.saveTokens(m)
+	tokMu.Unlock()
+	if err != nil {
 		return err
 	}
 	if err := os.MkdirAll(filepath.Dir(out), 0o700); err != nil {
@@ -124,7 +120,7 @@ func main() {
 	}
 	argv := strings.Fields(env("GKBENCH_WORKER", ".venv/bin/python -m gkbench.worker"))
 	app := &App{store: &Store{Data: data}, pool: NewPool(n, argv, env("GKBENCH_WORKER_DIR", "..")),
-		jobs: map[string]*Job{}, hosted: map[string]*Hosted{}}
+		jobs: map[string]*Job{}, hosted: map[string]*Hosted{}, github: loadGithubConf()}
 	defer app.pool.Close()
 	rep, _, err := app.pool.workers[0].Call(map[string]any{"op": "provenance"})
 	if err != nil {
@@ -151,13 +147,16 @@ func main() {
 		w.Header().Set("Cache-Control", "public, max-age=3600")
 		http.ServeFile(w, r, filepath.Join(static, "catalog.json"))
 	})
+	mux.HandleFunc("GET /api/auth", O(app.handleAuthInfo))
+	mux.HandleFunc("GET /api/auth/github", app.handleGithubStart)
+	mux.HandleFunc("GET /api/auth/github/callback", app.handleGithubCallback)
 	mux.Handle("GET /sprites/", http.StripPrefix("/sprites/", cacheFor(http.FileServer(http.Dir(filepath.Join(static, "sprites"))), 7*86400)))
 	// 要令牌
 	mux.HandleFunc("GET /api/me", A(app.handleMe))
-	mux.HandleFunc("POST /api/logout", func(w http.ResponseWriter, r *http.Request) {
-		http.SetCookie(w, &http.Cookie{Name: "gkb_token", Value: "", Path: "/", MaxAge: -1, HttpOnly: true})
-		writeJSONResp(w, 200, map[string]any{"ok": true})
-	})
+	mux.HandleFunc("POST /api/logout", app.handleLogout)
+	mux.HandleFunc("GET /api/me/tokens", A(app.handleMyTokens))
+	mux.HandleFunc("POST /api/me/tokens", A(app.handleNewToken))
+	mux.HandleFunc("DELETE /api/me/tokens/{id}", A(app.handleRevokeToken))
 	mux.HandleFunc("GET /api/me/runs", A(app.handleMyRuns))
 	mux.HandleFunc("GET /api/me/jobs", A(app.handleMyJobs))
 	mux.HandleFunc("POST /api/runs", A(app.handleUpload))
