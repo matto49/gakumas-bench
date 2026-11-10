@@ -439,10 +439,11 @@ function UploadPanel({ set }: { set: string }) {
         考试用命令行工具 <Code>gkbench</Code> 传：装一次、登录一次，之后一条命令。登录时它打开浏览器，在网页上点一下授权就行，不用抄令牌。
       </p>
       <div className="mb-3 max-w-[78ch]">
-        <CodeBlock>{`curl -fsSL ${site}install.sh | sh        # 装到 ~/.local/bin（Windows：irm ${site}install.ps1 | iex）
-gkbench login                            # 打开浏览器，点「授权」
-gkbench upload exam.json --set ${set}    # 传；逐道列出收下的和没收的原因`}</CodeBlock>
+        <CodeBlock>{`curl -fsSL ${site}install.sh | sh\ngkbench login\ngkbench upload exam.json --set ${set}`}</CodeBlock>
       </div>
+      <p className="mb-2.5 max-w-[78ch] text-[13px] text-ink-2">
+        第一条把它装到 <Code>~/.local/bin</Code>（Windows 用 PowerShell：<Code>{`irm ${site}install.ps1 | iex`}</Code>）；第二条打开浏览器，点「授权」；第三条上传，逐道列出收下的和没收的原因。
+      </p>
       <p className="mb-2.5 max-w-[78ch] text-[13px] text-ink-2">
         <Code>exam.json</Code> 是一份开局配置，怎么写看格式说明的「写一道题」：字段表、一份完整的例子、编号去哪查。想让 AI 代写代传，把下面那段说明贴给它。
       </p>
