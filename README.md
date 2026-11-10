@@ -79,7 +79,7 @@
 
 理论上限（管理员）：把服务器的 `private/template-seed.key` 和 `private/seeds/<题集>.template.json` 拷到本机（600），`gkbench run --set <题集> --algo oracle:seconds=30 --template --label oracle-30s`，再把运行目录放到服务器的 `runs/` 下。
 
-游戏官方 AI（管理员）：`gkbench eval --set <题集> --algo official-ai`，本机有保密种子时在本机跑完上传，照常排名，网页标「游戏官方 AI」「看牌序」。它的决策代码在 GKMS 的 `GKMSContest/official_ai`（稀疏检出要 `git sparse-checkout add GKMSContest`），第一次跑会用本机的 `c++` 编一个核心扩展（`gkbench/algos/native/official_ai_ext.cpp`，缓存在 `~/.cache/gkbench`）。
+游戏官方 AI（管理员）：`gkbench eval --set <题集> --algo official-ai`，本机有保密种子时在本机跑完上传，照常排名，网页上名字显示为「asahi老师策略」（算法的 `title`），标「游戏官方 AI」「看牌序」。它的决策代码在 GKMS 的 `GKMSContest/official_ai`（稀疏检出要 `git sparse-checkout add GKMSContest`），第一次跑会用本机的 `c++` 编一个核心扩展（`gkbench/algos/native/official_ai_ext.cpp`，缓存在 `~/.cache/gkbench`）。
 
 托管跑时，需要「可能的世界」的算法（PIMC 等）可以向服务器要：服务器把山札顺序、随机数、种子都重抽后导出发给客户端（约 3 KB / 个）；`tests/test_worlds.py` 检查导出数据里没有真种子。
 

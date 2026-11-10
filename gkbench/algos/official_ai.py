@@ -403,6 +403,7 @@ class _Resolver:
 class OfficialAIAlgo(Algorithm):
     """每个决策点：若上次搜出的整段出牌还在照着走（局面和预期一致），出下一步；否则在真实局面的克隆上重新搜一段。"""
     name = "official-ai"
+    title = "asahi老师策略"       # 网页上的名字（用户定的）；旁边另有「游戏官方 AI」「看牌序」两个标签
     sees_seed = True
     needs_gkms = True
 

@@ -130,7 +130,7 @@ def run(set_name, algo, budget=5.0, seed_indices=None, only=None, label=None, ke
     run_id = f"{stamp}-{set_name}-{'template-' if template else ''}{label or desc['name']}"
     out = Path(out_root or DATA / "runs") / run_id
     out.mkdir(parents=True, exist_ok=True)
-    info = {"schema": RUN_SCHEMA, "run": run_id, "label": label or desc["name"], "set": set_name,
+    info = {"schema": RUN_SCHEMA, "run": run_id, "label": label or getattr(algo, "title", None) or desc["name"], "set": set_name,
             "kind": "template" if template else "fixed",
             **run_header(algo, budget, by or getpass.getuser()), "privileged": bool(algo.privileged),
             "sees_seed": bool(getattr(algo, "sees_seed", False)),

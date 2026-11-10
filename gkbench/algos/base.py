@@ -33,6 +33,7 @@ class Decision:
 
 class Algorithm:
     name = "base"
+    title: str | None = None     # 展示名：不传 --label 时网页上显示它（运行编号仍用 name）
     privileged = False
     needs_gkms = False
     sees_seed = False
