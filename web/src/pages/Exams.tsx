@@ -311,7 +311,7 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
           {rows.map((p) => {
             const sc = p.scene ?? {}
             return (
-              <tr key={p.id} onDoubleClick={() => setOpen(p.id)} title="双击看完整牌组" className="cursor-pointer border-b border-line select-none last:border-0 hover:bg-brand-tint">
+              <tr key={p.id} onClick={() => { if (!window.getSelection()?.toString()) setOpen(p.id) }} className="cursor-pointer border-b border-line last:border-0 hover:bg-brand-tint">
                 <td className="max-w-[320px] px-3 py-2">
                   <div className="flex items-center gap-2.5">
                     <IdolThumb id={sc.idol} size={30} />
@@ -349,8 +349,8 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
                   </span>
                 </td>
                 <td className="px-3 py-2 font-mono text-[11.5px] whitespace-nowrap text-ink-3">{p.family}</td>
-                <td className="px-3 py-2 text-right whitespace-nowrap">
-                  <Tip tip="看完整牌组（也可以双击这一行）"><button onClick={() => setOpen(p.id)} aria-label={`看 ${p.name} 的牌组`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-ink"><Layers size={14} /></button></Tip>
+                <td className="px-3 py-2 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <Tip tip="看完整牌组（点这一行也可以）"><button onClick={() => setOpen(p.id)} aria-label={`看 ${p.name} 的牌组`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-ink"><Layers size={14} /></button></Tip>
                   <Tip tip="下载这道题的题模板（审查存档）"><a href={`${BASE}api/saves/${p.id}?download=1`} aria-label={`下载 ${p.name}`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-ink"><Download size={14} /></a></Tip>
                   {canEdit && <button onClick={() => onDelete(p)} aria-label={`删除 ${p.name}`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-critical"><Trash2 size={14} /></button>}
                 </td>
