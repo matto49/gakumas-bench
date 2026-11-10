@@ -154,7 +154,11 @@
 
     # 卡牌目录和小图（主数据或素材更新后重跑）
     cd server && go run ./cmd/catalog -master $GKMS_ROOT/GakumasCLI/ro/master/tables \
-        -cards <素材>/skill_cards -drinks <素材>/drinks -out $GKBENCH_DATA/static
+        -cards <素材>/skill_cards,<补的卡面目录> -drinks <素材>/drinks -out $GKBENCH_DATA/static
+    # 新卡没图时：从游戏资源导出（digital-hiro-research/gkmas-assets/tools/export_card_icons.py <资源名>…），
+    # 把导出目录加进 -cards；已有的小图不会重做。
+
+线上 nginx 的 hiro 站点（443 那个 server 块）开了 gzip（JSON / JS / CSS），卡牌目录约 1 MB → 100 KB。
 
     # 旧数据（v1）转换
     .venv/bin/python -m gkbench.migrate [--dry-run]

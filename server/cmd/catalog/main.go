@@ -65,17 +65,26 @@ func enumName(r row, k string) string {
 var tagRe = regexp.MustCompile(`<[^>]*>`)
 
 // 效果文字：produceDescriptions 里的 text 片段拼起来，去掉标签
+var multiNL = regexp.MustCompile(`\s*\n\s*`)
+
 func describe(r row) string {
 	ds, _ := r["produceDescriptions"].([]any)
 	var b strings.Builder
 	for _, d := range ds {
 		m, _ := d.(map[string]any)
-		if t, ok := m["text"].(string); ok {
+		t, _ := m["text"].(string)
+		switch {
+		case m["target_id"] == "Label_StyleDot": // 每条效果前的「・」：游戏里各占一行
+			b.WriteString("\n")
+		case t == "" && enumName(m, "produce_description_type") == "PRODUCE_DESCRIPTION_TYPE_PLAIN_TEXT":
+			// 有些卡的换行条目解出来是空文本（同类卡里是 "\n"），当换行处理
+			b.WriteString("\n")
+		default:
 			b.WriteString(t)
 		}
 	}
 	s := tagRe.ReplaceAllString(b.String(), "")
-	return strings.TrimSpace(strings.ReplaceAll(s, "\n\n", "\n"))
+	return strings.TrimSpace(multiNL.ReplaceAllString(s, "\n"))
 }
 
 func short(prefix, s string) string { return strings.TrimPrefix(s, prefix) }
@@ -125,7 +134,7 @@ func resize(src, dst string, size int) error {
 
 func main() {
 	master := flag.String("master", "", "GKMS 主数据目录（ro/master/tables）")
-	cardsDir := flag.String("cards", "", "技能卡小图目录")
+	cardsDir := flag.String("cards", "", "技能卡小图目录，多个用逗号隔开")
 	drinksDir := flag.String("drinks", "", "饮料小图目录")
 	out := flag.String("out", "", "输出目录")
 	size := flag.Int("size", 96, "小图边长")
@@ -139,7 +148,7 @@ func main() {
 		log.Fatal(err)
 	}
 	have := map[string]string{} // asset -> 源文件
-	for _, d := range []string{*cardsDir, *drinksDir} {
+	for _, d := range append(strings.Split(*cardsDir, ","), *drinksDir) {
 		if d == "" {
 			continue
 		}
