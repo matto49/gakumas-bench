@@ -98,8 +98,8 @@ export function tagValueLabel(tag: string, v: string, idolName?: (id: string) =>
 }
 
 export const SET_INFO: Record<string, { title: string; blurb: string }> = {
-  'hif-live': { title: '实机开局', blurb: 'H.I.F 实战里打过的 5 个开局，篠澤広。' },
-  gkms480: { title: '审查题库', blurb: 'GKMS 按主数据生成：6 种机制 × 4 位偶像 × 2 种牌组 × 5 个阶段。' },
+  'hif-live': { title: 'H.I.F真实记录测试集', blurb: 'H.I.F 实战里打过的 5 个开局，篠澤広。' },
+  gkms480: { title: 'H.I.F随机牌组测试', blurb: 'GKMS 按主数据生成：6 种机制 × 4 位偶像 × 2 种牌组 × 5 个阶段。' },
 }
 
 /** 种子模式。fixed：固定种子题；template：题模板，每题固定 32 个保密种子；legacy：11-09 以前每次临时抽种子的旧评测 */
