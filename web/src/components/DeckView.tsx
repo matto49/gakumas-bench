@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import type { Card, Problem } from '../lib/api'
 import { enchantName, idolName, spriteUrl, useCatalog } from '../lib/catalog'
 import { examLine, MECHANIC, PLAN } from '../lib/game'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { CardDetail } from './CardDetail'
 import { DrinkChip, SkillCard } from './GameBits'
 import { AttrChip, IdolThumb, Tip } from './ui'
 
@@ -51,6 +52,8 @@ export function DeckView({ p, onClose }: { p: Problem; onClose: () => void }) {
   const params = triple(lo.parameters)
   const bonus = triple(lo.score_bonus_permils)
   const idol = String(lo.idol_card_id ?? '')
+  const [card, setCard] = useState<Card | null>(null)
+  const [cardOpen, setCardOpen] = useState(false)
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl">
@@ -85,12 +88,12 @@ export function DeckView({ p, onClose }: { p: Problem; onClose: () => void }) {
           {lo.include_produce_default === true && <p className="mb-2 text-[12px] text-ink-3">另外还有培育的默认卡（编成里写了 include_produce_default，开局时由引擎补上）。</p>}
           <div className="flex flex-wrap gap-2">
             {deck.map((c, i) => (
-              <Link key={i} to={`/cards?card=${c.id}`} className="relative rounded-md" title="在牌库里看强化前后">
+              <button key={i} type="button" onClick={() => { setCard(c); setCardOpen(true) }} aria-label="看这张卡强化前后的效果" className="relative cursor-pointer rounded-md">
                 <SkillCard card={c} size={52} />
                 {c.c && c.c.length > 0 && (
                   <span className="absolute top-0.5 left-[9px] rounded-[3px] bg-brand-deep px-0.5 text-[9px] leading-tight font-bold text-white">定制</span>
                 )}
-              </Link>
+              </button>
             ))}
           </div>
         </Block>
@@ -142,6 +145,7 @@ export function DeckView({ p, onClose }: { p: Problem; onClose: () => void }) {
             )}
           </div>
         </div>
+        {card && cat?.cards[card.id] && <CardDetail open={cardOpen} id={card.id} c={cat.cards[card.id]} current={card.u ?? 0} customizes={card.c} onClose={() => setCardOpen(false)} />}
       </DialogContent>
     </Dialog>
   )
