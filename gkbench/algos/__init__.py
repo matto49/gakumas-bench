@@ -6,7 +6,8 @@ def _registry():
     from .search import OracleAlgo, PimcAlgo
     from .simple import GreedyAlgo, RandomAlgo
     from .uinet import UinetAlgo
-    return {"random": RandomAlgo, "greedy": GreedyAlgo, "uinet": UinetAlgo, "pimc": PimcAlgo, "oracle": OracleAlgo}
+    from .hiro import HiroRulesAlgo
+    return {"random": RandomAlgo, "greedy": GreedyAlgo, "uinet": UinetAlgo, "pimc": PimcAlgo, "oracle": OracleAlgo, "hiro-rules": HiroRulesAlgo}
 
 
 def _value(v):
