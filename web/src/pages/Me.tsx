@@ -7,17 +7,22 @@ import { when } from '../lib/format'
 import { SET_INFO } from '../lib/game'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { btn, Code, CodeBlock, cx, Empty, ErrorState, ModeBadge, PageHeader, SectionTitle, TableSkeleton } from '../components/ui'
 
 type MyRun = { run: string; label: string; set: string; kind?: string; mode?: string; uploaded?: string; finished?: string; started?: string; episodes?: number; verified?: { accepted: number; rejected?: number }; privileged?: boolean }
 
-type MeInfo = { user: string; github?: string; name?: string; avatar?: string; engine: { rules_version?: number } }
+type MeInfo = { user: string; has_password?: boolean; github?: string; name?: string; avatar?: string; engine: { rules_version?: number } }
 
 export function Me() {
   const me = useApi<MeInfo>('api/me')
   if (me.loading && !me.data) return <TableSkeleton rows={4} />
-  if (me.error instanceof ApiError && me.error.status === 401) return <Login onDone={me.reload} />
+  const onLogin = () => {
+    me.reload()
+    window.dispatchEvent(new Event('gkb-auth')) // 让顶栏刷新登录状态
+  }
+  if (me.error instanceof ApiError && me.error.status === 401) return <Login onDone={onLogin} />
   if (me.error) return <ErrorState error={me.error} onRetry={me.reload} />
   return <Dashboard me={me.data!} />
 }
@@ -30,8 +35,96 @@ const GithubMark = () => (
 
 function Login({ onDone }: { onDone: () => void }) {
   const auth = useApi<{ github: boolean }>('api/auth')
-  const [tok, setTok] = useState('')
   const [err, setErr] = useState(() => new URLSearchParams(location.search).get('login_error') ?? '')
+  return (
+    <div className="max-w-[440px] py-6">
+      <PageHeader title="登录" sub="看排行和复盘不用登录。交成绩、托管跑要登录。" />
+      {err && <p className="mb-4 rounded-lg bg-surface-2 px-3 py-2 text-critical">{err}</p>}
+      {auth.data?.github !== false && (
+        <>
+          <a href={`${BASE}api/auth/github?next=/me`} className={cx(btn.primary, 'h-10 w-full')}>
+            <GithubMark /> 用 GitHub 登录
+          </a>
+          <p className="mt-2 text-[12.5px] text-ink-3">推荐。第一次登录自动建账号，用户名取 GitHub 名，只读公开信息。</p>
+          <div className="my-6 flex items-center gap-3 text-[12px] text-ink-3">
+            <span className="h-px flex-1 bg-line" />或者用用户名<span className="h-px flex-1 bg-line" />
+          </div>
+        </>
+      )}
+      <Tabs defaultValue="login">
+        <TabsList className="mb-4 w-full">
+          <TabsTrigger value="login">登录</TabsTrigger>
+          <TabsTrigger value="register">注册</TabsTrigger>
+        </TabsList>
+        <TabsContent value="login"><PasswordAuth mode="login" onDone={onDone} onError={setErr} /></TabsContent>
+        <TabsContent value="register"><PasswordAuth mode="register" onDone={onDone} onError={setErr} /></TabsContent>
+      </Tabs>
+      <details className="mt-6">
+        <summary className="cursor-pointer text-[13px] text-ink-2 hover:text-brand-ink">已经有命令行令牌？粘贴登录</summary>
+        <TokenLogin onDone={onDone} />
+      </details>
+    </div>
+  )
+}
+
+function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[13px] font-medium text-ink">{label}</span>
+      {children}
+      {hint && <span className="mt-1 block text-[12px] text-ink-3">{hint}</span>}
+    </label>
+  )
+}
+
+function PasswordAuth({ mode, onDone, onError }: { mode: 'login' | 'register'; onDone: () => void; onError: (m: string) => void }) {
+  const [user, setUser] = useState('')
+  const [pw, setPw] = useState('')
+  const [pw2, setPw2] = useState('')
+  const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false)
+  const reg = mode === 'register'
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setMsg('')
+    onError('')
+    if (reg && pw !== pw2) return setMsg('两次输入的密码不一样')
+    setBusy(true)
+    try {
+      await api(`api/auth/${mode}`, { method: 'POST', body: JSON.stringify({ user: user.trim(), password: pw }) })
+      if (reg) toast.success('注册好了', { description: '已经登录。记好密码：没有邮箱，忘了找不回。' })
+      onDone()
+    } catch (err) {
+      setMsg((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <Field label="用户名" hint={reg ? '3–24 位，小写字母、数字、_ 和 -。会显示在排行上。' : undefined}>
+        <Input value={user} onChange={(e) => setUser(e.target.value)} autoComplete="username" className="h-10" required />
+      </Field>
+      <Field label="密码" hint={reg ? '至少 8 位。' : undefined}>
+        <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete={reg ? 'new-password' : 'current-password'} className="h-10" required />
+      </Field>
+      {reg && (
+        <Field label="再输一次密码">
+          <Input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" className="h-10" required />
+        </Field>
+      )}
+      {msg && <p className="text-[13px] text-critical">{msg}</p>}
+      <Button type="submit" className="h-10 w-full" disabled={busy || !user.trim() || !pw}>
+        {busy && <Loader2 size={15} className="animate-spin" aria-hidden />}{reg ? '注册并登录' : '登录'}
+      </Button>
+      {reg && <p className="text-[12px] text-ink-3">没有邮箱，忘了密码找不回。想省心就用上面的 GitHub 登录。</p>}
+    </form>
+  )
+}
+
+function TokenLogin({ onDone }: { onDone: () => void }) {
+  const [tok, setTok] = useState('')
+  const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,35 +140,13 @@ function Login({ onDone }: { onDone: () => void }) {
     }
   }
   return (
-    <div className="max-w-[480px] py-6">
-      <PageHeader title="登录" sub="看排行和复盘不用登录。交成绩、托管跑要登录。" />
-      {err && <p className="mb-4 rounded-lg bg-surface-2 px-3 py-2 text-critical">{err}</p>}
-      {auth.data?.github !== false && (
-        <div className="rounded-xl border border-line bg-surface p-5">
-          <a href={`${BASE}api/auth/github?next=/me`} className={cx(btn.primary, 'w-full')} aria-disabled={!auth.data}>
-            <GithubMark /> 用 GitHub 登录
-          </a>
-          <p className="mt-3 text-[12.5px] text-ink-3">第一次登录会自动建账号，用户名取你的 GitHub 名。只读公开信息，不要仓库权限。</p>
-        </div>
-      )}
-      <details className="mt-5 group/tok">
-        <summary className="cursor-pointer text-[13px] text-ink-2 hover:text-brand-ink">已经有命令行令牌？粘贴登录</summary>
-        <form onSubmit={submit} className="mt-3 space-y-3">
-          <Input
-            type="password"
-            autoComplete="off"
-            aria-label="令牌"
-            value={tok}
-            onChange={(e) => setTok(e.target.value)}
-            className="h-10 font-mono"
-            placeholder="粘贴令牌"
-          />
-          <Button type="submit" variant="outline" disabled={!tok.trim() || busy}>
-            {busy && <Loader2 size={15} className="animate-spin" aria-hidden />}登录
-          </Button>
-        </form>
-      </details>
-    </div>
+    <form onSubmit={submit} className="mt-3 space-y-3">
+      <Input type="password" autoComplete="off" aria-label="令牌" value={tok} onChange={(e) => setTok(e.target.value)} className="h-10 font-mono" placeholder="粘贴令牌" />
+      {err && <p className="text-[13px] text-critical">{err}</p>}
+      <Button type="submit" variant="outline" disabled={!tok.trim() || busy}>
+        {busy && <Loader2 size={15} className="animate-spin" aria-hidden />}登录
+      </Button>
+    </form>
   )
 }
 
@@ -176,6 +247,7 @@ function Dashboard({ me }: { me: MeInfo }) {
           <SaveUploadForm onStarted={refreshJobs} />
           <UploadForm onStarted={refreshJobs} />
           <CliTokens />
+          <PasswordForm has={!!me.has_password} />
         </aside>
       </div>
     </div>
@@ -387,6 +459,42 @@ function CliTokens() {
 python -m gkbench upload <运行目录>
 python -m gkbench eval --set hif-live --algo uinet`}</CodeBlock>
       <p className="mt-2 text-[12.5px] text-ink-3">服务器默认 https://hiro.matto.top/gkbench，用 <Code>GKBENCH_SERVER</Code> 改。</p>
+    </section>
+  )
+}
+
+/** 设置 / 修改密码：GitHub 账号也能设，之后用户名 + 密码也能登录 */
+function PasswordForm({ has }: { has: boolean }) {
+  const [old, setOld] = useState('')
+  const [pw, setPw] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [set, setSet] = useState(has)
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      await api('api/me/password', { method: 'POST', body: JSON.stringify({ old, password: pw }) })
+      toast.success(set ? '密码改好了' : '密码设好了', { description: '现在也能用用户名 + 密码登录。' })
+      setOld('')
+      setPw('')
+      setSet(true)
+    } catch (err) {
+      toast.error('没改成', { description: (err as Error).message })
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <section>
+      <SectionTitle>{set ? '修改密码' : '设置密码'}</SectionTitle>
+      {!set && <p className="mb-3 text-ink-2">可选。设了以后，没有 GitHub 的电脑上也能用用户名 + 密码登录。</p>}
+      <form onSubmit={submit} className="space-y-2">
+        {set && <Input type="password" value={old} onChange={(e) => setOld(e.target.value)} placeholder="旧密码" aria-label="旧密码" autoComplete="current-password" className="h-9" />}
+        <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="新密码，至少 8 位" aria-label="新密码" autoComplete="new-password" className="h-9" />
+        <Button type="submit" size="sm" disabled={busy || pw.length < 8 || (set && !old)}>
+          {busy && <Loader2 size={14} className="animate-spin" aria-hidden />}{set ? '修改' : '设置'}
+        </Button>
+      </form>
     </section>
   )
 }

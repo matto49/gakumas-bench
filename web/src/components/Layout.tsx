@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { UserRound } from 'lucide-react'
 import { useApi } from '../lib/hooks'
@@ -17,6 +18,11 @@ const pill = ({ isActive }: { isActive: boolean }) =>
 
 export function Layout() {
   const me = useApi<{ user: string; avatar?: string }>('api/me')
+  useEffect(() => {
+    const f = () => me.reload()
+    window.addEventListener('gkb-auth', f)
+    return () => window.removeEventListener('gkb-auth', f)
+  }, [me.reload])
   return (
     <div className="flex min-h-dvh flex-col overflow-x-clip">
       <header className="sticky top-0 z-40 bg-brand-deep text-white">

@@ -2,7 +2,7 @@
 
 学園アイドルマスター考试出牌算法的 benchmark：同样的题、同样的种子、同样的时间预算，比各个算法打出的分数和耗时。
 
-线上：<https://hiro.matto.top/gkbench/>（排行、运行、复盘、对比公开只读；用 GitHub 登录后就能交成绩）
+线上：<https://hiro.matto.top/gkbench/>（排行、运行、复盘、对比公开只读；用 GitHub 登录或注册账号后就能交成绩）
 
 核心规则：**裁判握着种子和完整局面，算法只拿画面上看得到的信息。** 每一步算法交回一个动作，裁判推进引擎，记下结果。看种子的搜索只作「理论上限」当分母，不参与排名。
 
@@ -114,7 +114,7 @@
 
     .venv/bin/python -m pytest -q tests
 
-账号：网页上「用 GitHub 登录」，第一次登录自动建账号（用户名取 GitHub 名，只读公开信息）。命令行用的令牌在「我的」页自己生成、吊销，存到 `~/.config/gkbench/token`（600）；服务器地址 `GKBENCH_SERVER`，默认 `https://hiro.matto.top/gkbench`。
+账号：网页上「用 GitHub 登录」（推荐，第一次登录自动建账号，用户名取 GitHub 名，只读公开信息），或者用用户名 + 密码注册（没有邮箱，忘了密码找不回；GitHub 账号也能在「我的」页补设密码）。命令行用的令牌在「我的」页自己生成、吊销，存到 `~/.config/gkbench/token`（600）；服务器地址 `GKBENCH_SERVER`，默认 `https://hiro.matto.top/gkbench`。
 
 ### 接自己的算法
 
@@ -148,6 +148,8 @@
     # GitHub 登录（server/auth.go）：在 GitHub 建 OAuth App，回调填 <对外地址>/api/auth/github/callback，
     # 服务器环境变量 GKBENCH_GITHUB_CLIENT_ID、GKBENCH_GITHUB_CLIENT_SECRET、GKBENCH_PUBLIC_URL。
     # 账号存 private/users.json（GitHub id -> 用户名），要把 GitHub 账号绑到已有用户名就预先写一条 {"<id>": {"user": "<名字>"}}
+    # 密码账号（server/password.go）存 private/accounts.json（bcrypt）；有人忘了密码，删掉他那条的 hash，他用 GitHub 或令牌登录后重设
+    # 防刷：同一 IP 每小时最多注册 5 个；同一 IP + 用户名 15 分钟内输错 8 次就要等（按 nginx 的 X-Real-IP）
     gkbench-server public-seeds <题集> on|off     # 开发集种子（和固定种子题存档）公开下载；测试集永不公开
 
     # 卡牌目录和小图（主数据或素材更新后重跑）

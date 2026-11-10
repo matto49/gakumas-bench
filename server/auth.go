@@ -296,6 +296,9 @@ func (s *Store) upsertGithubUser(p *githubProfile) (string, error) {
 		for _, t := range s.loadTokens() {
 			taken[t.User] = true
 		}
+		for n := range s.loadAccounts() {
+			taken[n] = true
+		}
 		name := slug(strings.ToLower(p.Login))
 		if name == "" {
 			name = "gh-" + id

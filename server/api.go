@@ -113,6 +113,7 @@ func (s *Store) SetConfigs() map[string]SetConfig {
 
 func (a *App) handleMe(w http.ResponseWriter, r *http.Request, u string) {
 	out := map[string]any{"user": u, "engine": a.engineInfo}
+	out["has_password"] = a.hasPassword(u)
 	if p := a.store.userProfile(u); p != nil {
 		out["github"], out["name"], out["avatar"] = p.Login, p.Name, p.Avatar
 	}

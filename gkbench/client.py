@@ -19,7 +19,7 @@ TOKEN_FILE = Path(os.environ.get("GKBENCH_TOKEN_FILE", Path.home() / ".config/gk
 def _client(server=None):
     tok = os.environ.get("GKBENCH_TOKEN") or (TOKEN_FILE.read_text().strip() if TOKEN_FILE.is_file() else None)
     if not tok:
-        raise SystemExit(f"没有令牌：用 GitHub 登录 {SERVER}/me ，在「命令行令牌」里生成一个，存到 {TOKEN_FILE}（或设 GKBENCH_TOKEN）")
+        raise SystemExit(f"没有令牌：登录 {SERVER}/me （GitHub 或注册账号），在「命令行令牌」里生成一个，存到 {TOKEN_FILE}（或设 GKBENCH_TOKEN）")
     return httpx.Client(base_url=(server or SERVER), headers={"Authorization": f"Bearer {tok}"}, timeout=600)
 
 
