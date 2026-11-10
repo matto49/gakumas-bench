@@ -75,6 +75,8 @@ export type Row = {
   kind: 'fixed' | 'template'
   by: string
   privileged: boolean
+  /** 看牌序但照常排名（游戏官方 AI） */
+  sees_seed?: boolean
   step_seconds: number | null
   n: number
   problems: number

@@ -41,6 +41,23 @@ var builtinAlgos = []struct {
 		},
 		Private: []string{"整局求解来自 GKMS（私有仓库，未公开）"},
 	}},
+	{[]string{"official-ai"}, AlgoDoc{
+		Summary: "游戏官方 AI：学マス客户端自带的出牌 AI，比赛自动打和考试里高亮推荐卡用的就是它。它看牌序，排名时请注意。",
+		Detail: []string{
+			"决策代码是 GKMS 从安卓 3.2.1 客户端还原的官方搜索和评估，这里只用这部分算法，出牌、抽牌、随机结果全由裁判同款引擎（GKMS 原生核心）推进。",
+			"每次决策往后搜到下一回合结束（两回合内，最多 5 步），按出牌顺序深度优先枚举；叶子局面用客户端的评估表（ProduceExamAutoEvaluation 等）打分，按偶像卡的推荐效果分组，已装上的持续效果按之后能带来多少折算进去。选分最高的一整段照着打完，再搜下一段。",
+			"出牌里要选卡时（从山札选卡等），用客户端的选卡评分（ProduceExamAutoCardSelectEvaluation）选。",
+			"它和游戏里一样在真实牌局上往后搜：接下来两回合抽到什么、随机结果是什么都是真的。所以标「看牌序」，不能托管跑，由管理员在本机打保密牌序后上传。",
+			"它从不喝饮料：比赛 AI 没有饮料这个动作，H.I.F 的饮料它不会用。",
+			"接到我们的引擎上有三处近似：持续效果的预测按每条效果的净变化记，不记其中的卡牌成长；「效果抽牌总数」一项按 0；定时效果一律当作技能卡带来的。",
+		},
+		Sees: "seed",
+		Links: []AlgoLink{
+			{"本仓库的引擎接入 gkbench/algos/official_ai.py", repoBlob + "gkbench/algos/official_ai.py"},
+			{"单条效果执行的核心扩展 gkbench/algos/native/official_ai_ext.cpp", repoBlob + "gkbench/algos/native/official_ai_ext.cpp"},
+		},
+		Private: []string{"官方 AI 的还原代码在 GKMS 的 GKMSContest/official_ai（私有仓库，未公开）"},
+	}},
 	{[]string{"pimc", "pimc-vote", "pimc-eval"}, AlgoDoc{
 		Summary: "确定化搜索（PIMC）：把看不到的山札顺序和随机数补全成多个世界，每个世界用 GNRPA 搜整场，再汇总。",
 		Detail: []string{

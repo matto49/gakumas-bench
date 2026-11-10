@@ -28,6 +28,7 @@ type Row struct {
 	Kind            string            `json:"kind"`
 	Params          any               `json:"params,omitempty"`
 	Privileged      bool              `json:"privileged"`
+	SeesSeed        bool              `json:"sees_seed,omitempty"` // 看牌序但照常排名（游戏官方 AI）
 	BudgetS         any               `json:"step_seconds"`
 	N               int               `json:"n"`
 	Problems        int               `json:"problems"`
@@ -222,6 +223,7 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 		row.Uploader, _ = r.info["by"].(string)
 		row.Kind, _ = r.info["kind"].(string)
 		row.Params = r.info["params"]
+		row.SeesSeed, _ = r.info["sees_seed"].(bool)
 		row.About = algoDoc(r.info)
 		var think []float64
 		var vsO, vsB [][2]float64

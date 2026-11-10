@@ -34,7 +34,7 @@ def over_budget(step_ms: float, step_seconds) -> bool:
 
 class Ctx:
     """本机跑时给算法的 ctx，公开字段和托管时的 client.HostedCtx 一样：obs、budget、loadout、meta、rng、worlds(k)。
-    裁判（知道种子和真实局面）放在 _ref 里，不是给算法用的；只有理论上限（privileged）额外拿到 seed、true_session。"""
+    裁判（知道种子和真实局面）放在 _ref 里，不是给算法用的；只有理论上限（privileged）和看种子的算法（sees_seed）额外拿到 seed、true_session。"""
 
     def __init__(self, ref, loadout, budget, rng, world_rng, algo, seed):
         self._ref = ref
@@ -43,7 +43,7 @@ class Ctx:
         self.meta = ref.public_meta()
         self.obs = None
         self.worlds_made = 0
-        if algo.privileged:
+        if algo.privileged or getattr(algo, "sees_seed", False):
             self.seed = seed
             self.true_session = ref.battle.session
 
@@ -132,6 +132,7 @@ def run(set_name, algo, budget=5.0, seed_indices=None, only=None, label=None, ke
     info = {"schema": RUN_SCHEMA, "run": run_id, "label": label or desc["name"], "set": set_name,
             "kind": "template" if template else "fixed",
             **run_header(algo, budget, by or getpass.getuser()), "privileged": bool(algo.privileged),
+            "sees_seed": bool(getattr(algo, "sees_seed", False)),
             "seed_indices": seed_indices, "only": only, "engine": engine.provenance(),
             "started": datetime.now(timezone.utc).isoformat()}
     if template:

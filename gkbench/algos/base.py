@@ -13,6 +13,7 @@
 所以要世界的算法设 True，开局前就能报出缺什么。
 
 ``privileged = True`` 的算法（理论上限）额外拿到 ctx.true_session 和 ctx.seed，成绩单独标出，不参与排名。
+``sees_seed = True`` 的算法（游戏官方 AI 这类本来就看真实局面的）也拿到这两样，照常排名，但网页上标「看牌序」，不能托管跑。
 
 ``about``（可选）：托管 / 评测时随运行提交的算法说明，显示在网站的运行页和算法排行里：
   {"summary": "一句话思路", "detail": ["分条说明", ...], "sees": "screen",   # screen 只看画面；seed 看种子
@@ -34,13 +35,14 @@ class Algorithm:
     name = "base"
     privileged = False
     needs_gkms = False
+    sees_seed = False
     about: dict | None = None
 
     def __init__(self, **params):
         self.params = params
 
     def describe(self) -> dict:
-        return {"name": self.name, "params": self.params, "privileged": self.privileged}
+        return {"name": self.name, "params": self.params, "privileged": self.privileged, "sees_seed": self.sees_seed}
 
     def begin(self, ctx):
         """一局开始时调用一次。"""

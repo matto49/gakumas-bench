@@ -233,8 +233,8 @@ export function Leaderboard() {
                           </Tip>
                         )}
                         {r.sees_seed && (
-                          <Tip tip="它在真实局面上往前搜，等于提前知道接下来几回合抽到什么（游戏里本来就这样算）。排名照算，但和只看画面的算法不是同一起跑线。">
-                            <Badge tabIndex={0} variant="outline" className="whitespace-nowrap border-critical/60 text-critical">看种子</Badge>
+                          <Tip tip="它在真实牌局上往后搜，等于提前知道接下来两回合抽到什么（游戏里本来就这样算）。排名照算，但和只看画面的算法不是同一起跑线。">
+                            <Badge tabIndex={0} variant="outline" className="whitespace-nowrap border-critical/60 text-critical">看牌序</Badge>
                           </Tip>
                         )}
                         {r.about && <Help tip={<>{r.about.summary}<span className="mt-1 block text-ink-3">点算法名看完整说明和实现链接。</span></>} />}

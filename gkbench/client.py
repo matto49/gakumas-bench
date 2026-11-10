@@ -104,8 +104,8 @@ def hosted(set_name, algo, budget=5.0, label=None, seed_indices=None, only=None,
     progress = progress or (lambda m: print(m, flush=True))
     desc = algo.describe()
     label = label or desc["name"]
-    if algo.privileged:
-        raise SystemExit("特权算法（理论上限）不能托管跑")
+    if algo.privileged or getattr(algo, "sees_seed", False):
+        raise SystemExit("理论上限和看牌序的算法（官方 AI）不能托管跑：托管时服务器不给牌序")
     with _client(server) as c:
         probs = c.get(f"/api/sets/{set_name}/problems").raise_for_status().json()
         for p in probs:
@@ -134,8 +134,8 @@ def evaluate(set_name, algo_spec, seeds=32, parallel=3, budget=5.0, label=None, 
     probe = algos.make(algo_spec)
     if getattr(probe, "needs_gkms", False):
         engine.setup()                          # 贪心、PIMC、UINet 等要用本地的 GKMS；只看观测的算法不加载
-    if probe.privileged:
-        raise SystemExit("特权算法（理论上限）不能托管跑；管理员用 gkbench run --template 在本机跑")
+    if probe.privileged or getattr(probe, "sees_seed", False):
+        raise SystemExit("理论上限和看牌序的算法（官方 AI）不能托管跑；管理员在本机跑（有保密牌序时 gkbench eval 会自动在本机跑）")
     desc = probe.describe()
     label = label or desc["name"]
     with _client(server) as c:
