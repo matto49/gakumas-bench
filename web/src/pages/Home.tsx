@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Download } from 'lucide-react'
+import { ArrowRight, Download, KeyRound } from 'lucide-react'
 import { useApi } from '../lib/hooks'
-import { api, BASE, type RunInfo, type SetInfo } from '../lib/api'
-import { int } from '../lib/format'
+import { api, BASE, type Row, type RunInfo, type SetInfo } from '../lib/api'
+import { int, pct } from '../lib/format'
 import { ROUND, STAGE } from '../lib/game'
 import { setBlurbOf, setTitleOf } from '../lib/sets'
 import { idolName, useCatalog } from '../lib/catalog'
-import { btn, Code, CodeBlock, Grade, IdolThumb, RankNum, SectionTitle, Skeleton, Tip, TurnStrip } from '../components/ui'
+import { Badge } from '@/components/ui/badge'
+import { btn, Code, CodeBlock, Grade, IdolThumb, RankNum, Skeleton, Tip, TurnStrip } from '../components/ui'
 
 type RunItem = { run: string; label: string; kind?: string; privileged?: boolean }
 
@@ -100,7 +101,7 @@ function FeaturedResult() {
 
 function SetIdols({ ids }: { ids?: string[] }) {
   return (
-    <span className="flex -space-x-2">
+    <span className="flex shrink-0 -space-x-2">
       {(ids ?? []).slice(0, 6).map((id) => (
         <IdolThumb key={id} id={id} size={32} className="ring-2 ring-surface" />
       ))}
@@ -108,11 +109,106 @@ function SetIdols({ ids }: { ids?: string[] }) {
   )
 }
 
+/** 首页的节标题：比内页的 SectionTitle 大一号，下面可以带一行说明 */
+function HomeTitle({ children, sub, right }: { children: React.ReactNode; sub?: React.ReactNode; right?: React.ReactNode }) {
+  return (
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+      <div>
+        <h2 className="flex items-center gap-2.5 text-[21px] leading-tight font-bold tracking-tight text-ink">
+          <span className="inline-block h-5 w-[5px] shrink-0 -skew-x-12 rounded-sm bg-brand" aria-hidden />
+          {children}
+        </h2>
+        {sub && <p className="mt-2 max-w-[54em] text-ink-2">{sub}</p>}
+      </div>
+      {right}
+    </div>
+  )
+}
+
+function Stat({ n, label }: { n: React.ReactNode; label: string }) {
+  return (
+    <div className="flex flex-col-reverse">
+      <dt className="text-[12px] text-ink-3">{label}</dt>
+      <dd className="disp text-[26px] leading-none text-ink">{n}</dd>
+    </div>
+  )
+}
+
+/** 题集卡片：题数、种子数，加上保密种子榜的前三名。整张卡点进排行，下载存档是卡片里单独的链接 */
+function SetCard({ s, sets }: { s: SetInfo; sets: SetInfo[] }) {
+  const lb = useApi<Row[]>(`api/leaderboard?set=${encodeURIComponent(s.set)}&kind=template`)
+  const top = useMemo(() => {
+    // 同一个算法跑过几次（题集扩过题）时留题数最多的那次
+    const best = new Map<string, Row>()
+    for (const r of lb.data ?? []) {
+      if (r.privileged) continue
+      const old = best.get(r.label)
+      if (!old || r.problems > old.problems) best.set(r.label, r)
+    }
+    const v = (r: Row) => r.vs_oracle?.geo ?? -1
+    return [...best.values()].sort((a, b) => v(b) - v(a) || b.mean - a.mean).slice(0, 3)
+  }, [lb.data])
+  const hasOracle = top.some((r) => r.vs_oracle)
+  return (
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-[border-color,box-shadow] duration-150 hover:border-brand hover:shadow-[0_14px_30px_-22px_oklch(0.45_0.12_40/0.5)]">
+      <div className="px-5 pt-4 pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-[17px] leading-snug font-bold text-ink">
+            <Link to={`/sets/${s.set}`} className="rounded-sm after:absolute after:inset-0 group-hover:text-brand-ink">
+              {setTitleOf(sets, s.set)}
+            </Link>
+          </h3>
+          <SetIdols ids={s.idols} />
+        </div>
+        <p className="mt-1.5 text-ink-2">{setBlurbOf(sets, s.set)}</p>
+        <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
+          <Stat n={s.problems} label="道题" />
+          <Stat n={s.seeds.dev + s.seeds.test} label="个固定种子" />
+          <Stat n={s.template_seeds ?? 32} label="个保密种子 / 题" />
+        </dl>
+      </div>
+      <div className="flex-1 border-t border-line bg-surface-2/70">
+        <p className="flex justify-between px-5 pt-2.5 pb-1 text-[12px] text-ink-3">
+          <span>保密种子 · 前三</span>
+          <span>{hasOracle ? '相对上限' : '平均分'}</span>
+        </p>
+        {lb.loading && <Skeleton className="mx-5 mb-3 h-[108px]" />}
+        {!lb.loading && top.length === 0 && <p className="px-5 pt-1 pb-4 text-ink-3">还没有成绩。</p>}
+        <ol>
+          {top.map((r, i) => (
+            <li key={r.run} className="flex h-10 items-center gap-3 px-5">
+              <RankNum n={i + 1} className="w-4 text-center text-[19px]" />
+              <span className="min-w-0 flex-1 truncate font-semibold text-ink">{r.label}</span>
+              {hasOracle && (
+                <span className="relative z-10 inline-flex">
+                  <Grade ratio={r.vs_oracle?.geo} size={26} />
+                </span>
+              )}
+              <span className="disp w-[4.5rem] text-right text-[19px] leading-none text-ink">{hasOracle ? pct(r.vs_oracle) : int(r.mean)}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-line px-5 py-2.5 text-[12.5px]">
+        <a
+          href={`${BASE}api/sets/${s.set}/saves?answers=1${s.public_seeds ? '&fixed=1' : ''}`}
+          className="relative z-10 inline-flex items-center gap-1.5 rounded-sm text-ink-2 hover:text-brand-ink hover:underline"
+        >
+          <Download size={13} aria-hidden /> 下载审查存档
+        </a>
+        <span className="inline-flex items-center gap-1 font-semibold text-brand-ink" aria-hidden>
+          完整排行 <ArrowRight size={13} />
+        </span>
+      </div>
+    </article>
+  )
+}
+
 export function Home() {
   const sets = useApi<SetInfo[]>('api/sets')
   return (
     <div>
-      <section className="stripes-soft mx-[calc(50%-50vw)] -mt-7 mb-10 border-b border-line bg-brand-tint px-5 pt-10 pb-12">
+      <section className="stripes-soft mx-[calc(50%-50vw)] -mt-7 mb-12 border-b border-line bg-brand-tint px-5 pt-10 pb-12">
         <div className="mx-auto grid max-w-[1120px] items-center gap-10 lg:grid-cols-[minmax(0,1fr)_440px]">
           <div>
             <h1 className="text-[34px] leading-[1.2] font-bold tracking-tight text-ink sm:text-[40px]">
@@ -134,40 +230,52 @@ export function Home() {
 
       <div className="mx-auto max-w-[1120px]">
         <Why />
+      </div>
 
-        <section className="mb-12">
-          <SectionTitle>题集</SectionTitle>
-          <div className="grid gap-3 md:grid-cols-2">
-            {sets.loading && <Skeleton className="h-24" />}
-            {sets.data?.map((s) => (
-              <Link key={s.set} to={`/sets/${s.set}`} className="group flex flex-col gap-3 rounded-xl border border-line bg-surface px-4 py-3.5 transition-colors duration-150 hover:border-brand">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[16px] font-bold text-ink group-hover:text-brand-ink">{setTitleOf(sets.data ?? null, s.set)}</span>
-                  <SetIdols ids={s.idols} />
-                </div>
-                <p className="text-ink-2">{setBlurbOf(sets.data ?? null, s.set)}</p>
-                <p className="num text-[12.5px] text-ink-3">
-                  <span className="disp text-[16px] text-ink">{s.problems}</span> 题 · <span className="disp text-[16px] text-ink">{s.seeds.dev + s.seeds.test}</span> 个固定种子 · 每题另有 {s.template_seeds ?? 32} 个保密种子 · {s.runs} 次运行
-                </p>
+      <section className="mx-[calc(50%-50vw)] mb-14 border-y border-line bg-surface-2 px-5 py-12">
+        <div className="mx-auto max-w-[1120px]">
+          <HomeTitle
+            sub={
+              <>
+                题和答都按 <Code>gkms.audition_save.v2</Code>（GKMS-STD-001）存，任何实现了这个格式的引擎都能重放核对。
+              </>
+            }
+            right={
+              <Link to="/exams" className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand-ink hover:underline">
+                全部試験集合 <ArrowRight size={13} aria-hidden />
               </Link>
-            ))}
+            }
+          >
+            题集
+          </HomeTitle>
+          <div className="grid gap-4 md:grid-cols-2">
+            {sets.loading && <Skeleton className="h-[330px] rounded-2xl" />}
+            {sets.data?.map((s) => <SetCard key={s.set} s={s} sets={sets.data ?? []} />)}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="join" className="mb-12 scroll-mt-20">
-          <SectionTitle>交成绩</SectionTitle>
-          <p className="mb-5 max-w-[46em] text-ink-2">
-            算法是一个函数：拿到画面上看得见的信息（和 GKMS UINet 的 UIObs v1 一样），返回一个动作。先到 <Link to="/me" className="text-brand-ink hover:underline">我的</Link> 页拿令牌。
-          </p>
-          <dl className="divide-y divide-line rounded-xl border border-line bg-surface">
-            <Way title="固定种子 · 本地跑完上传" body="用同一个引擎跑完整套题再上传，服务器按种子逐局重放，对不上的局拒收。成绩标「自报」。">
+      <div className="mx-auto max-w-[1120px]">
+        <section id="join" className="scroll-mt-20">
+          <HomeTitle
+            sub="算法是一个函数：拿到画面上看得见的信息（和 GKMS UINet 的 UIObs v1 一样），返回一个动作。交法有三种，都要先拿令牌。"
+            right={
+              <Link to="/me" className={btn.small}>
+                <KeyRound size={14} aria-hidden /> 去拿令牌
+              </Link>
+            }
+          >
+            交成绩
+          </HomeTitle>
+          <dl className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+            <Way title="固定种子 · 本地跑完上传" tag="上手最快" body="用同一个引擎跑完整套题再上传，服务器按种子逐局重放，对不上的局拒收。成绩标「自报」。">
               {`python -m gkbench run --set hif-live --algo uinet
 python -m gkbench upload <运行目录>`}
             </Way>
-            <Way title="保密种子 · 托管评测" body="每题 32 个种子只在服务器上，算法每步向服务器要画面、交动作，用时按服务器计。PIMC 这类算法可以向服务器要「可能的世界」。断了用 --resume 接着跑。">
+            <Way title="保密种子 · 托管评测" tag="进默认排行" strong body="每题 32 个种子只在服务器上，算法每步向服务器要画面、交动作，用时按服务器计。PIMC 这类算法可以向服务器要「可能的世界」。断了用 --resume 接着跑。">
               {`python -m gkbench eval --set hif-live --algo uinet --parallel 3`}
             </Way>
-            <Way title="只交路线" body="算法不是 Python 也行：下载审查存档，把每局的出牌路线（如 p0 d1 p2 e）写回去再交，服务器逐条重放。">
+            <Way title="只交路线" tag="不用 Python" body="算法不是 Python 也行：下载审查存档，把每局的出牌路线（如 p0 d1 p2 e）写回去再交，服务器逐条重放。">
               {`python -m gkbench save check my.gksave.jsonl
 python -m gkbench upload-saves my.gksave.jsonl --label my-algo`}
             </Way>
@@ -176,31 +284,20 @@ python -m gkbench upload-saves my.gksave.jsonl --label my-algo`}
             接自己的算法：继承 <Code>gkbench.algos.base.Algorithm</Code>，实现 <Code>decide(ctx)</Code>。格式见仓库里的 <Code>docs/format.md</Code>。
           </p>
         </section>
-
-        <section>
-          <SectionTitle>审查存档</SectionTitle>
-          <p className="max-w-[46em] text-ink-2">
-            题和答都按 <Code>gkms.audition_save.v2</Code>（GKMS-STD-001）存，任何实现了这个格式的引擎都能重放核对。
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {sets.data?.map((s) => (
-              <a key={s.set} href={`${BASE}api/sets/${s.set}/saves?answers=1${s.public_seeds ? '&fixed=1' : ''}`} className={btn.small}>
-                <Download size={14} aria-hidden /> {setTitleOf(sets.data ?? null, s.set)}
-              </a>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   )
 }
 
-function Way({ title, body, children }: { title: string; body: string; children: string }) {
+function Way({ title, tag, strong, body, children }: { title: string; tag: string; strong?: boolean; body: string; children: string }) {
   return (
-    <div className="grid gap-x-8 gap-y-2 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+    <div className="grid items-center gap-x-8 gap-y-3 px-5 py-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <div>
-        <dt className="font-bold text-ink">{title}</dt>
-        <dd className="mt-1 text-ink-2">{body}</dd>
+        <dt className="flex flex-wrap items-center gap-2 text-[15px] font-bold text-ink">
+          {title}
+          <Badge variant={strong ? 'brand' : 'outline'}>{tag}</Badge>
+        </dt>
+        <dd className="mt-1.5 text-ink-2">{body}</dd>
       </div>
       <dd>
         <CodeBlock>{children}</CodeBlock>
@@ -214,25 +311,28 @@ const Pow = ({ n }: { n: number }) => <>10<sup>{n}</sup></>
 /** 基础说明：为什么有这个网站，一局本战有多大。数字是 2026-11 在 hif-live 的本战题上实测的（MacBook Air M4）：
  *  排法数 = 牌堆的排列数；打法数用随机试打估算（Knuth 估计，第二轮 8 题各 4000 局，自助法区间约 ±0.3 个数量级）；
  *  GNRPA 单核 60 秒约 300 到 350 万局整局模拟、8,400 万次出牌推演。脚本在 gakumas-bench-data/scripts/complexity*.py */
-const N = ({ children }: { children: React.ReactNode }) => <span className="num font-semibold text-ink">{children}</span>
+/** 正文里的重点数字：加粗，下半截垫一道橙色荧光笔 */
+const N = ({ children }: { children: React.ReactNode }) => (
+  <strong className="num box-decoration-clone bg-[linear-gradient(transparent_58%,color-mix(in_oklch,var(--color-brand)_40%,transparent)_58%)] px-[2px] font-bold text-ink">{children}</strong>
+)
 
 function Why() {
   return (
     <section className="mb-14">
-      <SectionTitle>为什么有这个网站</SectionTitle>
+      <HomeTitle>为什么有这个网站</HomeTitle>
       <div className="grid items-start gap-x-12 gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         <div className="max-w-[36em] space-y-3.5 text-[14.5px] leading-[1.8] text-ink-2">
           <p className="text-[16px] leading-[1.7] font-medium text-ink">
             众所周知，学园偶像大师是一款肉鸽卡牌游戏。对局里每一步选哪张卡、用不用道具，都存在最优解；理论上只要计算量够大，总能算出一副牌组的最优打法。
           </p>
           <p>
-            但实际上，以 H.I.F 为例：本战第二轮至少有 <N>12 回合</N>，一局要做 <N>23 到 35 次</N>决定，算上饮料，每次平均有 <N>4 到 6 种</N>选择；牌堆有 22 到 25 张牌，光排法就有 <N><Pow n={20} /> 到 <Pow n={23} /> 种</N>；即使牌序固定，完整的打法也还有 <N><Pow n={13} /> 到 <Pow n={17} /> 种</N>。
+            但实际上，以 H.I.F 为例：本战第二轮至少有 <N>12 回合</N>，一局要做 <N>23 到 35 次</N>决定，算上饮料，每次平均有 <N>4 到 6 种</N>选择；牌堆有 <N>22 到 25 张</N>牌，光排法就有 <N><Pow n={20} /> 到 <Pow n={23} /> 种</N>；即使牌序固定，完整的打法也还有 <N><Pow n={13} /> 到 <Pow n={17} /> 种</N>。
             每一步的效果结算还要考虑 P 道具、三色属性倍率、支援卡效果，以及好调、好印象、集中、元气、全力等各种 buff 的影响，计算量大得恐怖。
           </p>
           <p>面对这么大的计算量，我们需要性能更高的算法或神经网络，在更短的时间里算出更好的打法，给游戏过程中的选卡、换卡作指引。</p>
           <p>
             所以这个网站收集真实的考试数据，整理成可信的 benchmark，给不同的算法和模型测出高置信的得分和性能，最终设计出最好的算法，交给 bot / AI 自动运行。
-            目前每道考试题都会先用 GNRPA 算法，在知道牌序的前提下，开局一次性把整局的出牌路线搜出来，每局搜 <N>30 秒</N>（MacBook Air M4 单核约 150 万局整局模拟），得到一个相对的「最优解」。收集来的外部算法都以它为锚，评估各自的用时和质量。
+            目前每道考试题都会先用 GNRPA 算法，在知道牌序的前提下，开局一次性把整局的出牌路线搜出来，每局搜 <N>30 秒</N>（MacBook Air M4 单核约 <N>150 万局</N>整局模拟），得到一个相对的「最优解」。收集来的外部算法都以它为锚，评估各自的用时和质量。
           </p>
         </div>
         <ScaleFigure />
@@ -306,7 +406,7 @@ function ScaleFigure() {
         </div>
       </div>
       <p className="mt-4 border-t border-line pt-3 text-[12.5px] leading-relaxed text-ink-2">
-        30 秒搜过的局数，不到全部打法的百万分之一。所以这里的「最优解」是限时搜到的最好成绩，不是真正的最优解。
+        30 秒搜过的局数，<strong className="font-bold text-ink">不到全部打法的百万分之一</strong>。所以这里的「最优解」是限时搜到的最好成绩，不是真正的最优解。
       </p>
     </figure>
   )
