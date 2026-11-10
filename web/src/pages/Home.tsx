@@ -211,7 +211,8 @@ function Way({ title, body, children }: { title: string; body: string; children:
 
 const Pow = ({ n }: { n: number }) => <>10<sup>{n}</sup></>
 
-/** 基础说明：为什么有这个网站，一局本战有多大。数字是实测的，口径写在表下 */
+/** 基础说明：为什么有这个网站，一局本战有多大。数字是 2026-11 在 hif-live 的 12 道本战题上实测的：
+ *  打法数用随机试打估算（Knuth 估计，每题 400 局），模拟局数按 Apple M4 单核每秒约 4.5 万局算（gakumas-bench-data/scripts/complexity.py） */
 function Why() {
   const rows: [string, React.ReactNode][] = [
     ['一局要做的决定', <>9 或 12 回合，出牌 20 到 35 次。每次平均有 4 到 6 种选择，最多 10 种。</>],
@@ -238,9 +239,6 @@ function Why() {
               </div>
             ))}
           </dl>
-          <p className="mt-2 text-[12px] leading-relaxed text-ink-3">
-            数字是 2026 年 11 月在「H.I.F真实记录测试集」的 12 道本战题上量的。打法数靠随机试打估算（Knuth 估计，每题 400 局）；模拟局数按 Apple M4 单核每秒约 4.5 万局算。
-          </p>
         </div>
       </div>
     </section>
