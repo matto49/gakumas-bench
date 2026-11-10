@@ -33,8 +33,12 @@ def over_budget(step_ms: float, step_seconds) -> bool:
 
 
 class Ctx:
+    """本机跑时给算法的 ctx，公开字段和托管时的 client.HostedCtx 一样：obs、budget、loadout、meta、rng、worlds(k)。
+    裁判（知道种子和真实局面）放在 _ref 里，不是给算法用的；只有理论上限（privileged）额外拿到 seed、true_session。"""
+
     def __init__(self, ref, loadout, budget, rng, world_rng, algo, seed):
-        self.ref, self.loadout, self.budget, self.rng = ref, loadout, budget, rng
+        self._ref = ref
+        self.loadout, self.budget, self.rng = loadout, budget, rng
         self._world_rng = world_rng
         self.meta = ref.public_meta()
         self.obs = None
@@ -45,7 +49,7 @@ class Ctx:
 
     def worlds(self, k):
         self.worlds_made += k
-        return [self.ref.sample_world(self._world_rng) for _ in range(k)]
+        return [self._ref.sample_world(self._world_rng) for _ in range(k)]
 
 
 def run_header(algo, step_seconds, by=None) -> dict:
