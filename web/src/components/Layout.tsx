@@ -8,7 +8,7 @@ const nav = [
   { to: '/', label: '首页', end: true, wide: true }, // 小屏上藏起来，点 logo 回首页
   { to: '/sets', label: '算法排行' },
   { to: '/exams', label: '試験集合' },
-  { to: '/cards', label: '牌库' },
+  { to: '/cards', label: '卡组资源一览' },
   { to: '/compare', label: '对比' },
 ]
 
