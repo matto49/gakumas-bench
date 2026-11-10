@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, CircleHelp, RotateCw } from 'lucide-react'
 import { cn } from 'cn'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ApiError, type Ratio } from '../lib/api'
+import { ApiError, BASE, type Ratio } from '../lib/api'
 import { pct, pm } from '../lib/format'
 import { GRADE_HINT, gradeOf, modeLabel } from '../lib/game'
 import { gradeUrl, idolName, idolThumbUrl, useCatalog } from '../lib/catalog'
@@ -219,4 +220,27 @@ export function CodeBlock({ children }: { children: string }) {
       {children}
     </pre>
   )
+}
+
+/** 行里自己能点的东西：点到它们时整行不跳 */
+const ROW_INTERACTIVE = 'a,button,input,select,textarea,label,summary,[role="button"],[role="checkbox"],[tabindex]:not(tr)'
+
+/**
+ * 整行可点：`const rowLink = useRowLink()`，`<tr {...rowLink('/runs/' + id)} className="cursor-pointer …">`。点行里的空白或文字跳到 to；点行里自己的链接、按钮、
+ * 带提示的数字照常；选中文字时不跳；⌘ / Ctrl / Shift 点或中键点在新标签打开。行里仍要留一个真链接给键盘和读屏。
+ */
+export function useRowLink() {
+  const nav = useNavigate()
+  return (to: string) => {
+    const open = (e: MouseEvent, newTab: boolean) => {
+      if ((e.target as HTMLElement).closest(ROW_INTERACTIVE)) return
+      if (window.getSelection()?.toString()) return
+      if (newTab) window.open(BASE + to.replace(/^\//, ''), '_blank', 'noopener')
+      else nav(to)
+    }
+    return {
+      onClick: (e: MouseEvent) => open(e, e.metaKey || e.ctrlKey || e.shiftKey),
+      onAuxClick: (e: MouseEvent) => { if (e.button === 1) open(e, true) },
+    }
+  }
 }

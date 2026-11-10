@@ -10,7 +10,7 @@ import { setBlurbOf, setTitleOf, sortSets } from '../lib/sets'
 import { Select } from '../components/Select'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Code, cx, Empty, SectionTitle, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, RankNum, RatioText, TableSkeleton, Tip } from '../components/ui'
+import { useRowLink, Code, cx, Empty, SectionTitle, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, RankNum, RatioText, TableSkeleton, Tip } from '../components/ui'
 
 type SortKey = 'oracle' | 'base' | 'mean' | 'p50' | 'n' | 'label'
 
@@ -56,6 +56,7 @@ function SortHead({ k, children, sort, dir, onSort, align = 'right', help }: { k
 }
 
 export function Leaderboard() {
+  const rowLink = useRowLink()
   const { set } = useParams()
   const [q, setQ] = useSearchParams()
   const cat = useCatalog()
@@ -223,7 +224,7 @@ export function Leaderboard() {
                 if (!r.privileged) rank++
                 const params = r.params ? Object.entries(r.params).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${v}`).join(' ') : ''
                 return (
-                  <tr key={r.run} className={cx('border-b border-line last:border-0', r.privileged ? 'bg-surface-2 text-ink-2' : 'hover:bg-brand-tint')}>
+                  <tr key={r.run} {...rowLink(`/runs/${r.run}`)} className={cx('cursor-pointer border-b border-line last:border-0', r.privileged ? 'bg-surface-2 text-ink-2 hover:bg-surface-3' : 'hover:bg-brand-tint')}>
                     <td className="px-3 py-3 text-center">{r.privileged ? <span className="text-[12px] whitespace-nowrap text-ink-3">分母</span> : <RankNum n={rank} />}</td>
                     <td className="max-w-[300px] px-3 py-3">
                       <span className="flex items-center gap-2">

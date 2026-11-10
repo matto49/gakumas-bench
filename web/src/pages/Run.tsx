@@ -9,7 +9,7 @@ import { useSetTitle } from '../lib/sets'
 import { StripPlot } from '../components/Charts'
 import { AlgoAbout } from '../components/AlgoAbout'
 import { Select } from '../components/Select'
-import { cx, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, TableSkeleton, TurnStrip } from '../components/ui'
+import { useRowLink, cx, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, TableSkeleton, TurnStrip } from '../components/ui'
 
 type RunListItem = { run: string; label: string; set: string; kind?: string; privileged?: boolean; template_seeds?: string }
 
@@ -40,6 +40,7 @@ export function useOracle(set: string | undefined, kind: string | undefined, tse
 }
 
 export function RunPage() {
+  const rowLink = useRowLink()
   const setTitle = useSetTitle()
   const { run = '' } = useParams()
   const nav = useNavigate()
@@ -180,7 +181,7 @@ export function RunPage() {
           </thead>
           <tbody>
             {eps.map((e) => (
-              <tr key={`${e.id}#${e.seed_index}`} className="border-b border-line last:border-0 hover:bg-brand-tint">
+              <tr key={`${e.id}#${e.seed_index}`} {...rowLink(`/runs/${run}/${e.id}/${e.seed_index}`)} className="cursor-pointer border-b border-line last:border-0 hover:bg-brand-tint">
                 <td className="max-w-[360px] px-3 py-2">
                   <div className="flex items-center gap-2.5">
                     <IdolThumb id={e.tags?.idol} size={30} />

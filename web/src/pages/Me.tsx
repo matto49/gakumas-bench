@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { btn, Code, CodeBlock, cx, Empty, ErrorState, ModeBadge, PageHeader, SectionTitle, TableSkeleton } from '../components/ui'
+import { useRowLink, btn, Code, CodeBlock, cx, Empty, ErrorState, ModeBadge, PageHeader, SectionTitle, TableSkeleton } from '../components/ui'
 
 type MyRun = { run: string; label: string; set: string; kind?: string; mode?: string; uploaded?: string; finished?: string; started?: string; episodes?: number; verified?: { accepted: number; rejected?: number }; privileged?: boolean }
 
@@ -151,6 +151,7 @@ function TokenLogin({ onDone }: { onDone: () => void }) {
 }
 
 function Dashboard({ me }: { me: MeInfo }) {
+  const rowLink = useRowLink()
   const user = me.user
   const setTitle = useSetTitle()
   const runs = useApi<MyRun[]>('api/me/runs')
@@ -225,7 +226,7 @@ function Dashboard({ me }: { me: MeInfo }) {
                   </thead>
                   <tbody>
                     {[...runs.data].reverse().map((r) => (
-                      <tr key={r.run} className="border-b border-line last:border-0 hover:bg-brand-tint">
+                      <tr key={r.run} {...rowLink(`/runs/${r.run}`)} className="cursor-pointer border-b border-line last:border-0 hover:bg-brand-tint">
                         <td className="px-3 py-2">
                           <Link to={`/runs/${r.run}`} className="font-semibold text-ink hover:text-brand-ink">{r.label}</Link>
                           <div className="font-mono text-[11px] text-ink-3">{r.run}</div>
