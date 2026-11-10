@@ -2,9 +2,9 @@ import type { CatalogCard } from '../lib/api'
 import { spriteUrl } from '../lib/catalog'
 import { PLAN } from '../lib/game'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { cx } from './ui'
+import { CopyId, cx } from './ui'
 
-/** 技能卡的图、标签和详情弹窗：考试资源一览和题的牌组共用 */
+/** 技能卡的图、标签和详情弹窗：游戏资源一览和题的牌组共用 */
 
 export const CATEGORY: Record<string, string> = { ACTIVE_SKILL: 'アクティブ', MENTAL_SKILL: 'メンタル', TROUBLE: 'トラブル' }
 export const UP_LABEL = ['未强化', '强化 +', '强化 ++', '强化 +++']
@@ -41,6 +41,11 @@ export function CardImage({ c, size }: { c: CatalogCard; size: number }) {
   )
 }
 
+/** 解锁 P 等级 */
+export function UnlockTag({ lv }: { lv: number }) {
+  return <Meta><span title={`制作人等级 ${lv} 解锁`}>PLv {lv}</span></Meta>
+}
+
 export function CardTags({ id, c }: { id: string; c: CatalogCard }) {
   return (
     <div className="flex flex-wrap gap-1">
@@ -48,6 +53,7 @@ export function CardTags({ id, c }: { id: string; c: CatalogCard }) {
       <Meta>{PLAN[c.plan] ?? c.plan}</Meta>
       <Meta>{CATEGORY[c.category] ?? c.category}</Meta>
       {sourceOf(id) !== 'common' && <Meta>{SOURCE[sourceOf(id)]}</Meta>}
+      {c.unlock ? <UnlockTag lv={c.unlock} /> : null}
     </div>
   )
 }
@@ -76,7 +82,7 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes }:
             <div className="min-w-0">
               <DialogTitle className="text-[18px] font-bold">{c.name}</DialogTitle>
               <div className="mt-1.5"><CardTags id={id} c={c} /></div>
-              <DialogDescription className="mt-1 font-mono text-[11px]">{id}</DialogDescription>
+              <DialogDescription className="mt-1"><CopyId id={id} /></DialogDescription>
             </div>
           </div>
         </DialogHeader>

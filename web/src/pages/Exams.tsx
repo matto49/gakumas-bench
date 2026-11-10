@@ -398,7 +398,7 @@ function UploadGuide({ set }: { set: string }) {
           <li>
             写开局配置：偶像、哪场考试、牌组 <Code>deck_cards</Code>、P 道具 <Code>produce_item_ids</Code>、饮料 <Code>drink_ids</Code>、开局体力这些，
             字段表和一份完整的例子在 <a href={FORMAT_DOC} {...ext} className={link}>格式说明</a>。
-            编号在 <a href={`${BASE}cards`} {...ext} className={link}>考试资源一览</a> 查，
+            编号在 <a href={`${BASE}cards`} {...ext} className={link}>游戏资源一览</a> 查，
             也可以拿 <a href={`${BASE}api/sets/${set}/problems`} {...ext} className={link}>这个集合现成的题</a>（JSON，每项的 <Code>archive.loadout</Code>）照着改。
           </li>
           <li>

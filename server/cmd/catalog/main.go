@@ -5,7 +5,8 @@
 //
 // 输出
 //
-//	catalog.json       cards / drinks / items / enchants / idols：编号 -> 日文名、稀有度、效果文字、小图名；卡带定制方向（custom）
+//	catalog.json       cards / drinks / items / enchants / idols：编号 -> 日文名、稀有度、效果文字、小图名；卡带定制方向（custom）；
+//	                   卡和饮料带解锁 P 等级（unlock，0 省略）
 //	sprites/<asset>.png  96px 小图（只生成用得到的）
 package main
 
@@ -99,6 +100,7 @@ type Card struct {
 	Asset    string            `json:"asset,omitempty"`
 	Up       map[int]CardLevel `json:"up"`
 	Custom   *CardCustom       `json:"custom,omitempty"`
+	Unlock   int               `json:"unlock,omitempty"` // 解锁 P 等级（unlockProducerLevel）；0 = 不靠等级解锁（初始、固有、トラブル）
 }
 
 // 卡的定制（カスタマイズ）：每张卡有自己的几个方向，每个方向 1～3 档，各档花 P 点；一张卡总共能定制 Max 次。
@@ -235,6 +237,7 @@ type Thing struct {
 	Plan   string `json:"plan,omitempty"`
 	Text   string `json:"text,omitempty"`
 	Asset  string `json:"asset,omitempty"`
+	Unlock int    `json:"unlock,omitempty"` // 饮料的解锁 P 等级；P 道具主数据里没有这一项
 }
 
 func resize(src, dst string, size int) error {
@@ -332,6 +335,9 @@ func main() {
 			c.Asset = sprite(str(r, "assetId"))
 		}
 		c.Up[u] = CardLevel{Name: str(r, "name"), Text: describe(r)}
+		if v, ok := r["unlockProducerLevel"].(float64); ok && u == 0 {
+			c.Unlock = int(v)
+		}
 		if ids, _ := r["produceCardCustomizeIds"].([]any); len(ids) > 0 && c.Custom == nil {
 			c.Custom = &CardCustom{}
 			if v, ok := r["maxCustomizeCount"].(float64); ok {
@@ -374,8 +380,12 @@ func main() {
 
 	drinks := map[string]Thing{}
 	for _, r := range readTable(*master, "ProduceDrink") {
+		unlock := 0
+		if v, ok := r["unlockProducerLevel"].(float64); ok {
+			unlock = int(v)
+		}
 		drinks[str(r, "id")] = Thing{Name: str(r, "name"), Rarity: short("PRODUCE_DRINK_RARITY_", enumName(r, "rarity")),
-			Plan: short("PRODUCE_PLAN_TYPE_", enumName(r, "planType")), Text: describe(r), Asset: sprite(str(r, "assetId"))}
+			Plan: short("PRODUCE_PLAN_TYPE_", enumName(r, "planType")), Text: describe(r), Asset: sprite(str(r, "assetId")), Unlock: unlock}
 	}
 	items := map[string]Thing{}
 	for _, r := range readTable(*master, "ProduceItem") {

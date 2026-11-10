@@ -59,7 +59,7 @@
 
 编号去哪查：
 
-- 卡、饮料、P 道具、偶像、定制 P 道具效果、回忆：`GET https://hiro.matto.top/gkbench/api/catalog`（JSON，按编号给名字和效果文字；`cards.<编号>.custom.dirs[].id` 是这张卡能选的定制编号，`levels` 是各档效果），网页版是「考试资源一览」。
+- 卡、饮料、P 道具、偶像、定制 P 道具效果、回忆：`GET https://hiro.matto.top/gkbench/api/catalog`（JSON，按编号给名字和效果文字；`cards.<编号>.custom.dirs[].id` 是这张卡能选的定制编号，`levels` 是各档效果；卡和饮料的 `unlock` 是解锁 P 等级，没有这一项就是不靠等级解锁），网页版是「游戏资源一览」。
 - 现成的题：`GET https://hiro.matto.top/gkbench/api/sets/<集合>/problems`，每项的 `archive.loadout` 就是一份开局配置，可以照着改。支援卡的编号和千分比目录里没有，从这里抄。
 
 **2. 上传。** 一条 curl 就行，不用装本仓库，编号由服务器按内容算：

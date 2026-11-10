@@ -1,6 +1,8 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, CircleHelp, RotateCw } from 'lucide-react'
+import { AlertTriangle, Check, CircleHelp, Copy, RotateCw } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 import { cn } from 'cn'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -243,4 +245,28 @@ export function useRowLink() {
       onAuxClick: (e: MouseEvent) => { if (e.button === 1) open(e, true) },
     }
   }
+}
+
+/** 编号 + 复制按钮（上传编成时要填编号：偶像卡、饮料、P 道具、回忆能力、技能卡） */
+export function CopyId({ id, className }: { id: string; className?: string }) {
+  const [done, setDone] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(id)
+      setDone(true)
+      setTimeout(() => setDone(false), 1200)
+    } catch {
+      toast.error('没复制成功', { description: '浏览器不让写剪贴板，手动选中编号复制。' })
+    }
+  }
+  return (
+    <span className={cx('inline-flex max-w-full items-center gap-1 font-mono text-[11px] text-ink-3', className)}>
+      <span className="truncate select-all" title={id}>{id}</span>
+      <button type="button" onClick={copy} aria-label={`复制编号 ${id}`}
+        className="inline-grid size-6 shrink-0 place-items-center rounded-full hover:bg-surface-2 hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-ring">
+        {done ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />}
+      </button>
+      <span className="sr-only" aria-live="polite">{done ? '已复制' : ''}</span>
+    </span>
+  )
 }
