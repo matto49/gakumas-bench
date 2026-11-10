@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowRight, ChevronRight, Download, FolderPlus, Layers, Loader2, ShieldCheck, Trash2, Upload } from 'lucide-react'
+import { ArrowRight, ChevronRight, FolderPlus, Layers, Loader2, ShieldCheck, Trash2, Upload } from 'lucide-react'
 import { DeckView } from '../components/DeckView'
 import { toast } from 'sonner'
 import { api, ApiError, BASE, type Job, type Problem, type SetInfo } from '../lib/api'
@@ -243,7 +243,6 @@ export function ExamSet() {
             {admin && info && (info.status === 'community'
               ? <Button variant="outline" size="sm" onClick={() => review('official')}><ShieldCheck size={14} aria-hidden />审核通过，升为官方</Button>
               : info.owner && info.owner !== 'matto' && <Button variant="outline" size="sm" onClick={() => review('community')}>退回社区</Button>)}
-            <a href={`${BASE}api/sets/${set}/saves`} className={btn.small}><Download size={14} aria-hidden />下载全部题模板</a>
             <Link to={`/sets/${set}`} className={btn.small}>算法排行 <ArrowRight size={13} aria-hidden /></Link>
           </div>
         }
@@ -351,7 +350,6 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
                 <td className="px-3 py-2 font-mono text-[11.5px] whitespace-nowrap text-ink-3">{p.family}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                   <Tip tip="看完整牌组（点这一行也可以）"><button onClick={() => setOpen(p.id)} aria-label={`看 ${p.name} 的牌组`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-ink"><Layers size={14} /></button></Tip>
-                  <Tip tip="下载这道题的题模板（审查存档）"><a href={`${BASE}api/saves/${p.id}?download=1`} aria-label={`下载 ${p.name}`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-ink"><Download size={14} /></a></Tip>
                   {canEdit && <button onClick={() => onDelete(p)} aria-label={`删除 ${p.name}`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-critical"><Trash2 size={14} /></button>}
                 </td>
               </tr>
@@ -381,7 +379,7 @@ function UploadGuide() {
           <ul className="list-disc space-y-1.5 pl-4">
             <li>别人发来的分享码：粘到「分享码」框里。</li>
             <li>
-              改一道现成的题：在题表里点下载（或右上「下载全部题模板」），改 <Code>loadout</Code> 里的字段，比如牌组 <Code>deck_cards</Code>、
+              自己写或改一道题：编辑审查存档 <Code>.gksave.json</Code> 里 <Code>loadout</Code> 的字段，比如牌组 <Code>deck_cards</Code>、
               P 道具 <Code>produce_item_ids</Code>、饮料 <Code>drink_ids</Code>、开局体力 <Code>starting_stamina</Code>。
               改完要重算编号，在 gakumas-bench 仓库目录下运行：
               <div className="my-1.5"><CodeBlock>{'python -m gkbench save make 改好的.gksave.json --name 题名'}</CodeBlock></div>
