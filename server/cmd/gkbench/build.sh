@@ -17,5 +17,7 @@ for t in darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64 windows
   CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags "-s -w -X main.version=$ver" -o "$out/gkbench-$os-$arch$ext" ./cmd/gkbench
 done
 cp "$here/install.sh" "$here/install.ps1" "$out/"
-(cd "$out" && rm -f SHA256SUMS && shasum -a 256 gkbench-* > SHA256SUMS && echo "$ver" > VERSION)
+# 校验和按没压缩的文件算；另给 macOS / Linux 的各出一份 .gz（约三分之一大小），安装脚本优先下它
+(cd "$out" && rm -f SHA256SUMS gkbench-*.gz && shasum -a 256 gkbench-* > SHA256SUMS && echo "$ver" > VERSION \
+  && for f in gkbench-darwin-* gkbench-linux-*; do gzip -9 -k "$f"; done)
 ls -la "$out"

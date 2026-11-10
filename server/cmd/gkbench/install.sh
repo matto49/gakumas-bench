@@ -24,9 +24,18 @@ name="gkbench-$os-$arch"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-echo "下载 $BASE/cli/$name"
-curl -fsSL "$BASE/cli/$name" -o "$tmp/gkbench"
-curl -fsSL "$BASE/cli/SHA256SUMS" -o "$tmp/SHA256SUMS"
+# 在终端里就显示进度条；网络断了自动重试
+if [ -t 2 ]; then bar="-#"; else bar="-sS"; fi
+get() { curl -fL $bar --retry 3 --retry-delay 2 --connect-timeout 20 "$1" -o "$2"; }
+if command -v gzip >/dev/null 2>&1; then
+  echo "下载 $BASE/cli/$name.gz"
+  get "$BASE/cli/$name.gz" "$tmp/gkbench.gz"
+  gzip -d "$tmp/gkbench.gz"
+else
+  echo "下载 $BASE/cli/$name"
+  get "$BASE/cli/$name" "$tmp/gkbench"
+fi
+curl -fsSL --retry 3 --connect-timeout 20 "$BASE/cli/SHA256SUMS" -o "$tmp/SHA256SUMS"
 
 want="$(awk -v n="$name" '$2 == n {print $1}' "$tmp/SHA256SUMS")"
 if command -v sha256sum >/dev/null 2>&1; then
