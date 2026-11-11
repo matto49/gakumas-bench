@@ -452,6 +452,7 @@ func (a *App) verify(j *Job, info map[string]any, tmp string, u string) {
 		delete(info, "fixed_machine")
 		delete(info, "submission")
 	}
+	withAbout(info, info["about"]) // 整次上传的 run.json 里带的算法说明（含 family / family_name）和托管一样展开、限长
 	info["run"], info["by"], info["mode"], info["uploaded"], info["kind"] = j.Run, u, mode, now(), kind
 	info["verified"] = map[string]any{"accepted": len(accepted), "rejected": len(eps) - len(accepted), "engine": a.engineInfo}
 	a.store.mu.Lock()

@@ -101,6 +101,8 @@ export type Row = {
   author?: string
   /** 算法家族：同一算法的各个版本 / 不同人跑的结果（服务器按标签或上传时写的 family 归类） */
   family?: string
+  /** 家族显示名（有人起过名才有；没有就显示 family） */
+  family_name?: string
 }
 
 export type EpisodeSummary = {

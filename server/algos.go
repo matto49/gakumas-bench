@@ -181,6 +181,9 @@ func withAbout(h map[string]any, about any) {
 	if f, _ := m["family"].(string); normFamily(f) != "" { // 家族不依赖说明：只写 family 也收
 		h["family"] = normFamily(f)
 	}
+	if n, _ := m["family_name"].(string); cleanFamilyName(n) != "" {
+		h["family_name"] = cleanFamilyName(n)
+	}
 	if s, _ := m["summary"].(string); clip(s, 300) != "" {
 		h["summary"] = clip(s, 300)
 	} else {

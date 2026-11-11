@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowDown, ArrowRight, ArrowUp, ChevronRight, ChevronsUpDown } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUp, ChevronRight, ChevronsUpDown, Pencil } from 'lucide-react'
 import { useApi } from '../lib/hooks'
-import type { Row, SetInfo } from '../lib/api'
+import { api, type Row, type SetInfo } from '../lib/api'
 import { useCatalog, idolShort } from '../lib/catalog'
 import { compact, int, ms, secs } from '../lib/format'
 import { GRADE_HINT, KIND_INFO, TAG_LABEL, tagValueLabel, type Kind } from '../lib/game'
@@ -64,6 +64,7 @@ export function Leaderboard() {
   const cat = useCatalog()
   const sets = useApi<SetInfo[]>('api/sets')
   const [openFam, setOpenFam] = useState<Set<string>>(() => new Set())
+  const me = useApi<{ user: string }>('api/me')
   // 排行只看每题 32 种随机牌序的成绩；?kind=legacy 是旧版评测。以前的 ?kind=fixed（每题几种牌序、本地跑完上传）不再单列排行，旧链接落回默认
   const kind: Kind = q.get('kind') === 'legacy' ? 'legacy' : 'template'
   const base = q.get('base') ?? ''
@@ -113,6 +114,17 @@ export function Leaderboard() {
   const famRows = new Map<string, Row[]>()
   for (const r of rows) {
     if (r.family && !r.privileged) famRows.set(r.family, [...(famRows.get(r.family) ?? []), r])
+  }
+  const famName = (f: string) => famRows.get(f)?.find((m) => m.family_name)?.family_name || f
+  const renameFam = async (f: string) => {
+    const name = window.prompt(`给「${famName(f)}」家族起个名字（最多 40 字，留空恢复成 ${f}）`, famName(f) === f ? '' : famName(f))
+    if (name === null) return
+    try {
+      await api(`api/families/${encodeURIComponent(f)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
+      lb.reload()
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : String(e))
+    }
   }
   type Item = { r: Row; kind: 'row' | 'family' | 'child'; fam?: string; count?: number }
   const items: Item[] = []
@@ -267,13 +279,24 @@ export function Leaderboard() {
                           </button>
                         )}
                         {kind === 'family' ? (
-                          <span className="truncate text-[14px] font-bold text-ink">{fam}</span>
+                          <span className="truncate text-[14px] font-bold text-ink" title={`家族编号 ${fam}`}>{famName(fam!)}</span>
                         ) : (
                           <Link to={`/runs/${r.run}`} className={cx('truncate text-ink hover:text-brand-ink', kind === 'child' ? 'text-[13px] font-semibold' : 'text-[14px] font-bold')}>
                             {r.label}
                           </Link>
                         )}
                         {kind === 'family' && <Badge variant="outline" className="whitespace-nowrap">{count} 个版本</Badge>}
+                        {kind === 'family' && me.data?.user && (
+                          <button
+                            type="button"
+                            aria-label={`给 ${famName(fam!)} 家族改名`}
+                            title="改名（管理员和在这个家族里传过成绩的人）"
+                            onClick={(e) => { e.stopPropagation(); renameFam(fam!) }}
+                            className="grid size-6 shrink-0 place-items-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-brand-ink"
+                          >
+                            <Pencil size={13} aria-hidden />
+                          </button>
+                        )}
                         {kind !== 'family' && <ModeBadge mode={r.mode} privileged={r.privileged} />}
                         {r.algo === OFFICIAL_AI && (
                           <Tip tip="学マス客户端自带的出牌 AI：比赛自动打、考试里高亮推荐卡用的就是它（GKMS 从安卓 3.2.1 客户端还原）。">

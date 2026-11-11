@@ -191,6 +191,7 @@ func main() {
 	mux.HandleFunc("POST /api/saves", A(app.handleSaveUpload))
 	mux.HandleFunc("POST /api/sets", A(app.handleCreateSet))
 	mux.HandleFunc("PATCH /api/sets/{set}", A(app.handlePatchSet))
+	mux.HandleFunc("PATCH /api/families/{family}", A(app.handlePatchFamily))
 	mux.HandleFunc("POST /api/sets/{set}/problems", A(app.handleUploadProblems))
 	mux.HandleFunc("DELETE /api/sets/{set}/problems/{id}", A(app.handleDeleteProblem))
 	mux.HandleFunc("GET /api/jobs/{job}", A(app.handleJob))

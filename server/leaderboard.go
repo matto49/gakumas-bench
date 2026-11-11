@@ -55,6 +55,8 @@ type Row struct {
 	Author       string `json:"author,omitempty"` // 提交人（评测机由管理员上传，by 是管理员）
 	// 算法家族：同一个算法的不同版本 / 不同人跑的结果（任何人都能往里加）。排行每个版本仍各占一行，网页上按家族下拉看全部
 	Family string `json:"family"`
+	// 家族显示名：管理员 / 家族成员起的名（families.json），其次是上传时写的 family_name；都没有时网页显示 family
+	FamilyName string `json:"family_name,omitempty"`
 }
 
 // Group 按题目标签分组后的成绩：相对上限（有上限时）、相对基准（选了基准时）、平均分
@@ -234,6 +236,9 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 		row.SeesSeed, _ = r.info["sees_seed"].(bool)
 		row.About = algoDoc(r.info)
 		row.Family = familyOf(r.info)
+		if n, _ := r.info["family_name"].(string); cleanFamilyName(n) != "" {
+			row.FamilyName = cleanFamilyName(n)
+		}
 		if r.info["fixed_machine"] == true {
 			row.FixedMachine = true
 			row.Machine, _ = r.info["machine"].(string)
@@ -337,6 +342,12 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 		}
 		return rows[i].Mean > rows[j].Mean
 	})
+	names := s.FamilyNames()
+	for i := range rows {
+		if n := names[rows[i].Family]; n != "" {
+			rows[i].FamilyName = n
+		}
+	}
 	return rows, nil
 }
 
