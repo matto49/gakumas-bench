@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, Fragment, useContext, useEffect, useState, type ReactNode } from 'react'
 import { api, BASE, type Catalog } from './api'
-import { CATEGORY_JA, CATEGORY_ZH, IDOL_STYLE, IDOL_STYLE_ZH, PLAN, PLAN_ZH } from './game'
+import { CATEGORY_JA, CATEGORY_ZH, IDOL_STYLE, IDOL_STYLE_ZH, PLAN, PLAN_ZH, setGameLang } from './game'
 
 /** 游戏里的名字和效果文字用日文还是中文（中文取学マス汉化插件的翻译，见 server/cmd/catalog/zh.go） */
 export type Lang = 'ja' | 'zh'
@@ -37,9 +37,13 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     }
     setLangState(l)
   }
+  // 游戏用语表（lib/game.ts 的 bi()）是模块级的：先设好再画；换语言时用 key 让整页重画一遍
+  setGameLang(lang)
   return (
     <LangCtx.Provider value={{ lang, setLang }}>
-      <Ctx.Provider value={cat}>{children}</Ctx.Provider>
+      <Ctx.Provider value={cat}>
+        <Fragment key={lang}>{children}</Fragment>
+      </Ctx.Provider>
     </LangCtx.Provider>
   )
 }
