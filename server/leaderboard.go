@@ -425,7 +425,8 @@ func contains(xs []string, x string) bool {
 	return false
 }
 
-var familyVersionSeg = regexp.MustCompile(`^(v?\d)`)
+// 版本段：2.0beta、v2、V.2、Ver2.1、version3（比较前已转小写）
+var familyVersionSeg = regexp.MustCompile(`^((v|ver|version)\.?)?\d`)
 var familyClean = regexp.MustCompile(`[^\p{L}\p{N}_-]+`)
 
 // familyOf：算法家族。上传 / 托管时写了 family（about.family 或 run.json 的 family）就用它；

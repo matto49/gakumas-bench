@@ -47,6 +47,7 @@ func TestFamilyOf(t *testing.T) {
 	cases := map[string]string{
 		"uinet-2.0beta-Abenddammerungseinsamkeit": "uinet", "uinet": "uinet", "pimc-vote-16w-2s": "pimc-vote",
 		"oracle-30s": "oracle", "hiro-rules": "hiro-rules", "pimc-plus-v2": "pimc-plus", "asahi老师策略": "asahi老师策略",
+		"UINet-Ver2.1-Kummertranen": "uinet", "uinet-Version3": "uinet", "my-algo-V.2": "my-algo", "pimc-vote-x": "pimc-vote-x",
 	}
 	for label, want := range cases {
 		if got := familyOf(map[string]any{"label": label}); got != want {
