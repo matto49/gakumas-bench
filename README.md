@@ -234,3 +234,15 @@
 - 上传的成绩一律记为 `self`：服务器核对过分数，但证明不了算法没偷看种子；可信度最高的是 `hosted`。
 - 仓库里不放读存档、解密、还原种子的代码；题目从存档转出来的那一步在仓库外做。
 - GKMS 代码不进本仓库，按路径引用（私有、无许可证，和作者共建）。
+
+## 许可
+
+本仓库的代码（`gkbench/`、`server/`、`web/`、`tools/` 等）以 [MIT](LICENSE) 发布，可以直接引用、改写，也可以把这里的算法接进别的项目。
+
+不在本许可内的东西：
+- GKMS（yuzeis/GKMSProject）是私有项目、没有许可证，本仓库只按路径引用它的引擎，不包含它的代码；
+  `gkbench/algos/native/official_ai_ext.cpp` 编译时要 `#include` GKMS 的核心，所以只能在装了 GKMS 的机器上编。
+- UINet 的模型和代码在 [yuzeis/GKMSUINet](https://github.com/yuzeis/GKMSUINet)（MIT），按它自己的许可。
+- `gkbench/algos/hiro.py` 运行时引用 [hiro-gakumas-hero](https://github.com/matto49/hiro-gakumas-hero)（GPL-3.0-or-later），不包含它的代码。
+- 卡面、图标等游戏素材和主数据的权利属于游戏的权利人，这里只作研究用途。
+
