@@ -53,13 +53,13 @@ export const STAGE: Record<string, string> = {
   'nia.audition_final': '最終審査',
 }
 
-/** 阶段名：表里没有的，偶像之路 tower.N 写「N 层」，初的培育课程 hajime.N 写「课程 N」 */
+/** 阶段名：表里没有的，偶像之路 tower.N 写「N 层」；初的培育课程 hajime.N 的 N 是 GKMS 的步骤编号（看不出第几节课），写「培育课程 #N」 */
 export function stageLabel(v: string): string {
   if (STAGE[v]) return STAGE[v]
   let m = /^tower\.(\d+)$/.exec(v)
   if (m) return `${m[1]} 层`
   m = /^hajime\.(\d+)$/.exec(v)
-  if (m) return `课程 ${m[1]}`
+  if (m) return `培育课程 #${m[1]}`
   return v
 }
 

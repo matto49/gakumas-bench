@@ -124,6 +124,14 @@ func (s *Store) planOfIdol(id string) string {
 	return idolPlan[id]
 }
 
+// deckOf 编成里的牌组：H.I.F / 初 / N.I.A 叫 deck_cards，偶像之路（gkms.exam_loadout.v1）叫 produce_cards
+func deckOf(lo map[string]any) any {
+	if v, ok := lo["deck_cards"]; ok && v != nil {
+		return v
+	}
+	return lo["produce_cards"]
+}
+
 func idsOf(v any) []string {
 	xs, _ := v.([]any)
 	var out []string
@@ -149,7 +157,7 @@ func (s *Store) sceneOf(p map[string]any) map[string]any {
 		"exam": lo["produce_id"], "stage": m["stage"], "round": lo["round"], "mechanic": m["mechanic"],
 		"by": m["by"], "source": sourceKind(m), "kind": kindOfStage(str(m["stage"]), str(lo["round"])),
 		"idol": idol, "plan": s.planOfIdol(idol), "turns": m["turns"],
-		"deck": len(idsOf(lo["deck_cards"])), "items": idsOf(lo["produce_item_ids"]), "drinks": idsOf(lo["drink_ids"]),
+		"deck": len(idsOf(deckOf(lo))), "items": idsOf(lo["produce_item_ids"]), "drinks": idsOf(lo["drink_ids"]),
 	}
 	for k, v := range sc {
 		if v == nil || v == "" {

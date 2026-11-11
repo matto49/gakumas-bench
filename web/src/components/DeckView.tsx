@@ -43,7 +43,7 @@ export function DeckView({ p, onClose }: { p: Problem; onClose: () => void }) {
   const cat = useCatalog()
   const lo = (p.archive.loadout ?? {}) as Record<string, unknown>
   const sc = p.scene ?? {}
-  const deck = list(lo.deck_cards).map(parseDeckCard).filter((c): c is Card => !!c)
+  const deck = list(lo.deck_cards ?? lo.produce_cards).map(parseDeckCard).filter((c): c is Card => !!c)
   const items = list(lo.produce_item_ids).map(String)
   const drinks = list(lo.drink_ids).map(String)
   const supports = list(lo.support_cards).map((s) => (typeof s === 'string' ? s.split(':') : [String((s as { support_card_id?: string }).support_card_id), String((s as { permil?: number }).permil)]))

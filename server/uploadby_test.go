@@ -43,3 +43,12 @@ func TestSceneKind(t *testing.T) {
 		t.Error("sceneKeys 要有 kind")
 	}
 }
+
+func TestSceneDeckFromProduceCards(t *testing.T) {
+	s := &Store{Data: t.TempDir()}
+	p := map[string]any{"loadout": map[string]any{"produce_id": "tower", "produce_cards": []any{"p_card-a+1", "p_card-b"},
+		"produce_item_ids": []any{"pitem_x"}}, "meta": map[string]any{"stage": "tower.8"}}
+	if sc := s.sceneOf(p); sc["deck"] != 2 {
+		t.Errorf("偶像之路的牌组在 produce_cards：%v", sc["deck"])
+	}
+}
