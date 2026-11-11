@@ -332,6 +332,13 @@ func (a *App) handleUpload(w http.ResponseWriter, r *http.Request, u string) {
 		fail(w, 403, "看种子的理论上限只能由管理员上传")
 		return
 	}
+	if n, err := countEpisodeLines(epsRaw, maxRunUploadEpisodes); err != nil {
+		fail(w, 400, "episodes.jsonl.zst 读不了："+err.Error())
+		return
+	} else if n > maxRunUploadEpisodes {
+		fail(w, 413, fmt.Sprintf("一次最多传 %d 局，请分批（新版 gkbench upload 会自动按题分批）", maxRunUploadEpisodes))
+		return
+	}
 	runID := slug(fmt.Sprintf("%v-%s", info["run"], u))
 	if _, err := os.Stat(a.store.RunDir(runID)); err == nil {
 		fail(w, 409, "已经有运行 "+runID)

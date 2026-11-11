@@ -23,12 +23,60 @@ def _client(server=None):
     return httpx.Client(base_url=(server or SERVER), headers={"Authorization": f"Bearer {tok}"}, timeout=600)
 
 
+# 服务器一次最多收这么多局（server/uploadcap.go）；多了按题分批，几批在排行里按算法合成一行
+MAX_UPLOAD_EPISODES = 1000
+
+
+def split_by_problem(eps, limit=MAX_UPLOAD_EPISODES):
+    """按题切成每批不超过 limit 局；同一道题的局放在同一批（一道题本身超过 limit 时单独一批）。"""
+    groups: dict[str, list] = {}
+    for e in eps:
+        groups.setdefault(str(e.get("id")), []).append(e)
+    chunks, cur = [], []
+    for lst in groups.values():
+        if cur and len(cur) + len(lst) > limit:
+            chunks.append(cur)
+            cur = []
+        cur.extend(lst)
+    if cur:
+        chunks.append(cur)
+    return chunks
+
+
 def upload(run_dir, server=None):
+    """上传一次运行。局数超过服务器上限时自动按题分批，每批是一次单独的运行（名字加 -p1、-p2…）。"""
+    import io
+    import json
+
+    import zstandard
+
+    from .runner import read_episodes
     d = Path(run_dir)
+    eps = list(read_episodes(d))
+    if len(eps) <= MAX_UPLOAD_EPISODES:
+        return _upload_one((d / "run.json").read_bytes(), (d / "episodes.jsonl.zst").read_bytes(), server)
+    info = json.loads((d / "run.json").read_text())
+    chunks = split_by_problem(eps)
+    out = {"status": "done", "accepted": 0, "rejected": [], "runs": []}
+    for i, chunk in enumerate(chunks, 1):
+        part = dict(info, run=f"{info['run']}-p{i}", episodes=len(chunk))
+        buf = io.BytesIO()
+        with zstandard.ZstdCompressor(level=6).stream_writer(buf, closefd=False) as w:
+            for e in chunk:
+                w.write((json.dumps(e, ensure_ascii=False) + "\n").encode())
+        print(f"  分批上传 {i}/{len(chunks)}：{len(chunk)} 局", flush=True)
+        j = _upload_one(json.dumps(part, ensure_ascii=False).encode(), buf.getvalue(), server)
+        out["accepted"] += j.get("accepted", 0)
+        out["rejected"] += j.get("rejected") or []
+        out["runs"].append(j.get("run"))
+    out["run"] = ", ".join(str(r) for r in out["runs"])
+    return out
+
+
+def _upload_one(run_json: bytes, episodes_zst: bytes, server=None):
     with _client(server) as c:
-        r = c.post("/api/runs", files={"run_json": ("run.json", (d / "run.json").read_bytes(), "application/json"),
-                                       "episodes": ("episodes.jsonl.zst", (d / "episodes.jsonl.zst").read_bytes(),
-                                                    "application/zstd")})
+        r = c.post("/api/runs", files={"run_json": ("run.json", run_json, "application/json"),
+                                       "episodes": ("episodes.jsonl.zst", episodes_zst, "application/zstd")})
         if r.status_code >= 400:
             raise SystemExit(f"上传失败 {r.status_code}：{r.text[:2000]}")
         j = r.json()

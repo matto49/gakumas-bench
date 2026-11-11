@@ -13,11 +13,14 @@ from gkbench.problems import list_sets, load_set
 from gkbench.referee import Referee
 from gkbench.worlds import export_world, import_world
 
-pytestmark = pytest.mark.skipif("hif-live" not in list_sets(), reason="缺题集 hif-live")
+SET = next((s for s in ("hif", "hif-live") if s in list_sets()), None)
+pytestmark = pytest.mark.skipif(SET is None, reason="缺题集 hif")
 
 
 def _cases():
-    out = load_set("hif-live")
+    if SET is None:
+        return []
+    out = [c for c in load_set(SET) if c[1]][:15]   # hif 合并后有 500 多题：取前 15 道有牌序的
     if "gkms480" in list_sets():
         out += load_set("gkms480")[:3]
     return out

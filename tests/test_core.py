@@ -1,4 +1,4 @@
-"""裁判、世界采样、重放校验的基本性质。用题集 hif-live 的第一道题（没有题集时跳过）。
+"""裁判、世界采样、重放校验的基本性质。用题集 hif（旧数据目录叫 hif-live）的第一道题（没有题集时跳过）。
 
   .venv/bin/python -m pytest -q tests
 """
@@ -13,12 +13,13 @@ from gkbench.referee import IllegalAction, Referee
 from gkbench.runner import play_episode
 from gkbench.verify import replay
 
-pytestmark = pytest.mark.skipif("hif-live" not in list_sets(), reason="缺题集 hif-live")
+SET = next((s for s in ("hif", "hif-live") if s in list_sets()), None)
+pytestmark = pytest.mark.skipif(SET is None, reason="缺题集 hif")
 
 
 @pytest.fixture(scope="module")
 def case():
-    p, seeds = load_set("hif-live")[0]
+    p, seeds = load_set(SET)[0]
     return p, seeds[0]
 
 
