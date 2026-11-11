@@ -206,6 +206,10 @@
     # 回忆能力的图标（memicon-*，游戏里的彩色方底 + 效果图案合成）：gkmas-assets/tools/export_memory_icons.py，
     # 导出到 export/memory_icons，第一次生成时把它加进 -cards。
     # 只更新文字（效果、定制方向）时可以不带 -cards / -drinks：-out 下已有的小图照用。
+    # 中文目录：加 -zh <汉化数据目录>，另出 catalog.zh.json（网页右上角「日 / 中」切到中文时读它，接口 api/catalog?lang=zh）。
+    # 汉化数据用学マス汉化插件那份：git clone https://github.com/imas-tools/gakumas-master-translation，-zh 指它的 data/
+    # （插件 gakumas-local/local-files/masterTrans 是同一种格式）。做法照插件：按表的 primaryKeys 找到同一行，只换文字，
+    # 汉化留空或对不上的保留日文；生成时会打印每张表命中多少行（cmd/catalog/zh.go）。上线时两份 json 一起放 $GKBENCH_DATA/static/。
     # 目录里每张卡带它自己的定制方向（custom：各方向各档的 P 点和效果）；主数据没有定制的说明文字，
     # 数值类的按效果类型拼（cmd/catalog 的 growValueText），加 / 换效果的用那条效果自己的说明。
 

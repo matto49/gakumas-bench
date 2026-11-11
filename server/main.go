@@ -153,7 +153,14 @@ func main() {
 	mux.HandleFunc("GET /api/catalog", func(w http.ResponseWriter, r *http.Request) {
 		// 每次都问一下有没有更新（没变时回 304，不重新下载），换了目录马上生效
 		w.Header().Set("Cache-Control", "public, no-cache")
-		http.ServeFile(w, r, filepath.Join(static, "catalog.json"))
+		// ?lang=zh：中文目录（cmd/catalog -zh 生成，卡名和效果文字用学マス汉化插件的翻译）；没有就回日文的
+		name := "catalog.json"
+		if r.URL.Query().Get("lang") == "zh" {
+			if _, err := os.Stat(filepath.Join(static, "catalog.zh.json")); err == nil {
+				name = "catalog.zh.json"
+			}
+		}
+		http.ServeFile(w, r, filepath.Join(static, name))
 	})
 	mux.HandleFunc("GET /api/auth", O(app.handleAuthInfo))
 	mux.HandleFunc("GET /api/auth/github", app.handleGithubStart)

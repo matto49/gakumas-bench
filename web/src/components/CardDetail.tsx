@@ -1,12 +1,12 @@
 import type { CatalogCard } from '../lib/api'
-import { spriteUrl } from '../lib/catalog'
-import { PLAN } from '../lib/game'
+import { spriteUrl, useTerms } from '../lib/catalog'
+import { CATEGORY_JA } from '../lib/game'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CopyId, cx } from './ui'
 
 /** 技能卡的图、标签和详情弹窗：游戏资源一览和题的牌组共用 */
 
-export const CATEGORY: Record<string, string> = { ACTIVE_SKILL: 'アクティブ', MENTAL_SKILL: 'メンタル', TROUBLE: 'トラブル' }
+export const CATEGORY = CATEGORY_JA
 export const UP_LABEL = ['未强化', '强化 +', '强化 ++', '强化 +++']
 
 // 编号 p_card-<计划>-<来源>-…：ido 偶像固有、sup 支援卡、act / men 通用
@@ -48,11 +48,12 @@ export function UnlockTag({ lv }: { lv: number }) {
 }
 
 export function CardTags({ id, c }: { id: string; c: CatalogCard }) {
+  const terms = useTerms()
   return (
     <div className="flex flex-wrap gap-1">
       <RarityTag r={c.rarity} />
-      <Meta>{PLAN[c.plan] ?? c.plan}</Meta>
-      <Meta>{CATEGORY[c.category] ?? c.category}</Meta>
+      <Meta>{terms.plan[c.plan] ?? c.plan}</Meta>
+      <Meta>{terms.category[c.category] ?? c.category}</Meta>
       {sourceOf(id) !== 'common' && <Meta>{SOURCE[sourceOf(id)]}</Meta>}
       {c.unlock ? <UnlockTag lv={c.unlock} /> : null}
     </div>

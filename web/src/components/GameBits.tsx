@@ -1,4 +1,4 @@
-import { useCatalog, spriteUrl, cardName, drinkName, enchantName } from '../lib/catalog'
+import { useCatalog, useTerms, spriteUrl, cardName, drinkName, enchantName } from '../lib/catalog'
 import type { Card } from '../lib/api'
 import { STATUS } from '../lib/game'
 import { cx, Tip } from './ui'
@@ -13,6 +13,7 @@ const RARITY_RING: Record<string, string> = {
 /** 一张技能卡：小图 + 日文名；悬停显示效果文字。没有小图时用名字的首字。 */
 export function SkillCard({ card, size = 44, dim, mark }: { card: Card; size?: number; dim?: boolean; mark?: 'played' | 'chosen' }) {
   const cat = useCatalog()
+  const terms = useTerms()
   const c = cat?.cards[card.id]
   const u = card.u ?? 0
   const name = cardName(cat, card.id, u)
@@ -22,7 +23,7 @@ export function SkillCard({ card, size = 44, dim, mark }: { card: Card; size?: n
       tip={
         <span className="block">
           <span className="block font-medium text-ink">{name}</span>
-          {c && <span className="mt-0.5 block text-[11px] text-ink-3">{c.rarity} · {c.category === 'ACTIVE_SKILL' ? 'アクティブ' : c.category === 'MENTAL_SKILL' ? 'メンタル' : c.category === 'TROUBLE' ? 'トラブル' : c.category}</span>}
+          {c && <span className="mt-0.5 block text-[11px] text-ink-3">{c.rarity} · {terms.category[c.category] ?? c.category}</span>}
           {text && <span className="mt-1 block whitespace-pre-line">{text}</span>}
           {card.c && card.c.length > 0 && <span className="mt-1 block text-brand-ink">定制 {card.c.map((x) => `×${x[1]}`).join(' ')}</span>}
           {card.g && card.g.length > 0 && <span className="mt-1 block text-brand-ink">考试中成长 {card.g.length} 次</span>}

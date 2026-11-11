@@ -1,18 +1,61 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { api, BASE, type Catalog } from './api'
+import { CATEGORY_JA, CATEGORY_ZH, IDOL_STYLE, IDOL_STYLE_ZH, PLAN, PLAN_ZH } from './game'
+
+/** 游戏里的名字和效果文字用日文还是中文（中文取学マス汉化插件的翻译，见 server/cmd/catalog/zh.go） */
+export type Lang = 'ja' | 'zh'
+const LANG_KEY = 'gkb-lang'
 
 const Ctx = createContext<Catalog | null>(null)
+const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'ja', setLang: () => {} })
+
+function savedLang(): Lang {
+  try {
+    return localStorage.getItem(LANG_KEY) === 'zh' ? 'zh' : 'ja'
+  } catch {
+    return 'ja'
+  }
+}
 
 export function CatalogProvider({ children }: { children: ReactNode }) {
   const [cat, setCat] = useState<Catalog | null>(null)
+  const [lang, setLangState] = useState<Lang>(savedLang)
   useEffect(() => {
-    api<Catalog>('api/catalog').then(setCat).catch(() => setCat({ cards: {}, drinks: {}, items: {}, enchants: {}, idols: {} }))
-  }, [])
-  return <Ctx.Provider value={cat}>{children}</Ctx.Provider>
+    let live = true
+    api<Catalog>(lang === 'zh' ? 'api/catalog?lang=zh' : 'api/catalog')
+      .then((c) => live && setCat(c))
+      .catch(() => live && setCat({ cards: {}, drinks: {}, items: {}, enchants: {}, idols: {} }))
+    return () => {
+      live = false
+    }
+  }, [lang])
+  const setLang = (l: Lang) => {
+    try {
+      localStorage.setItem(LANG_KEY, l)
+    } catch {
+      /* 无痕模式存不了，只在这一页生效 */
+    }
+    setLangState(l)
+  }
+  return (
+    <LangCtx.Provider value={{ lang, setLang }}>
+      <Ctx.Provider value={cat}>{children}</Ctx.Provider>
+    </LangCtx.Provider>
+  )
 }
 
 export function useCatalog() {
   return useContext(Ctx)
+}
+
+export function useLang() {
+  return useContext(LangCtx)
+}
+
+/** 计划、卡的类型、偶像流派的叫法，跟着「日 / 中」开关 */
+export function useTerms() {
+  const { lang } = useContext(LangCtx)
+  return lang === 'zh' ? { plan: PLAN_ZH, category: CATEGORY_ZH, style: IDOL_STYLE_ZH } : { plan: PLAN, category: CATEGORY_JA, style: IDOL_STYLE }
 }
 
 export const spriteUrl = (asset: string) => `${BASE}sprites/${asset}.png`

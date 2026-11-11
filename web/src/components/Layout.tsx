@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { UserRound } from 'lucide-react'
 import { useApi } from '../lib/hooks'
+import { useLang } from '../lib/catalog'
 import { cx } from './ui'
 
 const nav = [
@@ -17,6 +18,44 @@ const pill = ({ isActive }: { isActive: boolean }) =>
     'rounded-full px-2.5 py-1 text-[13.5px] font-semibold whitespace-nowrap transition-colors duration-150 sm:px-3',
     isActive ? 'bg-surface-2 text-ink shadow-[inset_0_0_0_1px_var(--color-line)]' : 'text-ink-2 hover:bg-surface-2 hover:text-ink',
   )
+
+/** 卡名、效果文字用日文还是中文 */
+function LangSwitch() {
+  const { lang, setLang } = useLang()
+  const opt = (l: 'ja' | 'zh', label: string, title: string) => (
+    <button
+      type="button"
+      onClick={() => setLang(l)}
+      aria-pressed={lang === l}
+      title={title}
+      className={cx(
+        'rounded-full px-2 py-0.5 text-[12.5px] font-semibold transition-colors duration-150',
+        lang === l ? 'bg-surface text-ink shadow-[inset_0_0_0_1px_var(--color-line)]' : 'text-ink-3 hover:text-ink',
+      )}
+    >
+      {label}
+    </button>
+  )
+  const other = lang === 'ja' ? 'zh' : 'ja'
+  return (
+    <>
+      {/* 小屏上只放一个键，点了换到另一种，给导航留位置 */}
+      <button
+        type="button"
+        onClick={() => setLang(other)}
+        title={other === 'zh' ? '卡名和效果改用中文' : '卡名和效果改用日文原文'}
+        aria-label={other === 'zh' ? '游戏文字改用中文' : '游戏文字改用日文'}
+        className="rounded-full bg-surface-2 px-2 py-0.5 text-[12.5px] font-semibold text-ink-2 hover:text-ink sm:hidden"
+      >
+        {other === 'zh' ? '中' : '日'}
+      </button>
+      <div role="group" aria-label="游戏文字语言" className="hidden items-center gap-0.5 rounded-full bg-surface-2 p-0.5 sm:flex">
+        {opt('ja', '日', '卡名和效果用游戏原文（日文）')}
+        {opt('zh', '中', '卡名和效果用中文（学マス汉化插件的翻译）')}
+      </div>
+    </>
+  )
+}
 
 export function Layout() {
   const me = useApi<{ user: string; avatar?: string }>('api/me')
@@ -47,7 +86,8 @@ export function Layout() {
                 </NavLink>
               ))}
             </nav>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+              <LangSwitch />
               <NavLink to="/me" aria-label={me.data?.user ?? '登录'} className={(s) => cx(pill(s), 'inline-flex items-center gap-1.5')}>
                 {me.data?.avatar ? <img src={me.data.avatar} alt="" width={18} height={18} className="size-[18px] rounded-full" /> : <UserRound size={14} aria-hidden />}
                 <span className="hidden sm:inline">{me.data?.user ?? '登录'}</span>
@@ -63,6 +103,9 @@ export function Layout() {
         <div className="mx-auto flex max-w-[1320px] flex-wrap gap-x-6 gap-y-1 px-5 py-5 text-[12px] text-ink-3">
           <span>裁判：<a href="https://github.com/yuzeis/GKMSProject" className="hover:text-brand-ink">GKMS</a> 原生核心</span>
           <span><a href="https://github.com/matto49/gakumas-bench" className="hover:text-brand-ink">源代码</a></span>
+          <span>
+            中文卡名和效果：<a href="https://github.com/imas-tools/gakumas-master-translation" className="hover:text-brand-ink">学マス汉化插件的翻译数据</a>
+          </span>
           <span>卡面、图标等游戏素材归各自权利人所有，这里只作研究用。</span>
         </div>
       </footer>

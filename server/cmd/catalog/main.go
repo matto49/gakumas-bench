@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"golang.org/x/image/draw"
@@ -146,6 +147,7 @@ var growChangeText = map[string]string{
 
 type growTables struct {
 	grow, effect, trigger, cardEnchant map[string]row
+	tx                                 texts
 }
 
 func byID(rows []row) map[string]row {
@@ -171,10 +173,10 @@ func (t growTables) text(id string) (string, bool) {
 	if f, ok := g["value"].(float64); ok {
 		v = int(f)
 	}
-	if f, ok := growValueText[typ]; ok {
+	if f, ok := t.tx.value[typ]; ok {
 		return fmt.Sprintf(f, v), true
 	}
-	if f, ok := growPermilText[typ]; ok {
+	if f, ok := t.tx.permil[typ]; ok {
 		return fmt.Sprintf(f, permil(v)), true
 	}
 	detail := ""
@@ -202,7 +204,7 @@ func (t growTables) level(r row) string {
 		id, _ := x.(string)
 		s, plain := t.text(id)
 		if !plain && kind == "" {
-			kind = growChangeText[short("PRODUCE_CARD_GROW_EFFECT_TYPE_", enumName(t.grow[id], "effectType"))]
+			kind = t.tx.change[short("PRODUCE_CARD_GROW_EFFECT_TYPE_", enumName(t.grow[id], "effectType"))]
 		}
 		if s != "" {
 			dup := false
@@ -287,6 +289,7 @@ func main() {
 	drinksDir := flag.String("drinks", "", "饮料小图目录")
 	out := flag.String("out", "", "输出目录")
 	size := flag.Int("size", 96, "小图边长")
+	zh := flag.String("zh", "", "汉化数据目录（imas-tools/gakumas-master-translation 的 data/，或汉化插件的 local-files/masterTrans）；给了就另出 catalog.zh.json")
 	flag.Parse()
 	if *master == "" || *out == "" {
 		flag.Usage()
@@ -334,8 +337,64 @@ func main() {
 		return asset
 	}
 
+	rdJa := func(name string) []row { return readTable(*master, name) }
+	doc, info := buildDoc(rdJa, jaTexts, sprite)
+	var docZh map[string]any
+	if *zh != "" {
+		cache := map[string]*trTable{}
+		rdZh := func(name string) []row {
+			t, ok := cache[name]
+			if !ok {
+				t = loadTr(*zh, name)
+				cache[name] = t
+			}
+			return overlay(name, readTable(*master, name), t)
+		}
+		docZh, _ = buildDoc(rdZh, zhTexts, sprite)
+	}
+	n := 0
+	for asset := range used {
+		dst := filepath.Join(spr, asset+".png")
+		if _, err := os.Stat(dst); err == nil {
+			continue
+		}
+		if err := resize(have[asset], dst, *size); err != nil {
+			log.Printf("缩图失败 %s：%v", asset, err)
+			continue
+		}
+		n++
+	}
+	b, _ := json.Marshal(doc)
+	if err := os.WriteFile(filepath.Join(*out, "catalog.json"), b, 0o644); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s；小图 %d 张（新生成 %d），catalog.json %d KB\n", info, len(used), n, len(b)/1024)
+	if docZh != nil {
+		bz, _ := json.Marshal(docZh)
+		if err := os.WriteFile(filepath.Join(*out, "catalog.zh.json"), bz, 0o644); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("中文目录 catalog.zh.json %d KB；汉化命中（表：命中行 / 主数据行，数组对不上的条数）：", len(bz)/1024)
+		names := make([]string, 0, len(trStat))
+		for k := range trStat {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, k := range names {
+			st := trStat[k]
+			fmt.Printf(" %s %d/%d", k, st.hit, st.rows)
+			if st.nestedSkip > 0 {
+				fmt.Printf("（%d）", st.nestedSkip)
+			}
+		}
+		fmt.Println()
+	}
+}
+
+// 生成一份目录。rd 读一张主数据表（中文目录读的是叠了汉化的表），tx 是目录自己拼的那些文字
+func buildDoc(rd func(string) []row, tx texts, sprite func(string) string) (map[string]any, string) {
 	cards := map[string]*Card{}
-	for _, r := range readTable(*master, "ProduceCard") {
+	for _, r := range rd("ProduceCard") {
 		id := str(r, "id")
 		u := 0
 		if v, ok := r["upgradeCount"].(float64); ok {
@@ -369,10 +428,10 @@ func main() {
 			}
 		}
 	}
-	gt := growTables{grow: byID(readTable(*master, "ProduceCardGrowEffect")), effect: byID(readTable(*master, "ProduceExamEffect")),
-		trigger: byID(readTable(*master, "ProduceExamTrigger")), cardEnchant: byID(readTable(*master, "ProduceCardStatusEnchant"))}
+	gt := growTables{tx: tx, grow: byID(rd("ProduceCardGrowEffect")), effect: byID(rd("ProduceExamEffect")),
+		trigger: byID(rd("ProduceExamTrigger")), cardEnchant: byID(rd("ProduceCardStatusEnchant"))}
 	custom := map[string][]CustomLevel{} // 定制编号 → 各档（按档次排好）
-	for _, r := range readTable(*master, "ProduceCardCustomize") {
+	for _, r := range rd("ProduceCardCustomize") {
 		n := 1
 		if v, ok := r["customizeCount"].(float64); ok {
 			n = int(v)
@@ -399,7 +458,7 @@ func main() {
 	}
 
 	drinks := map[string]Thing{}
-	for _, r := range readTable(*master, "ProduceDrink") {
+	for _, r := range rd("ProduceDrink") {
 		unlock := 0
 		if v, ok := r["unlockProducerLevel"].(float64); ok {
 			unlock = int(v)
@@ -408,21 +467,21 @@ func main() {
 			Plan: short("PRODUCE_PLAN_TYPE_", enumName(r, "planType")), Text: describe(r), Asset: sprite(str(r, "assetId")), Unlock: unlock}
 	}
 	items := map[string]Thing{}
-	for _, r := range readTable(*master, "ProduceItem") {
+	for _, r := range rd("ProduceItem") {
 		items[str(r, "id")] = Thing{Name: str(r, "name"), Rarity: short("PRODUCE_ITEM_RARITY_", enumName(r, "rarity")),
 			Plan: short("PRODUCE_PLAN_TYPE_", enumName(r, "planType")), Text: describe(r), Asset: sprite(str(r, "assetId"))}
 	}
 	// 回忆（编成里的 memory_ability_ids）：效果写在 ProduceSkill 上
 	skills := map[string]string{}
-	for _, r := range readTable(*master, "ProduceSkill") {
+	for _, r := range rd("ProduceSkill") {
 		skills[str(r, "id")] = describe(r)
 	}
 	// 回忆的图标：游戏里是彩色方底 + 白色图案，导出时已经合成好（gkmas-assets/tools/export_memory_icons.py → memicon-*）。
 	// 考试中生效的（附魔）按附魔给的第一种考试效果取图案；培育中生效的按效果类型取
-	skillRows := byID(readTable(*master, "ProduceSkill"))
-	effects := byID(readTable(*master, "ProduceEffect"))
-	enchantRows := byID(readTable(*master, "ProduceExamStatusEnchant"))
-	examEffects := byID(readTable(*master, "ProduceExamEffect"))
+	skillRows := byID(rd("ProduceSkill"))
+	effects := byID(rd("ProduceEffect"))
+	enchantRows := byID(rd("ProduceExamStatusEnchant"))
+	examEffects := byID(rd("ProduceExamEffect"))
 	produceIcon := map[string]string{
 		"VOCAL_ADDITION": "vocal", "DANCE_ADDITION": "dance", "VISUAL_ADDITION": "visual",
 		"VOCAL_GROWTH_RATE_ADDITION": "vocalgrowthrate", "DANCE_GROWTH_RATE_ADDITION": "dancegrowthrate", "VISUAL_GROWTH_RATE_ADDITION": "visualgrowthrate",
@@ -463,7 +522,7 @@ func main() {
 	}
 	memories := map[string]Thing{}
 	noIcon := 0
-	for _, r := range readTable(*master, "MemoryAbility") {
+	for _, r := range rd("MemoryAbility") {
 		if t := skills[str(r, "skillId")]; t != "" {
 			sk := skillRows[str(r, "skillId")]
 			plan := short("PRODUCE_PLAN_TYPE_", enumName(sk, "planType"))
@@ -478,11 +537,11 @@ func main() {
 		}
 	}
 	chars := map[string]string{}
-	for _, r := range readTable(*master, "Character") {
+	for _, r := range rd("Character") {
 		chars[str(r, "id")] = str(r, "lastName") + str(r, "firstName")
 	}
 	idols := map[string]Idol{}
-	for _, r := range readTable(*master, "IdolCard") {
+	for _, r := range rd("IdolCard") {
 		idols[str(r, "id")] = Idol{Name: fmt.Sprintf("【%s】%s", str(r, "name"), chars[str(r, "characterId")]),
 			Rarity: short("IDOL_CARD_RARITY_", enumName(r, "rarity")), Plan: short("PRODUCE_PLAN_TYPE_", enumName(r, "planType")),
 			Style:   short("PRODUCE_EXAM_EFFECT_TYPE_", enumName(r, "examEffectType")),
@@ -494,7 +553,7 @@ func main() {
 	itemRe := regexp.MustCompile(`p_item_effect_([0-9]+-[0-9]+-[0-9]+-[0-9]+)`)
 	memRe := regexp.MustCompile(`hif_memory-(p_card-[0-9a-z_-]+?)-enc`)
 	enchants := map[string]Thing{}
-	for _, r := range readTable(*master, "ProduceExamStatusEnchant") {
+	for _, r := range rd("ProduceExamStatusEnchant") {
 		id := str(r, "id")
 		t := Thing{Text: describe(r)}
 		if m := itemRe.FindStringSubmatch(id); m != nil {
@@ -503,33 +562,17 @@ func main() {
 			}
 		} else if m := memRe.FindStringSubmatch(id); m != nil {
 			if c, ok := cards[m[1]]; ok {
-				t.Name = c.Name + "（回忆）"
+				t.Name = c.Name + tx.memSuffix
 			}
 		} else if strings.HasPrefix(id, "enchant-customize_pitem") {
-			t.Name = "定制 P 道具"
+			t.Name = tx.customItem
 		}
 		enchants[id] = t
 	}
 
-	n := 0
-	for asset := range used {
-		dst := filepath.Join(spr, asset+".png")
-		if _, err := os.Stat(dst); err == nil {
-			continue
-		}
-		if err := resize(have[asset], dst, *size); err != nil {
-			log.Printf("缩图失败 %s：%v", asset, err)
-			continue
-		}
-		n++
-	}
 	doc := map[string]any{"schema": "gkbench.catalog.v1", "cards": cards, "drinks": drinks, "items": items,
 		"enchants": enchants, "idols": idols, "memories": memories}
-	b, _ := json.Marshal(doc)
-	if err := os.WriteFile(filepath.Join(*out, "catalog.json"), b, 0o644); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("回忆 %d（没图标 %d）；能定制的卡 %d；", len(memories), noIcon, nCustom)
-	fmt.Printf("目录：卡 %d、饮料 %d、P 道具 %d、持续效果 %d、偶像 %d；小图 %d 张（新生成 %d），catalog.json %d KB\n",
-		len(cards), len(drinks), len(items), len(enchants), len(idols), len(used), n, len(b)/1024)
+	info := fmt.Sprintf("回忆 %d（没图标 %d）；能定制的卡 %d；目录：卡 %d、饮料 %d、P 道具 %d、持续效果 %d、偶像 %d",
+		len(memories), noIcon, nCustom, len(cards), len(drinks), len(items), len(enchants), len(idols))
+	return doc, info
 }

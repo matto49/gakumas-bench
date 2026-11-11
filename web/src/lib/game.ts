@@ -16,6 +16,14 @@ export const PLAN: Record<string, string> = {
   '4': 'アノマリー',
 }
 
+/** 中文叫法（「中」开关打开时用，照学マス汉化插件） */
+export const PLAN_ZH: Record<string, string> = { COMMON: '通用', PLAN1: '感性', PLAN2: '理性', PLAN3: '非凡', '2': '感性', '3': '理性', '4': '非凡' }
+export const CATEGORY_JA: Record<string, string> = { ACTIVE_SKILL: 'アクティブ', MENTAL_SKILL: 'メンタル', TROUBLE: 'トラブル' }
+export const CATEGORY_ZH: Record<string, string> = { ACTIVE_SKILL: '主动', MENTAL_SKILL: '精神', TROUBLE: '干扰' }
+export const IDOL_STYLE_ZH: Record<string, string> = {
+  EXAM_PARAMETER_BUFF: '好调', EXAM_LESSON_BUFF: '集中', EXAM_REVIEW: '好印象', EXAM_CARD_PLAY_AGGRESSIVE: '干劲', EXAM_CONCENTRATION: '强气', EXAM_FULL_POWER: '全力',
+}
+
 /** 偶像卡的流派（IdolCard.examEffectType） */
 export const IDOL_STYLE: Record<string, string> = {
   EXAM_PARAMETER_BUFF: '好調',

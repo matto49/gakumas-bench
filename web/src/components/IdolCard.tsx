@@ -1,6 +1,5 @@
 import type { Catalog, CatalogIdol, CatalogThing } from '../lib/api'
-import { spriteUrl } from '../lib/catalog'
-import { IDOL_STYLE, PLAN } from '../lib/game'
+import { spriteUrl, useTerms } from '../lib/catalog'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AttrChip, CopyId, cx, IdolThumb } from './ui'
 import { CardImage, Meta, RarityTag } from './CardDetail'
@@ -11,11 +10,12 @@ import { CardImage, Meta, RarityTag } from './CardDetail'
 const rate = (permil: number) => `${permil % 10 === 0 ? permil / 10 : (permil / 10).toFixed(1)}%`
 
 export function IdolTags({ d }: { d: CatalogIdol }) {
+  const terms = useTerms()
   return (
     <span className="flex flex-wrap items-center gap-1">
       <RarityTag r={d.rarity} />
-      {d.plan && <Meta>{PLAN[d.plan] ?? d.plan}</Meta>}
-      {d.style && <Meta>{IDOL_STYLE[d.style] ?? d.style}</Meta>}
+      {d.plan && <Meta>{terms.plan[d.plan] ?? d.plan}</Meta>}
+      {d.style && <Meta>{terms.style[d.style] ?? d.style}</Meta>}
     </span>
   )
 }
@@ -169,6 +169,7 @@ export function IdolDetail({ id, d, cat, onClose, onOpenCard }: { id: string; d:
 
 /** 回忆能力的一格：游戏里的图标（彩色方底 + 图案）、效果文字、稀有度和计划 */
 export function MemoryTile({ id, d }: { id: string; d: CatalogThing }) {
+  const terms = useTerms()
   return (
     <div className="flex gap-3 rounded-xl border border-line bg-surface p-3">
       {d.asset ? (
@@ -180,7 +181,7 @@ export function MemoryTile({ id, d }: { id: string; d: CatalogThing }) {
         <p className="text-[13px] leading-relaxed whitespace-pre-line text-ink">{d.text || d.name || '（无说明）'}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <RarityTag r={d.rarity} />
-          <Meta>{d.plan ? (PLAN[d.plan] ?? d.plan) : '通用'}</Meta>
+          <Meta>{d.plan ? (terms.plan[d.plan] ?? d.plan) : '通用'}</Meta>
           <CopyId id={id} className="min-w-0" />
         </div>
       </div>

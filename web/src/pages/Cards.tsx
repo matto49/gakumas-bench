@@ -2,8 +2,7 @@ import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import type { CatalogCard, CatalogThing } from '../lib/api'
-import { spriteUrl, useCatalog } from '../lib/catalog'
-import { IDOL_STYLE, PLAN } from '../lib/game'
+import { spriteUrl, useCatalog, useTerms } from '../lib/catalog'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select } from '../components/Select'
@@ -36,6 +35,7 @@ const opt = (all: string, entries: [string, string][]) => [{ value: '', label: a
 
 export function Cards() {
   const cat = useCatalog()
+  const terms = useTerms()
   const [q, setQ] = useSearchParams()
   const tab = q.get('tab') ?? 'cards'
   const get = (k: string) => q.get(k) ?? ''
@@ -108,7 +108,7 @@ export function Cards() {
   const counts = { cards: cards.length, drinks: drinks.length, items: items.length, idols: idols.length, memories: memories.length }
   const open = get('card')
   const openIdol = get('idol')
-  const planOpts = opt('全部计划', PLAN_ORDER.map((p) => [p, p === 'COMMON' ? '通用' : PLAN[p]]))
+  const planOpts = opt('全部计划', PLAN_ORDER.map((p) => [p, p === 'COMMON' ? '通用' : terms.plan[p]]))
   const rarities = tab === 'cards' ? ['LEGEND', 'SSR', 'SR', 'R', 'N'] : tab === 'memories' ? ['UR', 'SSR', 'SR', 'R'] : tab === 'idols' ? ['SSR', 'SR', 'R'] : ['SSR', 'SR', 'R', 'N']
   const rarityOpts = opt('全部稀有度', rarities.map((r) => [r, r]))
 
@@ -133,14 +133,14 @@ export function Cards() {
         </div>
         <Select label="培育计划" value={get('plan')} onChange={(v) => update({ plan: v })} options={tab === 'idols' ? planOpts.filter((o) => o.value !== 'COMMON') : planOpts} />
         <Select label="稀有度" value={get('rarity')} onChange={(v) => update({ rarity: v })} options={rarityOpts} />
-        {tab === 'idols' && <Select label="流派" value={get('style')} onChange={(v) => update({ style: v })} options={opt('全部流派', Object.entries(IDOL_STYLE))} />}
+        {tab === 'idols' && <Select label="流派" value={get('style')} onChange={(v) => update({ style: v })} options={opt('全部流派', Object.entries(terms.style))} />}
         {(tab === 'cards' || tab === 'drinks') && (
           <Select label="P 等级" value={get('lv')} onChange={(v) => update({ lv: v })}
             options={[{ value: '', label: '全部 P 等级' }, ...LV_STEPS.map((n) => ({ value: String(n), label: `到 PLv ${n} 能拿到的` }))]} />
         )}
         {tab === 'cards' && (
           <>
-            <Select label="类型" value={get('cat')} onChange={(v) => update({ cat: v })} options={opt('全部类型', [['ACTIVE_SKILL', 'アクティブ'], ['MENTAL_SKILL', 'メンタル'], ['TROUBLE', 'トラブル']])} />
+            <Select label="类型" value={get('cat')} onChange={(v) => update({ cat: v })} options={opt('全部类型', Object.entries(terms.category))} />
             <Select label="来源" value={get('src')} onChange={(v) => update({ src: v })} options={opt('全部来源', Object.entries(SOURCE))} />
             <Select label="强化" value={get('up')} onChange={(v) => update({ up: v })} options={UP_LABEL.map((l, i) => ({ value: i ? String(i) : '', label: l }))} />
           </>
@@ -223,6 +223,7 @@ function CardTile({ id, c, name, text, onOpen }: { id: string; c: CatalogCard; n
 }
 
 function ThingTile({ id, d }: { id: string; d: CatalogThing }) {
+  const terms = useTerms()
   return (
     <div className="flex gap-3 rounded-xl border border-line bg-surface p-3">
       {d.asset && (
@@ -232,7 +233,7 @@ function ThingTile({ id, d }: { id: string; d: CatalogThing }) {
         <p className="font-bold text-ink">{d.name}</p>
         <div className="mt-1 flex flex-wrap gap-1">
           <RarityTag r={d.rarity} />
-          {d.plan && <Meta>{PLAN[d.plan] ?? d.plan}</Meta>}
+          {d.plan && <Meta>{terms.plan[d.plan] ?? d.plan}</Meta>}
           {d.unlock ? <UnlockTag lv={d.unlock} /> : null}
         </div>
         {d.text && <p className="mt-1.5 text-[12.5px] leading-relaxed whitespace-pre-line text-ink-2">{d.text}</p>}
