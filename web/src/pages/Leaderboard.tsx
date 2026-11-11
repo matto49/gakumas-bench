@@ -115,6 +115,8 @@ export function Leaderboard() {
   for (const r of rows) {
     if (r.family && !r.privileged) famRows.set(r.family, [...(famRows.get(r.family) ?? []), r])
   }
+  // 子项只写版本部分：uinet-2.0beta-xxx 在 uinet 家族里显示 2.0beta-xxx；和家族同名的那个写「初版」
+  const verOf = (r: Row, f: string) => (r.label.toLowerCase().startsWith(f + '-') ? r.label.slice(f.length + 1) : r.label.toLowerCase() === f ? '初版' : r.label)
   const famName = (f: string) => famRows.get(f)?.find((m) => m.family_name)?.family_name || f
   const renameFam = async (f: string) => {
     const name = window.prompt(`给「${famName(f)}」家族起个名字（最多 40 字，留空恢复成 ${f}）`, famName(f) === f ? '' : famName(f))
@@ -261,77 +263,81 @@ export function Leaderboard() {
                   <tr
                     key={kind === 'family' ? `fam:${fam}` : kind === 'child' ? `child:${r.run}` : r.run}
                     {...(kind === 'family' ? { onClick: () => toggleFam(fam!) } : rowLink(`/runs/${r.run}`))}
-                    className={cx('cursor-pointer border-b border-line last:border-0',
-                      kind === 'child' ? 'bg-surface-2/60 hover:bg-brand-tint' : r.privileged ? 'bg-surface-2 text-ink-2 hover:bg-surface-3' : r.algo === OFFICIAL_AI ? 'bg-brand-soft hover:bg-brand-tint' : 'hover:bg-brand-tint')}
+                    className={cx('group/row cursor-pointer border-b border-line last:border-0',
+                      kind === 'child' ? 'bg-surface-2/50 hover:bg-brand-tint [&>td]:py-2' : kind === 'family' && open ? 'bg-surface-2/50 hover:bg-brand-tint' : r.privileged ? 'bg-surface-2 text-ink-2 hover:bg-surface-3' : r.algo === OFFICIAL_AI ? 'bg-brand-soft hover:bg-brand-tint' : 'hover:bg-brand-tint')}
                   >
                     <td className="px-3 py-3 text-center">{kind === 'child' ? null : r.privileged ? <span className="text-[12px] whitespace-nowrap text-ink-3">分母</span> : <RankNum n={rank} />}</td>
-                    <td className={cx('max-w-[300px] py-3 pr-3', kind === 'child' ? 'pl-10' : 'pl-3')}>
-                      <span className="flex items-center gap-2">
-                        {kind === 'family' && (
-                          <button
-                            type="button"
-                            aria-expanded={open}
-                            aria-label={`${open ? '收起' : '展开'} ${fam} 的 ${count} 个版本`}
-                            onClick={(e) => { e.stopPropagation(); toggleFam(fam!) }}
-                            className="-ml-1 grid size-6 shrink-0 place-items-center rounded-md border border-line-strong bg-surface text-ink-2 hover:border-brand hover:text-brand-ink"
-                          >
-                            <ChevronRight size={14} aria-hidden className={cx('transition-transform', open && 'rotate-90')} />
-                          </button>
-                        )}
-                        {kind === 'family' ? (
-                          <span className="truncate text-[14px] font-bold text-ink" title={`家族编号 ${fam}`}>{famName(fam!)}</span>
-                        ) : (
-                          <Link to={`/runs/${r.run}`} className={cx('truncate text-ink hover:text-brand-ink', kind === 'child' ? 'text-[13px] font-semibold' : 'text-[14px] font-bold')}>
-                            {r.label}
-                          </Link>
-                        )}
-                        {kind === 'family' && <Badge variant="outline" className="whitespace-nowrap">{count} 个版本</Badge>}
-                        {kind === 'family' && me.data?.user && (
-                          <button
-                            type="button"
-                            aria-label={`给 ${famName(fam!)} 家族改名`}
-                            title="改名（管理员和在这个家族里传过成绩的人）"
-                            onClick={(e) => { e.stopPropagation(); renameFam(fam!) }}
-                            className="grid size-6 shrink-0 place-items-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-brand-ink"
-                          >
-                            <Pencil size={13} aria-hidden />
-                          </button>
-                        )}
-                        {kind !== 'family' && <ModeBadge mode={r.mode} privileged={r.privileged} />}
-                        {r.algo === OFFICIAL_AI && (
-                          <Tip tip="学マス客户端自带的出牌 AI：比赛自动打、考试里高亮推荐卡用的就是它（GKMS 从安卓 3.2.1 客户端还原）。">
-                            <Badge tabIndex={0} variant="default" className="whitespace-nowrap">游戏官方 AI</Badge>
-                          </Tip>
-                        )}
-                        {r.sees_seed && (
-                          <Tip tip="它在真实牌局上往后搜，等于提前知道接下来两回合抽到什么（游戏里本来就这样算）。排名照算，但和只看画面的算法不是同一起跑线。">
-                            <Badge tabIndex={0} variant="outline" className="whitespace-nowrap border-critical/60 text-critical">看牌序</Badge>
-                          </Tip>
-                        )}
-                        {r.fixed_machine && (
-                          <Tip tip={<>算法提交到仓库后，由固定的评测机跑：{r.machine || '作者的 Mac'}，同一个 Python 环境、沙盒里单独进程、机器空闲时才跑。只有这类成绩的耗时互相可比。</>}>
-                            <Badge tabIndex={0} variant="outline" className="whitespace-nowrap">固定机器</Badge>
-                          </Tip>
-                        )}
-                        {r.about && <Help tip={<>{r.about.summary}<span className="mt-1 block text-ink-3">点算法名看完整说明和实现链接。</span></>} />}
-                      </span>
-                      <div className="truncate text-[11.5px] text-ink-3">
-                        {kind === 'family' ? `成绩取最好的版本：${r.label} · ${r.author || r.by}` : [params, r.step_seconds != null && `每步 ${r.step_seconds} s`, r.author || r.by].filter(Boolean).join(' · ')}
-                        {r.runs && r.runs.length > 1 && (
-                          <>
-                            {' · '}
-                            <Tip tip={<>同一算法的 {r.runs.length} 次运行合成一行，同题同牌序取最新那次。点这一行进最新那次：<span className="mt-1 block font-mono text-[11px] whitespace-pre-line">{r.runs.join('\n')}</span></>}>
-                              <span tabIndex={0} className="cursor-help underline decoration-dotted underline-offset-2">合并 {r.runs.length} 次运行</span>
+                    <td className={cx('max-w-[320px] pr-3', kind === 'child' ? 'py-2 pl-3' : 'relative py-3 pl-3')}>
+                      {kind === 'family' && (
+                        // 展开按钮挂在名字左边的空白里，家族名和其他行的算法名对齐
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          aria-label={`${open ? '收起' : '展开'} ${famName(fam!)} 的 ${count} 个版本`}
+                          onClick={(e) => { e.stopPropagation(); toggleFam(fam!) }}
+                          className="absolute top-3.5 -left-3 grid size-5 place-items-center rounded text-ink-3 hover:bg-surface-3 hover:text-ink focus-visible:outline-2 focus-visible:outline-brand"
+                        >
+                          <ChevronRight size={15} strokeWidth={2.25} aria-hidden className={cx('transition-transform duration-150 motion-reduce:transition-none', open && 'rotate-90')} />
+                        </button>
+                      )}
+                      <div className={cx(kind === 'child' && 'ml-1 border-l-2 border-line-strong pl-3')}>
+                        <span className="group/name flex items-center gap-2">
+                          {kind === 'family' ? (
+                            <span className="truncate text-[14px] font-bold text-ink" title={`家族编号 ${fam}`}>{famName(fam!)}</span>
+                          ) : (
+                            <Link to={`/runs/${r.run}`} className={cx('truncate hover:text-brand-ink', kind === 'child' ? 'text-[13px] font-semibold text-ink-2' : 'text-[14px] font-bold text-ink')}>
+                              {kind === 'child' ? verOf(r, fam!) : r.label}
+                            </Link>
+                          )}
+                          {kind === 'family' && me.data?.user && (
+                            <button
+                              type="button"
+                              aria-label={`给 ${famName(fam!)} 家族改名`}
+                              title="改名（管理员和在这个家族里传过成绩的人）"
+                              onClick={(e) => { e.stopPropagation(); renameFam(fam!) }}
+                              className="grid size-5 shrink-0 place-items-center rounded text-ink-3 opacity-0 group-hover/row:opacity-100 hover:text-brand-ink focus-visible:opacity-100"
+                            >
+                              <Pencil size={12} aria-hidden />
+                            </button>
+                          )}
+                          {kind !== 'family' && <ModeBadge mode={r.mode} privileged={r.privileged} />}
+                          {r.algo === OFFICIAL_AI && (
+                            <Tip tip="学マス客户端自带的出牌 AI：比赛自动打、考试里高亮推荐卡用的就是它（GKMS 从安卓 3.2.1 客户端还原）。">
+                              <Badge tabIndex={0} variant="default" className="whitespace-nowrap">游戏官方 AI</Badge>
                             </Tip>
-                          </>
-                        )}
+                          )}
+                          {r.sees_seed && (
+                            <Tip tip="它在真实牌局上往后搜，等于提前知道接下来两回合抽到什么（游戏里本来就这样算）。排名照算，但和只看画面的算法不是同一起跑线。">
+                              <Badge tabIndex={0} variant="outline" className="whitespace-nowrap border-critical/60 text-critical">看牌序</Badge>
+                            </Tip>
+                          )}
+                          {r.fixed_machine && (
+                            <Tip tip={<>算法提交到仓库后，由固定的评测机跑：{r.machine || '作者的 Mac'}，同一个 Python 环境、沙盒里单独进程、机器空闲时才跑。只有这类成绩的耗时互相可比。</>}>
+                              <Badge tabIndex={0} variant="outline" className="whitespace-nowrap">固定机器</Badge>
+                            </Tip>
+                          )}
+                          {kind !== 'family' && r.about && <Help tip={<>{r.about.summary}<span className="mt-1 block text-ink-3">点算法名看完整说明和实现链接。</span></>} />}
+                        </span>
+                        <div className="truncate text-[11.5px] text-ink-3">
+                          {kind === 'family'
+                            ? `${count} 个版本 · 成绩取 ${verOf(r, fam!)}（${r.author || r.by}）`
+                            : [params, r.step_seconds != null && `每步 ${r.step_seconds} s`, r.author || r.by].filter(Boolean).join(' · ')}
+                          {kind !== 'family' && r.runs && r.runs.length > 1 && (
+                            <>
+                              {' · '}
+                              <Tip tip={<>同一算法的 {r.runs.length} 次运行合成一行，同题同牌序取最新那次。点这一行进最新那次：<span className="mt-1 block font-mono text-[11px] whitespace-pre-line">{r.runs.join('\n')}</span></>}>
+                                <span tabIndex={0} className="cursor-help underline decoration-dotted underline-offset-2">合并 {r.runs.length} 次运行</span>
+                              </Tip>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </td>
                     {hasOracle && (
                       <td className="px-3 py-3 text-right">
                         {r.privileged ? <span className="text-ink-3">100%</span> : (
                           <span className="inline-flex items-center justify-end gap-2.5">
-                            <Grade ratio={r.vs_oracle?.geo} size={30} />
+                            <Grade ratio={r.vs_oracle?.geo} size={kind === 'child' ? 24 : 30} />
                             <RatioText r={r.vs_oracle} strong />
                           </span>
                         )}
@@ -343,7 +349,7 @@ export function Leaderboard() {
                         {r.vs_base && <span className="num ml-2 text-[12px] text-ink-3">胜 {(r.vs_base.win * 100).toFixed(0)}%</span>}
                       </td>
                     )}
-                    <td className="px-3 py-3 text-right"><span className="disp text-[17px] text-ink">{int(r.mean)}</span></td>
+                    <td className="px-3 py-3 text-right"><span className={cx('disp text-ink', kind === 'child' ? 'text-[15px]' : 'text-[17px]')}>{int(r.mean)}</span></td>
                     <td className="num px-3 py-3 text-right whitespace-nowrap">
                       {r.privileged && r.params?.seconds != null ? (
                         <span className="text-ink-3">开局求解 {String(r.params.seconds)} s</span>
