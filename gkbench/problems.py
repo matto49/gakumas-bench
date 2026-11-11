@@ -277,6 +277,8 @@ def load_set(set_name, only=None, template=False):
         seeds = json.loads(sp.read_text())["problems"] if sp.is_file() else {}
     out = []
     for f in sorted(d.glob("*.gksave.json")):
+        if f.name.startswith("._"):                      # macOS tar 带上的元数据文件，不是题
+            continue
         p = problem_of(set_name, json.loads(f.read_text()))
         if only and not any(o in p["id"] or o in p["name"] for o in only):
             continue

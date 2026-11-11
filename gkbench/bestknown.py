@@ -34,13 +34,23 @@ ABOUT = {
 }
 
 
-def collect(set_name, farm_files=(), run_dirs=None):
-    """→ {(题模板编号, 牌序下标): {"score", "route"（动作元组列表）, "src"}}，每局只留报分最高的"""
+KEEP = 8      # 每局留报分最高的几条路线，重打时取裁判算出来最高的那条
+
+
+def collect(set_name, farm_files=(), run_dirs=None, keep=KEEP):
+    """→ {(题模板编号, 牌序下标): [{"score", "route"（动作元组列表）, "src"}…]}，每局留报分最高的 keep 条（高的在前）。
+    留几条是因为搜索时的引擎可能比裁判旧：报分最高的路线在裁判上未必还走得通（2026-11-11 规则 59 改了出牌时触发的体力判定）。"""
     best = {}
 
     def offer(key, score, route, src):
-        if route and score > best.get(key, {}).get("score", -1):
-            best[key] = {"score": int(score), "route": route, "src": src}
+        if not route:
+            return
+        xs = best.setdefault(key, [])
+        if any(x["route"] == route for x in xs):
+            return
+        xs.append({"score": int(score), "route": route, "src": src})
+        xs.sort(key=lambda x: -x["score"])
+        del xs[keep:]
 
     for f in farm_files:
         for line in open(f, encoding="utf-8"):
@@ -66,6 +76,35 @@ def collect(set_name, farm_files=(), run_dirs=None):
             if e.get("err") or not e.get("route"):
                 continue
             offer((e["id"], int(e["seed_index"])), e["final"]["score"], save.parse_route(e["route"]), f"run:{Path(d).name}")
+    return best
+
+
+def replay_score(loadout, seed, route):
+    """在裁判上照路线打（选择交给引擎，和 RouteAlgo 一样），走不通就停：返回 (分数, 是否走完)。用来在几条候选路线里挑。"""
+    from . import engine
+    s, _ = engine.build({k: v for k, v in loadout.items() if k != "seed"}, int(seed))
+    for a in route:
+        if a[0] == "select":
+            continue
+        if s.finished:
+            break
+        if tuple(a) not in [tuple(x) for x in s.legal_actions()]:
+            return int(s.observe()["score"]), False
+        s.step(tuple(a))
+    return int(s.observe()["score"]), bool(s.finished)
+
+
+def pick(loadout, seed, cands):
+    """候选路线按裁判重打的分数挑最高的；报分最高那条在裁判上分数不变就直接用它（省时间）。"""
+    first = cands[0]
+    sc, done = replay_score(loadout, seed, first["route"])
+    if done and sc == first["score"] or len(cands) == 1:
+        return dict(first, score=sc)
+    best = dict(first, score=sc)
+    for c in cands[1:]:
+        sc, done = replay_score(loadout, seed, c["route"])
+        if sc > best["score"]:
+            best = dict(c, score=sc)
     return best
 
 
@@ -125,10 +164,11 @@ def main(argv=None):
         for row in rows:
             if idx is not None and int(row["index"]) not in idx:
                 continue
-            hit = best.get((p["id"], int(row["index"])))
-            if hit is None:
+            cands = best.get((p["id"], int(row["index"])))
+            if not cands:
                 missing.append(f"{p['name']}#{row['index']}")
                 continue
+            hit = pick(p["loadout"], int(row["seed"]), cands)
             routes[(p["id"], int(row["seed"]))] = hit
             kind = hit["src"].split(":")[0]
             src[kind] = src.get(kind, 0) + 1
