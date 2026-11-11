@@ -66,6 +66,8 @@ def describe(loadout: dict) -> dict:
     from GakumasCLI.scenario.timeline import stage_key
     out = {}
     st = stage_key(meta)
+    if not st and loadout.get("produce_id") == "tower" and loadout.get("layer"):
+        st = f"tower.{int(loadout['layer'])}"           # 偶像之路：GKMS 的 stage_key 不认，按层数
     if st:
         out["stage"] = st
     mech = _idol_mechanic().get(loadout.get("idol_card_id"))
@@ -116,10 +118,15 @@ def add_problem(set_name, loadout: dict, *, name: str, source: dict, tags=(), se
     return doc["id"]
 
 
-def check_upload(doc, rules_version=None) -> dict:
+# 题的来源（meta.source.kind）：上传时一律 upload；管理员上传时可以指定下面几种
+SOURCE_KINDS = ("upload", "history", "capture", "live", "manual", "bench")
+
+
+def check_upload(doc, rules_version=None, *, by: str | None = None, source: str | None = None) -> dict:
     """上传的一份题（审查存档对象）→ 能入库的题模板。给服务器的「試験集合」上传用（worker 的 check_problem）。
 
     按第 5 章核对编号、题族；固定种子题核对起点。题模板没有种子，用一个随机种子开局，确认引擎能跑。
+    by / source：提交人和来源，服务器决定后传进来（不传就不写 by，source 记 upload）。
     返回 {id, family, name, text（题模板 JSON 文本，直接写盘）, meta, fixed_seed（固定种子题才有，一行种子记录）}。"""
     import random as _random
     r = save.read(doc, engine_check=engine_check)
@@ -129,7 +136,9 @@ def check_upload(doc, rules_version=None) -> dict:
     from . import engine
     engine.build(lo, _random.randrange(1, 2**31 - 1))          # 能开局（编成里的卡、道具、偶像引擎都认得）
     meta = describe(lo)
-    meta["source"] = {"kind": "upload"}
+    meta["source"] = {"kind": source if source in SOURCE_KINDS else "upload"}
+    if by:
+        meta["by"] = str(by)[:40]                              # 提交人：服务器按令牌填（管理员可代填）
     meta["tags"] = [f"name:{name[:80]}"] + [t for t in meta_in.get("tags") or []
                                             if isinstance(t, str) and not t.startswith("name:")][:8]
     out_doc = save.make_archive(lo, meta=meta)

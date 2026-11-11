@@ -256,4 +256,4 @@ export type Problem = {
 }
 
 /** 一道题的场景（服务器从编成和 meta 自动算） */
-export type Scene = { exam?: string; stage?: string; round?: string; plan?: string; mechanic?: string; idol?: string; turns?: number; deck?: number; items?: string[]; drinks?: string[] }
+export type Scene = { kind?: string; by?: string; source?: string; exam?: string; stage?: string; round?: string; plan?: string; mechanic?: string; idol?: string; turns?: number; deck?: number; items?: string[]; drinks?: string[] }

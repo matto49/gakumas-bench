@@ -120,8 +120,10 @@
 
 | 文件 | 内容 |
 |---|---|
-| `$GKBENCH_DATA/problems/<题集>/<AS-编号>.gksave.json` | 题模板，公开。`meta.tags` 约定 `name:<人读的名字>`、`deck:<牌组类型>` |
+| `$GKBENCH_DATA/problems/<题集>/<AS-编号>.gksave.json` | 题模板，公开。`meta.tags` 约定 `name:<人读的名字>`、`deck:<牌组类型>`；`meta.by` 提交人（默认上传的人，管理员可代填），`meta.source.kind` 来源（`history` 育成履歴、`capture` 采集站实录、`live` 实战存档、`upload` 上传） |
 | `$GKBENCH_DATA/private/seeds/<题集>.json` | `gkbench.seeds.v2`，私有（600）：`{"problems": {"<题模板编号>": [{"index", "seed", "split", "label", "fixed_id", "check"}]}}` |
+
+集合按模式分（2026-11-11 合并）：`hif`、`nia`、`hajime`、`idolroad`；旧集合名（`hif-live`、`hif-history`、`hif-yuzeis` 等）在服务器上自动指向新集合。
 
 `$GKBENCH_DATA/private/sets.json` 是集合信息：`{"<集合>": {title, blurb, owner, status, created, public_seeds}}`，`status` 是 `official` 或 `community`（没写当 `official`）。
 

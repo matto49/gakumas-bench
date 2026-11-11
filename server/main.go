@@ -206,7 +206,7 @@ func main() {
 	mux.Handle("/", spa(env("GKBENCH_WEB", "../web/dist")))
 
 	addr := env("GKBENCH_ADDR", "127.0.0.1:19150")
-	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Addr: addr, Handler: withSetAliases(mux), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
 		log.Printf("监听 %s，数据 %s，引擎子进程 %d 个", addr, data, n)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

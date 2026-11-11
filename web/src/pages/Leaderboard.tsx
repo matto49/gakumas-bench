@@ -6,7 +6,7 @@ import { api, type Row, type SetInfo } from '../lib/api'
 import { useCatalog, idolShort } from '../lib/catalog'
 import { compact, int, ms, secs } from '../lib/format'
 import { GRADE_HINT, KIND_INFO, TAG_LABEL, tagValueLabel, type Kind } from '../lib/game'
-import { setBlurbOf, setTitleOf, sortSets } from '../lib/sets'
+import { OLD_SETS, setBlurbOf, setTitleOf, sortSets } from '../lib/sets'
 import { Select } from '../components/Select'
 import { Badge } from '@/components/ui/badge'
 import { useRowLink, Code, cx, Empty, SectionTitle, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, RankNum, RatioText, TableSkeleton, Tip } from '../components/ui'
@@ -14,8 +14,7 @@ import { useRowLink, Code, cx, Empty, SectionTitle, ErrorState, Grade, Help, Ido
 type SortKey = 'oracle' | 'base' | 'mean' | 'p50' | 'n' | 'label'
 
 const GROUPS_BY_SET: Record<string, string[]> = {
-  gkms480: ['mechanic', 'stage', 'idol', 'deck'],
-  'hif-live': ['round', 'produce'],
+  hif: ['round', 'produce'],
 }
 
 // 顺序色阶（单一橙色，浅到深），只作格子底色；数字始终用正文色
@@ -104,6 +103,7 @@ export function Leaderboard() {
     if (sets.error) return <ErrorState error={sets.error} onRetry={sets.reload} />
     return <TableSkeleton />
   }
+  if (OLD_SETS[set]) return <Navigate to={`/sets/${OLD_SETS[set].set}${q.toString() ? `?${q}` : ''}`} replace />
 
   const info = sets.data?.find((s) => s.set === set)
   const hasOracle = rows.some((r) => r.privileged && r.vs_oracle)

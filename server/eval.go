@@ -66,6 +66,7 @@ func (a *App) handleEvalStart(w http.ResponseWriter, r *http.Request, u string) 
 		fail(w, 400, "请求体不是 JSON")
 		return
 	}
+	body.Set = canonicalSet(body.Set)
 	probs := a.store.Problems(body.Set)
 	if len(probs) == 0 {
 		fail(w, 404, "没有这套题")

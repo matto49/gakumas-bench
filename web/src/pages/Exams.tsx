@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowRight, BookOpen, ChevronRight, Copy, ExternalLink, FolderPlus, Layers, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
 import { DeckView } from '../components/DeckView'
 import { toast } from 'sonner'
@@ -7,7 +7,7 @@ import { api, ApiError, BASE, type Problem, type SetInfo } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { idolShort, spriteUrl, useCatalog } from '../lib/catalog'
 import { examLine, PLAN, SCENE_LABEL, sceneValueLabel } from '../lib/game'
-import { setBlurbOf, setTitleOf, sortSets, useSets } from '../lib/sets'
+import { OLD_SETS, setBlurbOf, setTitleOf, sortSets, useSets } from '../lib/sets'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +24,12 @@ function StatusBadge({ s }: { s?: string }) {
   return s === 'community'
     ? <Tip tip="社区集合：用户自己建、自己传题。管理员审核后可以升为官方。"><Badge tabIndex={0} variant="outline">社区</Badge></Tip>
     : <Tip tip="官方集合：管理员维护，首页和算法排行默认展示。"><Badge tabIndex={0} variant="brand">官方</Badge></Tip>
+}
+
+/** 集合的提交人：按题里记的提交人（题多的在前）；老集合的题没记时用集合的提交人 */
+function submittersOf(s: { owner?: string; scenes?: Record<string, Record<string, number>> }) {
+  const by = Object.entries(s.scenes?.by ?? {}).sort((a, b) => b[1] - a[1]).map(([k]) => k)
+  return by.length ? by.join('、') : (s.owner ?? '')
 }
 
 /** 场景分布：一行小标签，标签后是题数 */
@@ -83,7 +89,7 @@ export function Exams() {
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-ink-3">
                         <span className="relative z-10 inline-flex cursor-default"><StatusBadge s={s.status} /></span>
                         <span className="font-mono">{s.set}</span>
-                        {s.owner && <span>提交人 {s.owner}</span>}
+                        {submittersOf(s) && <span>提交人 {submittersOf(s)}</span>}
                       </div>
                     </div>
                     <span className="flex shrink-0 -space-x-2">
@@ -91,7 +97,7 @@ export function Exams() {
                     </span>
                   </div>
                   {setBlurbOf(sets, s.set) && <p className="text-ink-2">{setBlurbOf(sets, s.set)}</p>}
-                  <SceneChips scenes={s.scenes} idol={idol} />
+                  <SceneChips scenes={s.scenes} keys={['kind', 'plan']} idol={idol} />
                   <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3 text-[12.5px] text-ink-3">
                     <span><span className="disp text-[16px] text-ink">{s.problems}</span> 题</span>
                     <Tip tip={s.algos?.length ? s.algos.join('、') : '还没有算法跑过'}>
@@ -166,7 +172,7 @@ function NewSetDialog({ onDone }: { onDone: () => void }) {
 
 // ---------------------------------------------------------------- 集合详情
 
-const FILTER_KEYS = ['exam', 'stage', 'round', 'plan', 'mechanic', 'idol'] as const
+const FILTER_KEYS = ['kind', 'exam', 'stage', 'round', 'plan', 'mechanic', 'idol', 'by', 'source'] as const
 
 export function ExamSet() {
   const { set = '' } = useParams()
@@ -203,6 +209,13 @@ export function ExamSet() {
     return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   }, [rows, group])
 
+  // 合并前的旧集合地址：跳到新集合，带上对应的筛选
+  const old = OLD_SETS[set]
+  if (old) {
+    const n = new URLSearchParams(q)
+    for (const [k, v] of Object.entries(old.filter)) if (!n.has(k)) n.set(k, v)
+    return <Navigate to={`/exams/${old.set}?${n}`} replace />
+  }
   if (sets && !info) return <ErrorState error={new ApiError(404, '没有这个集合')} />
   const canEdit = !!info?.can_edit
   const admin = !!me.data?.admin
@@ -297,6 +310,7 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
           <tr>
             <th scope="col" className="px-3 py-2.5 text-left font-semibold">偶像 · 题</th>
             <th scope="col" className="px-3 py-2.5 text-left font-semibold">考试</th>
+            <th scope="col" className="px-3 py-2.5 text-left font-semibold">提交人</th>
             <th scope="col" className="px-3 py-2.5 text-left font-semibold">流派 · 机制</th>
             <th scope="col" className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">回合</th>
             <th scope="col" className="px-3 py-2.5 text-right font-semibold">牌组</th>
@@ -323,6 +337,7 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
                 <td className="px-3 py-2 whitespace-nowrap text-ink-2">
                   {examLine(sc.exam, sc.stage, sc.round)}
                 </td>
+                <td className="px-3 py-2 whitespace-nowrap text-ink-2">{sc.by ?? '—'}</td>
                 <td className="px-3 py-2 whitespace-nowrap text-ink-2">{[sc.plan && (PLAN[sc.plan] ?? sc.plan), sc.mechanic && sceneValueLabel('mechanic', sc.mechanic)].filter(Boolean).join(' · ')}</td>
                 <td className="num px-3 py-2 text-right whitespace-nowrap">{sc.turns ?? '—'}</td>
                 <td className="num px-3 py-2 text-right whitespace-nowrap">{sc.deck ?? '—'} 张</td>

@@ -4,7 +4,7 @@ import { ArrowRight, KeyRound } from 'lucide-react'
 import { useApi } from '../lib/hooks'
 import { api, type Row, type RunInfo, type SetInfo } from '../lib/api'
 import { int, ms, pct, pm } from '../lib/format'
-import { ROUND, STAGE } from '../lib/game'
+import { ROUND, stageLabel } from '../lib/game'
 import { setBlurbOf, setTitleOf, sortSets } from '../lib/sets'
 import { idolName, useCatalog } from '../lib/catalog'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +12,7 @@ import { btn, Code, CodeBlock, Grade, IdolThumb, ModeBadge, RankNum, Skeleton, T
 
 type RunItem = { run: string; label: string; kind?: string; privileged?: boolean }
 
-const FEATURE_SET = 'hif-live'
+const FEATURE_SET = 'hif'
 
 /** 首页头图：实机开局第一题、实机那一局的牌序，各算法打了多少分（数据取自每题几种牌序的自测运行） */
 function useFeatured() {
@@ -69,7 +69,7 @@ function FeaturedResult() {
           <div className="min-w-0">
             <p className="truncate text-[16px] font-bold text-ink">{idol ? idolName(cat, idol) : data.name}</p>
             <p className="text-[12.5px] text-ink-2">
-              {[stage && (STAGE[stage] ?? stage), round && (ROUND[round] ?? round)].filter(Boolean).join(' · ')}
+              {[stage && stageLabel(stage), round && (ROUND[round] ?? round)].filter(Boolean).join(' · ')}
             </p>
           </div>
         </div>
@@ -333,7 +333,7 @@ export function Home() {
 submissions/<你的算法>/submission.json`}
             </Way>
             <Way title="托管评测" tag="自测" body="每题随机 32 种牌序，只有服务器知道，算法每步向服务器要画面、交动作，用时按服务器计。PIMC 这类算法可以向服务器要「可能的世界」。断了用 --resume 接着跑。">
-              {`python -m gkbench eval --set hif-live --algo uinet --parallel 3`}
+              {`python -m gkbench eval --set hif --algo uinet --parallel 3`}
             </Way>
           </dl>
           <p className="mt-3 text-[12.5px] text-ink-3">

@@ -7,7 +7,7 @@
 
 1. 复制 `_example/` 成 `submissions/<你的算法名>/`，改 `algo.py` 和 `submission.json`。
 2. 本地自查：`python -m gkbench submissions check`，再用托管评测试跑几局：
-   `python -m gkbench eval --set hif-live --algo submissions/<名字>/algo.py:类名 --seeds 2`
+   `python -m gkbench eval --set hif --algo submissions/<名字>/algo.py:类名 --seeds 2`
 3. 开 PR。
 
 `submission.json`：
@@ -18,7 +18,7 @@
 | `entry` | `本目录里的文件.py:类名` |
 | `params` | 构造参数（可选） |
 | `author` | 你的 GitHub 用户名 |
-| `sets` | 跑哪些题集：`hif-live`（缺省）、`gkms480` |
+| `sets` | 跑哪些题集：`hif`（缺省）、`nia`、`hajime`、`idolroad` |
 | `step_seconds` | 每步时间预算，缺省 5，最多 10；超过 1.2 倍记超时 |
 
 ## 算法能用什么

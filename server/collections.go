@@ -14,6 +14,7 @@ package main
 //	DELETE /api/sets/{set}/problems/{id}     提交人或管理员删一道题（官方集合只有管理员能删）
 //
 // 上传的每道题交给引擎核对（worker check_problem：编号、题族、起点、能开局），同一集合里题族编号相同的算重复。
+// 每道题记提交人 meta.by（默认上传的人；管理员可代填）和来源 meta.source.kind，场景里按它们筛选、分组。
 // 保密种子在评测开始时按题自动生成（tseeds.go），不用另外处理。
 
 import (
@@ -146,6 +147,7 @@ func (s *Store) sceneOf(p map[string]any) map[string]any {
 	idol, _ := lo["idol_card_id"].(string)
 	sc := map[string]any{
 		"exam": lo["produce_id"], "stage": m["stage"], "round": lo["round"], "mechanic": m["mechanic"],
+		"by": m["by"], "source": sourceKind(m), "kind": kindOfStage(str(m["stage"]), str(lo["round"])),
 		"idol": idol, "plan": s.planOfIdol(idol), "turns": m["turns"],
 		"deck": len(idsOf(lo["deck_cards"])), "items": idsOf(lo["produce_item_ids"]), "drinks": idsOf(lo["drink_ids"]),
 	}
@@ -157,7 +159,53 @@ func (s *Store) sceneOf(p map[string]any) map[string]any {
 	return sc
 }
 
-var sceneKeys = []string{"exam", "stage", "round", "plan", "mechanic", "idol"}
+var sceneKeys = []string{"kind", "exam", "stage", "round", "plan", "mechanic", "idol", "by", "source"}
+
+// kindOfStage 题的类型（比阶段粗一层，集合卡片和筛选的第一层）：
+// selection 選抜、main 本戦、mid 中间审查、final 最终审查、lesson 培育课程、tower 偶像之路
+func kindOfStage(stage, round string) string {
+	switch {
+	case round == "lesson":
+		return "lesson"
+	case strings.HasPrefix(stage, "hif.sel"):
+		return "selection"
+	case strings.HasPrefix(stage, "hif.main"):
+		return "main"
+	case strings.HasPrefix(stage, "tower."):
+		return "tower"
+	case strings.Contains(stage, "audition_mid"):
+		return "mid"
+	case strings.Contains(stage, "audition_final"):
+		return "final"
+	}
+	return ""
+}
+
+// sourceKind 题的来源（meta.source.kind）：history 育成履歴、capture 采集站实录、live 实战存档、upload 上传……
+func sourceKind(m map[string]any) any {
+	if src, ok := m["source"].(map[string]any); ok {
+		return src["kind"]
+	}
+	return nil
+}
+
+// uploadAttribution 上传的题记谁的名字、什么来源：默认记上传的人、来源由引擎记 upload；
+// 管理员可以代填（题里 meta.by / meta.source.kind），用来收别人给的题（例如 yuzeis 的实战存档）。
+func uploadAttribution(u string, doc any) (by, source string) {
+	by = u
+	if !isAdmin(u) {
+		return by, ""
+	}
+	d, _ := doc.(map[string]any)
+	m, _ := d["meta"].(map[string]any)
+	if x, ok := m["by"].(string); ok && strings.TrimSpace(x) != "" {
+		by = strings.TrimSpace(x)
+	}
+	if k, ok := sourceKind(m).(string); ok {
+		source = k
+	}
+	return by, source
+}
 
 func (s *Store) sceneCounts(set string) map[string]map[string]int {
 	out := map[string]map[string]int{}
@@ -382,15 +430,15 @@ func (a *App) handleUploadProblems(w http.ResponseWriter, r *http.Request, u str
 			fail(w, 400, fmt.Sprintf("wait=1 一次最多 %d 道题，更多的去掉 wait，用返回的 job 查 /api/jobs/{job}", maxWaitDocs))
 			return
 		}
-		a.ingestProblems(job, set, docs, names)
+		a.ingestProblems(job, set, docs, names, u)
 		writeJSONResp(w, 200, job.snapshot())
 		return
 	}
-	go a.ingestProblems(job, set, docs, names)
+	go a.ingestProblems(job, set, docs, names, u)
 	writeJSONResp(w, 202, job.snapshot())
 }
 
-func (a *App) ingestProblems(j *Job, set string, docs []any, names []string) {
+func (a *App) ingestProblems(j *Job, set string, docs []any, names []string, u string) {
 	setJob := func(f func()) { j.mu.Lock(); f(); j.mu.Unlock() }
 	reject := func(i int, id, why string) {
 		setJob(func() {
@@ -403,7 +451,8 @@ func (a *App) ingestProblems(j *Job, set string, docs []any, names []string) {
 		if m, ok := d.(map[string]any); ok && str(m["id"]) != "" {
 			label = str(m["id"])
 		}
-		rep, _, err := a.pool.Pick().Call(map[string]any{"op": "check_problem", "doc": d, "name": names[i]})
+		by, source := uploadAttribution(u, d)
+		rep, _, err := a.pool.Pick().Call(map[string]any{"op": "check_problem", "doc": d, "name": names[i], "by": by, "source": source})
 		switch {
 		case err != nil:
 			msg := err.Error()

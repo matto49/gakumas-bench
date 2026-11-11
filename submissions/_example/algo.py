@@ -1,7 +1,7 @@
 """最小的自定义算法示例：能打牌就打手里第一张能打的，否则结束回合。不需要 GKMS。
 
 托管评测（种子留在服务器，只交动作）：
-    python -m gkbench eval --set hif-live --algo examples/first_playable.py:FirstPlayable --seeds 4
+    python -m gkbench eval --set hif --algo examples/first_playable.py:FirstPlayable --seeds 4
 
 ctx.obs 是公开观测（UIObs v1，字段见 docs/format.md「公开观测」），ctx.obs["legal"] 是合法动作列表，
 返回的动作必须是其中之一：["play", 手牌下标] / ["drink", 饮料下标] / ["end"] / 选牌时的 ["select", …]。

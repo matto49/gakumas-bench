@@ -90,6 +90,7 @@ func (a *App) handleHostedStart(w http.ResponseWriter, r *http.Request, u string
 		fail(w, 400, "请求体不是 JSON")
 		return
 	}
+	body.Set = canonicalSet(body.Set)
 	var row *SeedRow
 	for _, s := range a.store.Seeds(body.Set)[body.ID] {
 		if s.Index == body.SeedIndex {

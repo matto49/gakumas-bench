@@ -2,11 +2,11 @@
 
 提交：在仓库里加 submissions/<名字>/（PR 合进 develop 才会跑），里面放算法文件和 submission.json：
     {"label": "my-algo", "entry": "algo.py:MyAlgo", "params": {"k": 8}, "author": "github-name",
-     "sets": ["hif-live"], "step_seconds": 2}
+     "sets": ["hif"], "step_seconds": 2}
   label        排行上的名字（3–40 位小写字母、数字、-），全仓库唯一
   entry        文件.py:类名（相对这个目录）
   params       构造参数（可选）
-  sets         跑哪些题集（可选，缺省 hif-live）
+  sets         跑哪些题集（可选，缺省 hif）
   step_seconds 每步时间预算（可选，缺省 5，最多 10）
 
 评测机（这台 Mac 上 launchd 每 15 分钟叫一次 `python -m gkbench runner --once --pull`）：
@@ -31,7 +31,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 SUBMISSIONS = REPO / "submissions"
-OFFICIAL_SETS = ("hif-live", "gkms480")
+OFFICIAL_SETS = ("hif", "nia", "hajime", "idolroad")
 LABEL_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,39}$")
 MAX_STEP_SECONDS = 10.0
 
@@ -57,7 +57,7 @@ def load_submissions(root: Path = SUBMISSIONS) -> list[dict]:
             file, _, cls = (cfg.get("entry") or "").partition(":")
             if not file.endswith(".py") or not cls or not (d / file).is_file() or "/" in file.replace("\\", "/").lstrip("./"):
                 raise ValueError(f"entry 要写成 本目录里的文件.py:类名：{cfg.get('entry')!r}")
-            sets = cfg.get("sets") or ["hif-live"]
+            sets = cfg.get("sets") or ["hif"]
             bad = [s for s in sets if s not in OFFICIAL_SETS]
             if bad:
                 raise ValueError(f"sets 只能是 {OFFICIAL_SETS}：{bad}")

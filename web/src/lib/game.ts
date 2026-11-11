@@ -46,25 +46,72 @@ export const STAGE: Record<string, string> = {
   sel3: '選抜 3',
   main1: '本戦 1',
   main2: '本戦 2',
+  'hajime.audition_mid1': '中間審査',
+  'hajime.audition_final': '最終審査',
+  'nia.audition_mid1': '中間審査 1',
+  'nia.audition_mid2': '中間審査 2',
+  'nia.audition_final': '最終審査',
 }
 
-export const ROUND: Record<string, string> = { mid1: '中間 1', mid2: '中間 2', final: '最終' }
+/** 阶段名：表里没有的，偶像之路 tower.N 写「N 层」，初的培育课程 hajime.N 写「课程 N」 */
+export function stageLabel(v: string): string {
+  if (STAGE[v]) return STAGE[v]
+  let m = /^tower\.(\d+)$/.exec(v)
+  if (m) return `${m[1]} 层`
+  m = /^hajime\.(\d+)$/.exec(v)
+  if (m) return `课程 ${m[1]}`
+  return v
+}
+
+/** 题的类型（服务器按阶段算的 kind）：集合卡片和筛选的第一层 */
+export const KIND: Record<string, string> = {
+  selection: '選抜',
+  main: '本戦',
+  mid: '中間審査',
+  final: '最終審査',
+  lesson: '培育课程',
+  tower: '偶像之路',
+}
+
+/** 题从哪来（meta.source.kind） */
+export const SOURCE: Record<string, string> = {
+  history: '育成履歴',
+  capture: '采集站实录',
+  live: '实战存档',
+  upload: '上传',
+  manual: '手工整理',
+  bench: '生成',
+}
+
+export const ROUND: Record<string, string> = { mid1: '中間 1', mid2: '中間 2', final: '最終', lesson: '课程' }
 
 export const PRODUCE: Record<string, string> = { 'produce-007': '選抜試験', 'produce-008': '本戦' }
 
-/** 試験集合的场景：考试（produce_id）。以后加 N.I.A、初、塔时在这里补名字，没写的显示原编号 */
-export const EXAM: Record<string, string> = { 'produce-007': 'H.I.F 選抜', 'produce-008': 'H.I.F 本戦' }
+/** 試験集合的场景：考试（produce_id，名字取主数据 Produce 表），没写的显示原编号 */
+export const EXAM: Record<string, string> = {
+  'produce-001': '初 レギュラー',
+  'produce-002': '初 プロ',
+  'produce-003': '初 マスター',
+  'produce-006': '初 レジェンド',
+  'produce-004': 'N.I.A プロ',
+  'produce-005': 'N.I.A マスター',
+  'produce-007': 'H.I.F 選抜',
+  'produce-008': 'H.I.F 本戦',
+  tower: '偶像之路',
+}
 
 /** 考试 + 阶段 + 轮次合成一句：「H.I.F 本戦 1 · 中間 1」（阶段名已含選抜 / 本戦，不重复） */
 export function examLine(exam?: string, stage?: string, round?: string) {
   const ex = exam ? (EXAM[exam] ?? exam) : ''
-  const st = stage ? (STAGE[stage] ?? stage) : ''
+  const st = stage ? stageLabel(stage) : ''
   const series = ex.includes(' ') ? ex.split(' ')[0] : ''
+  // H.I.F 以外（初、N.I.A、偶像之路）：阶段名已经说清是哪场，考试名带难度，轮次不再重复
+  if (series !== 'H.I.F' && (ex || st)) return [ex, st].filter(Boolean).join(' ')
   const head = st ? (series ? `${series} ${st}` : st) : ex
   return [head, round && (ROUND[round] ?? round)].filter(Boolean).join(' · ')
 }
 
-export const SCENE_LABEL: Record<string, string> = { exam: '考试', stage: '阶段', round: '轮次', plan: '流派', mechanic: '机制', idol: '偶像' }
+export const SCENE_LABEL: Record<string, string> = { kind: '类型', exam: '考试', stage: '阶段', round: '轮次', plan: '流派', mechanic: '机制', idol: '偶像', by: '提交人', source: '来源' }
 
 export function sceneValueLabel(key: string, v: string, idolName?: (id: string) => string): string {
   switch (key) {
@@ -73,9 +120,13 @@ export function sceneValueLabel(key: string, v: string, idolName?: (id: string) 
     case 'plan':
       return PLAN[v] ?? v
     case 'stage':
-      return STAGE[v] ?? v
+      return stageLabel(v)
     case 'round':
       return ROUND[v] ?? v
+    case 'kind':
+      return KIND[v] ?? v
+    case 'source':
+      return SOURCE[v] ?? v
     case 'mechanic':
       return MECHANIC[v] ?? v
     case 'idol':
@@ -140,8 +191,10 @@ export function tagValueLabel(tag: string, v: string, idolName?: (id: string) =>
 }
 
 export const SET_INFO: Record<string, { title: string; blurb: string }> = {
-  'hif-live': { title: 'H.I.F真实记录测试集', blurb: 'H.I.F 实战里打过的开局，篠澤広。从开局存档或对局快照还原。' },
-  gkms480: { title: 'H.I.F随机牌组测试', blurb: 'GKMS 按主数据生成：6 种机制 × 4 位偶像 × 2 种牌组 × 5 个阶段。' },
+  hif: { title: 'H.I.F', blurb: 'H.I.F 实战开局：選抜 1～3、本戦两轮。' },
+  nia: { title: 'N.I.A', blurb: 'N.I.A 实战开局：中间审查 1、2 和最终审查。' },
+  hajime: { title: '初', blurb: '初实战开局：中间审查、最终审查和培育课程。' },
+  idolroad: { title: '偶像之路', blurb: '偶像之路各层的实战开局。' },
 }
 
 /** 一次运行打的是哪种牌序。网页上不说「种子」，说「牌序」：一道题的一局，洗牌和随机结果定下来就是一种牌序。

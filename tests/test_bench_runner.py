@@ -21,7 +21,7 @@ def _sub(root, name, **cfg):
 
 
 def test_load_submissions_validates(tmp_path):
-    _sub(tmp_path, "good-one", sets=["hif-live", "gkms480"], step_seconds=2)
+    _sub(tmp_path, "good-one", sets=["hif", "nia"], step_seconds=2)
     _sub(tmp_path, "bad-label", label="Bad Label")
     _sub(tmp_path, "bad-entry", entry="../x.py:Y")
     _sub(tmp_path, "too-slow", step_seconds=30)
@@ -29,7 +29,7 @@ def test_load_submissions_validates(tmp_path):
     _sub(tmp_path, "_template")
     subs = {s["name"]: s for s in BR.load_submissions(tmp_path)}
     assert "_template" not in subs
-    assert "error" not in subs["good-one"] and subs["good-one"]["sets"] == ["hif-live", "gkms480"]
+    assert "error" not in subs["good-one"] and subs["good-one"]["sets"] == ["hif", "nia"]
     for bad in ("bad-label", "bad-entry", "too-slow", "zz-dup"):
         assert "error" in subs[bad], bad
 
@@ -37,10 +37,10 @@ def test_load_submissions_validates(tmp_path):
 def test_job_key_changes_with_content(tmp_path):
     d = _sub(tmp_path, "algo-x")
     sub = BR.load_submissions(tmp_path)[0]
-    k1 = BR.job_key(sub, "hif-live", 55)
+    k1 = BR.job_key(sub, "hif", 55)
     (d / "algo.py").write_text((d / "algo.py").read_text() + "\n# changed\n")
-    assert BR.job_key(sub, "hif-live", 55) != k1
-    assert BR.job_key(sub, "gkms480", 55) != BR.job_key(sub, "hif-live", 55)
+    assert BR.job_key(sub, "hif", 55) != k1
+    assert BR.job_key(sub, "nia", 55) != BR.job_key(sub, "hif", 55)
 
 
 class _Ctx:

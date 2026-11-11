@@ -38,8 +38,21 @@ export function useSetTitle() {
   return (id: string) => setTitleOf(sets, id)
 }
 
-/** 官方集合的固定顺序：真实记录在前（排行页默认打开它），没列出的排在后面 */
-const SET_ORDER = ['hif-live', 'gkms480']
+/** 官方集合的固定顺序：H.I.F 在前（排行页默认打开它），没列出的排在后面 */
+const SET_ORDER = ['hif', 'nia', 'hajime', 'idolroad']
+
+/** 2026-11-11 集合按模式合并：旧集合名 → 新集合 + 考试页的筛选条件（服务器 server/setalias.go 有同样的表，旧名的接口照常能用） */
+export const OLD_SETS: Record<string, { set: string; filter: Record<string, string> }> = {
+  'hif-live': { set: 'hif', filter: { source: 'live' } },
+  'hif-history': { set: 'hif', filter: { source: 'history' } },
+  'hif-yuzeis': { set: 'hif', filter: { by: 'yuzeis' } },
+  'nia-history': { set: 'nia', filter: { source: 'history' } },
+  'nia-yuzeis': { set: 'nia', filter: { by: 'yuzeis' } },
+  'hajime-history': { set: 'hajime', filter: { source: 'history' } },
+  'hajime-yuzeis': { set: 'hajime', filter: { by: 'yuzeis' } },
+  'hajime-lesson-yuzeis': { set: 'hajime', filter: { kind: 'lesson' } },
+  'idolroad-yuzeis': { set: 'idolroad', filter: { by: 'yuzeis' } },
+}
 
 function setRank(id: string) {
   const i = SET_ORDER.indexOf(id)

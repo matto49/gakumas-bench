@@ -371,6 +371,7 @@ func (a *App) handleJob(w http.ResponseWriter, r *http.Request, u string) {
 
 func (a *App) verify(j *Job, info map[string]any, tmp string, u string) {
 	defer os.Remove(tmp)
+	info["set"] = canonicalSet(fmt.Sprint(info["set"]))
 	set := fmt.Sprint(info["set"])
 	setJob := func(f func()) { j.mu.Lock(); f(); j.mu.Unlock() }
 	setJob(func() { j.Status = "running" })

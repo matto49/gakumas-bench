@@ -3,6 +3,6 @@
   "entry": "algo.py:FirstPlayable",
   "params": {},
   "author": "your-github-name",
-  "sets": ["hif-live"],
+  "sets": ["hif"],
   "step_seconds": 5
 }
