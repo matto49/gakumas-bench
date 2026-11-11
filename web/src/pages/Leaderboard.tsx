@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowDown, ArrowRight, ArrowUp, ChevronsUpDown } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { useApi } from '../lib/hooks'
 import type { Row, SetInfo } from '../lib/api'
 import { useCatalog, idolShort } from '../lib/catalog'
@@ -108,6 +108,16 @@ export function Leaderboard() {
   const groups = GROUPS_BY_SET[set] ?? ['idol']
   const labels = Array.from(new Set(rows.filter((r) => !r.privileged).map((r) => r.label)))
   let rank = 0
+  const families = new Map<string, Row[]>()
+  for (const r of rows) {
+    if (!r.family || r.privileged) continue
+    families.set(r.family, [...(families.get(r.family) ?? []), r])
+  }
+  const rankOf = new Map<string, number>()
+  {
+    let k = 0
+    for (const r of rows) if (!r.privileged) rankOf.set(r.run, ++k)
+  }
 
   return (
     <div>
@@ -242,6 +252,9 @@ export function Leaderboard() {
                             <Badge tabIndex={0} variant="outline" className="whitespace-nowrap">固定机器</Badge>
                           </Tip>
                         )}
+                        {r.family && (families.get(r.family)?.length ?? 0) > 1 && (
+                          <FamilyMenu family={r.family} rows={families.get(r.family)!} current={r.run} rankOf={rankOf} />
+                        )}
                         {r.about && <Help tip={<>{r.about.summary}<span className="mt-1 block text-ink-3">点算法名看完整说明和实现链接。</span></>} />}
                       </span>
                       <div className="truncate text-[11.5px] text-ink-3">
@@ -367,5 +380,53 @@ function GroupMatrix({ rows, group, hasOracle, base, idol }: { rows: Row[]; grou
         </table>
       </div>
     </section>
+  )
+}
+
+/** 同一算法家族的全部结果：每个版本 / 每个人各一行，点开下拉一起看（任何人上传的同家族成绩都在里面） */
+function FamilyMenu({ family, rows, current, rankOf }: { family: string; rows: Row[]; current: string; rankOf: Map<string, number> }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const close = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', esc)
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc) }
+  }, [open])
+  return (
+    <span ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-label={`${family} 家族的 ${rows.length} 个结果`}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-0.5 rounded-full border border-line-strong bg-surface px-2 py-0.5 text-[11.5px] font-medium whitespace-nowrap text-ink-2 hover:border-brand hover:text-brand-ink"
+      >
+        {family} · {rows.length}
+        <ChevronDown size={12} aria-hidden className={cx('transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <span role="menu" className="absolute top-full left-0 z-30 mt-1 block w-[340px] rounded-xl border border-line bg-surface p-1.5 shadow-lg">
+          <span className="block px-2 pt-1 pb-1.5 text-[11.5px] text-ink-3">「{family}」家族的全部结果（每个版本、每个人各一行）</span>
+          {rows.map((r) => (
+            <Link
+              key={r.run}
+              role="menuitem"
+              to={`/runs/${r.run}`}
+              className={cx('grid grid-cols-[2.2rem_1fr_auto] items-center gap-2 rounded-lg px-2 py-1.5 text-[12.5px] hover:bg-surface-2', r.run === current && 'bg-surface-2')}
+            >
+              <span className="num text-ink-3">#{rankOf.get(r.run)}</span>
+              <span className="min-w-0">
+                <span className="block truncate font-semibold text-ink">{r.label}</span>
+                <span className="block truncate text-[11px] text-ink-3">{[r.author || r.by, `${r.n} 局`, r.p50_ms != null && `每步 ${ms(r.p50_ms)}`].filter(Boolean).join(' · ')}</span>
+              </span>
+              <span className="num text-right">{r.vs_oracle ? <RatioText r={r.vs_oracle} /> : int(r.mean)}</span>
+            </Link>
+          ))}
+        </span>
+      )}
+    </span>
   )
 }

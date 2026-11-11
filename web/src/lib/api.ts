@@ -99,6 +99,8 @@ export type Row = {
   machine?: string
   /** 提交人（评测机的运行由管理员上传，by 是管理员） */
   author?: string
+  /** 算法家族：同一算法的各个版本 / 不同人跑的结果（服务器按标签或上传时写的 family 归类） */
+  family?: string
 }
 
 export type EpisodeSummary = {

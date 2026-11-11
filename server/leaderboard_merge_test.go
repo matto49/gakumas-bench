@@ -42,3 +42,18 @@ func TestMergeRunsKeepsFixedMachineSeparate(t *testing.T) {
 		t.Fatalf("固定机器和自己机器的运行耗时不可比，不能合成一行：得到 %d 行", len(out))
 	}
 }
+
+func TestFamilyOf(t *testing.T) {
+	cases := map[string]string{
+		"uinet-2.0beta-Abenddammerungseinsamkeit": "uinet", "uinet": "uinet", "pimc-vote-16w-2s": "pimc-vote",
+		"oracle-30s": "oracle", "hiro-rules": "hiro-rules", "pimc-plus-v2": "pimc-plus", "asahi老师策略": "asahi老师策略",
+	}
+	for label, want := range cases {
+		if got := familyOf(map[string]any{"label": label}); got != want {
+			t.Errorf("familyOf(%q) = %q, want %q", label, got, want)
+		}
+	}
+	if got := familyOf(map[string]any{"label": "my-net-3", "family": "UINet"}); got != "uinet" {
+		t.Errorf("explicit family: %q", got)
+	}
+}

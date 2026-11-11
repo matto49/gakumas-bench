@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"regexp"
 	"sort"
+	"strings"
 )
 
 type Ratio struct {
@@ -51,6 +53,8 @@ type Row struct {
 	FixedMachine bool   `json:"fixed_machine,omitempty"`
 	Machine      string `json:"machine,omitempty"`
 	Author       string `json:"author,omitempty"` // 提交人（评测机由管理员上传，by 是管理员）
+	// 算法家族：同一个算法的不同版本 / 不同人跑的结果（任何人都能往里加）。排行每个版本仍各占一行，网页上按家族下拉看全部
+	Family string `json:"family"`
 }
 
 // Group 按题目标签分组后的成绩：相对上限（有上限时）、相对基准（选了基准时）、平均分
@@ -229,6 +233,7 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 		row.Params = r.info["params"]
 		row.SeesSeed, _ = r.info["sees_seed"].(bool)
 		row.About = algoDoc(r.info)
+		row.Family = familyOf(r.info)
 		if r.info["fixed_machine"] == true {
 			row.FixedMachine = true
 			row.Machine, _ = r.info["machine"].(string)
@@ -407,4 +412,35 @@ func contains(xs []string, x string) bool {
 		}
 	}
 	return false
+}
+
+var familyVersionSeg = regexp.MustCompile(`^(v?\d)`)
+var familyClean = regexp.MustCompile(`[^\p{L}\p{N}_-]+`)
+
+// familyOf：算法家族。上传 / 托管时写了 family（about.family 或 run.json 的 family）就用它；
+// 否则取标签按「-」切开后、第一个以数字或 v+数字开头的段之前的部分（uinet-2.0beta-xxx → uinet，pimc-vote-16w-2s → pimc-vote，
+// oracle-30s → oracle），整段都没有就是标签本身。
+func familyOf(info map[string]any) string {
+	if f, _ := info["family"].(string); strings.TrimSpace(f) != "" {
+		return normFamily(f)
+	}
+	label, _ := info["label"].(string)
+	parts := strings.Split(label, "-")
+	keep := parts[:0:0]
+	for i, p := range parts {
+		if i > 0 && familyVersionSeg.MatchString(strings.ToLower(p)) {
+			break
+		}
+		keep = append(keep, p)
+	}
+	return normFamily(strings.Join(keep, "-"))
+}
+
+func normFamily(s string) string {
+	s = familyClean.ReplaceAllString(strings.ToLower(strings.TrimSpace(s)), "-")
+	r := []rune(strings.Trim(s, "-"))
+	if len(r) > 40 {
+		r = r[:40]
+	}
+	return string(r)
 }
