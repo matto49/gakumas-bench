@@ -275,9 +275,9 @@ export function Leaderboard() {
                           aria-expanded={open}
                           aria-label={`${open ? '收起' : '展开'} ${famName(fam!)} 的 ${count} 个版本`}
                           onClick={(e) => { e.stopPropagation(); toggleFam(fam!) }}
-                          className="absolute top-3.5 -left-3 grid size-5 place-items-center rounded text-ink-3 hover:bg-surface-3 hover:text-ink focus-visible:outline-2 focus-visible:outline-brand"
+                          className="absolute top-1/2 -left-4 grid size-6 -translate-y-1/2 place-items-center rounded text-ink-3 hover:bg-surface-3 hover:text-ink focus-visible:outline-2 focus-visible:outline-brand"
                         >
-                          <ChevronRight size={15} strokeWidth={2.25} aria-hidden className={cx('transition-transform duration-150 motion-reduce:transition-none', open && 'rotate-90')} />
+                          <ChevronRight size={18} strokeWidth={2.25} aria-hidden className={cx('transition-transform duration-150 motion-reduce:transition-none', open && 'rotate-90')} />
                         </button>
                       )}
                       <div className={cx(kind === 'child' && 'ml-1 border-l-2 border-line-strong pl-3')}>
