@@ -248,7 +248,7 @@ export function ExamSet() {
         sub={
           <>
             {setBlurbOf(sets, set)}
-            {info && <span className="ml-1 text-ink-3">{info.problems} 题 · {info.algos?.length ?? 0} 种算法跑过{info.owner ? ` · 提交人 ${info.owner}` : ''}</span>}
+            {info && <span className="ml-1 text-ink-3">{info.problems} 题 · {info.algos?.length ?? 0} 种算法跑过{submittersOf(info) ? ` · 提交人 ${submittersOf(info)}` : ''}</span>}
           </>
         }
         right={
