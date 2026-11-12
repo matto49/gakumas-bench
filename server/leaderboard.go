@@ -57,7 +57,11 @@ type Row struct {
 	Family string `json:"family"`
 	// 家族显示名：管理员 / 家族成员起的名（families.json），其次是上传时写的 family_name；都没有时网页显示 family
 	FamilyName string `json:"family_name,omitempty"`
+	// 按核心题单算时：核心题一共几道（Problems 是这一行覆盖了其中几道）。0 = 没按核心题单
+	CoreProblems int `json:"core_problems,omitempty"`
 }
+
+func (r Row) coreComplete() bool { return r.CoreProblems == 0 || r.Problems >= r.CoreProblems }
 
 // Group 按题目标签分组后的成绩：相对上限（有上限时）、相对基准（选了基准时）、平均分
 type Group struct {
@@ -171,10 +175,17 @@ func perProblem(idx []EpisodeSummary) map[key]EpisodeSummary {
 //	fixed     默认，固定种子题：self、hosted、上限
 //	template  题模板，每题固定 32 个保密种子：同题同种子配对，和 fixed 一样；平均分是先按题平均再对题平均
 //	legacy    2026-11-09 以前的题模板评测（每次临时抽种子）：各算法种子不同，只能按题平均后比较
-func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
+//
+// scope：缺省按集合的核心题单算（只看核心题、题模板每题前 core_seeds 个牌序；没设核心题单时等于全部）；"all" 看全部题和牌序。
+func (s *Store) Leaderboard(set, base, group, kind, scope string) ([]Row, error) {
 	type run = lbRun
 	legacy := kind == "legacy"
 	tmpl := kind == "template" || kind == "random" || legacy
+	var core map[string]bool
+	coreN := TemplateSeeds
+	if scope != "all" && !legacy {
+		core, coreN = s.SetConfigs()[set].coreSet()
+	}
 	var runs []run
 	for _, info := range s.Runs(set) {
 		if (info["kind"] == "template") != tmpl {
@@ -197,7 +208,19 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 				m[key{e.ID, e.SeedIndex}] = e
 			}
 		}
-		runs = append(runs, run{info: info, eps: m, count: len(idx), names: []string{name}})
+		count := len(idx)
+		if core != nil {
+			for k := range m {
+				if !core[k.p] || (tmpl && k.s >= coreN) {
+					delete(m, k)
+				}
+			}
+			if len(m) == 0 {
+				continue
+			}
+			count = len(m)
+		}
+		runs = append(runs, run{info: info, eps: m, count: count, names: []string{name}})
 	}
 	runs = mergeRuns(runs, legacy)
 	oracle := map[key]float64{}
@@ -229,6 +252,9 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 			}
 		}
 		row.Label, _ = r.info["label"].(string)
+		if core != nil {
+			row.CoreProblems = len(core)
+		}
 		row.Mode, _ = r.info["mode"].(string)
 		row.Uploader, _ = r.info["by"].(string)
 		row.Kind, _ = r.info["kind"].(string)
@@ -329,6 +355,9 @@ func (s *Store) Leaderboard(set, base, group, kind string) ([]Row, error) {
 	sort.SliceStable(rows, func(i, j int) bool {
 		if rows[i].Privileged != rows[j].Privileged {
 			return !rows[i].Privileged
+		}
+		if ci, cj := rows[i].coreComplete(), rows[j].coreComplete(); ci != cj { // 没跑全核心题的排在跑全的后面
+			return ci
 		}
 		gi, gj := -1.0, -1.0
 		if rows[i].VsOracle != nil {

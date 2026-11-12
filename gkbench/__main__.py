@@ -112,7 +112,8 @@ def main(argv=None):
     ep = sub.add_parser("eval")
     ep.add_argument("--set", required=False)
     ep.add_argument("--algo", required=True)
-    ep.add_argument("--seeds", type=int, default=32, help="每道题跑前几个固定种子（默认全部 32 个）")
+    ep.add_argument("--seeds", type=int, default=None, help="每道题少跑几个牌序（调试用；缺省按集合的核心题单，没有核心题单时 32）")
+    ep.add_argument("--full", action="store_true", help="不按核心题单：全部题 × 32 个牌序")
     ep.add_argument("--parallel", type=int, default=3, help="同时跑几局")
     ep.add_argument("--budget", type=float, default=5.0)
     ep.add_argument("--only", default=None)
@@ -212,13 +213,15 @@ def main(argv=None):
             if algo.privileged:
                 sys.exit("理论上限用 gkbench run --template")
             print(f"本机有 {a.set} 的保密种子，在本机跑（要托管跑加 --hosted）", flush=True)
-            out = run(a.set, algo, a.budget, list(range(a.seeds)), a.only.split(",") if a.only else None,
-                      a.label, keep_obs=True, template=True)
+            from .client import set_scope
+            idx, only = set_scope(a.set, a.seeds, a.full, a.only.split(",") if a.only else None, a.server)
+            print(f"跑 {len(only) if only else '全部'} 题 × 每题 {len(idx)} 个牌序", flush=True)
+            out = run(a.set, algo, a.budget, idx, only, a.label, keep_obs=True, template=True)
             r = upload(out, a.server)
             print(f"上传完成：{r}")
         else:
             evaluate(a.set, a.algo, a.seeds, a.parallel, a.budget, a.label, a.only.split(",") if a.only else None,
-                     a.resume, a.server)
+                     a.resume, a.server, full=a.full)
     elif a.cmd == "submissions":
         from .bench_runner import load_submissions
         subs = load_submissions()

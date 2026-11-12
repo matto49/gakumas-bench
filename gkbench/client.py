@@ -23,6 +23,28 @@ def _client(server=None):
     return httpx.Client(base_url=(server or SERVER), headers={"Authorization": f"Bearer {tok}"}, timeout=600)
 
 
+TEMPLATE_SEEDS = 32
+
+
+def scope_from(cfg, seeds=None, full=False, only=None):
+    """一次评测跑哪些题、每题前几个保密牌序，和服务器 evalScope 一致：
+    缺省按集合的核心题单（core × core_seeds）；full 时全部题 × 32；给了 only 时按 only 筛题、牌序数照核心；
+    seeds 只能往少里调。返回 (牌序下标列表, only 列表或 None)。"""
+    core = None if full else (cfg.get("core") or None)
+    n = TEMPLATE_SEEDS if full or not core else min(TEMPLATE_SEEDS, cfg.get("core_seeds") or TEMPLATE_SEEDS)
+    if seeds and 0 < seeds < n:
+        n = seeds
+    return list(range(n)), (list(only) if only else core)
+
+
+def set_scope(set_name, seeds=None, full=False, only=None, server=None):
+    """向服务器要集合配置（公开接口，不要令牌），换算成本机跑的 (牌序下标, only)。"""
+    r = httpx.get(f"{server or SERVER}/api/sets", timeout=60)
+    r.raise_for_status()
+    cfg = next((x for x in r.json() if x.get("set") == set_name), None) or {"set": set_name}
+    return scope_from(cfg, seeds, full, only)
+
+
 # 服务器一次最多收这么多局（server/uploadcap.go）；多了按题分批，几批在排行里按算法合成一行
 MAX_UPLOAD_EPISODES = 1000
 
@@ -170,9 +192,10 @@ def hosted(set_name, algo, budget=5.0, label=None, seed_indices=None, only=None,
                 progress(f"{p.get('name', p['id'])} #{srow['index']}  {f['score']:>10,}  决策 {f['decisions']:>3}  服务器计时 {f['secs']:7.2f}s")
 
 
-def evaluate(set_name, algo_spec, seeds=32, parallel=3, budget=5.0, label=None, only=None, resume=None, server=None,
-             progress=None):
-    """题模板评测：每道题打服务器上那组固定的保密种子（共 32 个，seeds 只取前几个），算法托管跑、看不到种子。
+def evaluate(set_name, algo_spec, seeds=None, parallel=3, budget=5.0, label=None, only=None, resume=None, server=None,
+             progress=None, full=False):
+    """题模板评测：每道题打服务器上那组固定的保密种子，算法托管跑、看不到种子。
+    缺省按集合的核心题单（服务器定：哪些题、每题前几个牌序）；full=True 跑全部题 × 32；seeds 只能往少里调。
     parallel 局同时跑，每个线程一个算法实例。
     resume 给评测编号时接着跑没打完的格子。"""
     import threading
@@ -198,7 +221,8 @@ def evaluate(set_name, algo_spec, seeds=32, parallel=3, budget=5.0, label=None, 
         else:
             r = c.post("/api/evals", json={"set": set_name, "label": label, "step_seconds": budget,
                                            "algo": f"external:{desc['name']}", "params": desc.get("params"),
-                                           "about": getattr(probe, "about", None), "seeds": seeds, "only": only or []})
+                                           "about": getattr(probe, "about", None), "seeds": seeds or 0, "only": only or [],
+                                           "full": bool(full)})
             if r.status_code >= 400:
                 raise SystemExit(f"开评测失败 {r.status_code}：{r.text[:500]}")
             j = r.json()

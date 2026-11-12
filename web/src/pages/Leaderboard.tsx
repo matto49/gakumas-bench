@@ -56,6 +56,9 @@ function SortHead({ k, children, sort, dir, onSort, align = 'right', help }: { k
 /** 游戏官方 AI 的算法名（gkbench/algos/official_ai.py） */
 const OFFICIAL_AI = 'external:official-ai'
 
+/** 按核心题单算时没跑全核心题：不排名次，排在跑全的后面 */
+const partial = (r: Row) => !!r.core_problems && r.problems < r.core_problems
+
 export function Leaderboard() {
   const rowLink = useRowLink()
   const { set } = useParams()
@@ -67,10 +70,12 @@ export function Leaderboard() {
   // 排行只看每题 32 种随机牌序的成绩；?kind=legacy 是旧版评测。以前的 ?kind=fixed（每题几种牌序、本地跑完上传）不再单列排行，旧链接落回默认
   const kind: Kind = q.get('kind') === 'legacy' ? 'legacy' : 'template'
   const base = q.get('base') ?? ''
+  // 范围：缺省按集合的核心题单（服务器定题和每题牌序数）；all 看全部题 × 32
+  const scope = q.get('scope') === 'all' ? 'all' : ''
   const group = q.get('group') ?? ''
   const sort = ((q.get('sort') as SortKey) || 'oracle') as SortKey
   const dir = (q.get('dir') as 'asc' | 'desc') ?? (sort === 'p50' || sort === 'label' ? 'asc' : 'desc')
-  const lb = useApi<Row[]>(set ? `api/leaderboard?set=${encodeURIComponent(set)}&kind=${kind}&base=${encodeURIComponent(base)}&group=${encodeURIComponent(group)}` : null)
+  const lb = useApi<Row[]>(set ? `api/leaderboard?set=${encodeURIComponent(set)}&kind=${kind}&base=${encodeURIComponent(base)}&group=${encodeURIComponent(group)}&scope=${scope}` : null)
 
   const update = (patch: Record<string, string>) => {
     const n = new URLSearchParams(q)
@@ -83,13 +88,14 @@ export function Leaderboard() {
   }
 
   // 换了集合或成绩口径、新的还没取回来时，手里还是上一份成绩：不能摆在新标题下面，先当没有
-  const stale = !!lb.data && !(lb.loadedPath ?? '').includes(`set=${encodeURIComponent(set ?? '')}&kind=${kind}&`)
+  const stale = !!lb.data && !(lb.loadedPath ?? '').includes(`set=${encodeURIComponent(set ?? '')}&kind=${kind}&`) || !(lb.loadedPath ?? '').endsWith(`&scope=${scope}`)
   const rows = useMemo(() => {
     const rs = stale ? [] : [...(lb.data ?? [])]
     const sign = dir === 'asc' ? 1 : -1
     const key = sort === 'oracle' && !rs.some((r) => r.vs_oracle && !r.privileged) ? 'mean' : sort
     rs.sort((a, b) => {
       if (a.privileged !== b.privileged) return a.privileged ? 1 : -1
+      if (partial(a) !== partial(b)) return partial(a) ? 1 : -1 // 没跑全核心题的排在跑全的后面，不排名次
       const va = sortValue(a, key)
       const vb = sortValue(b, key)
       if (typeof va === 'string' || typeof vb === 'string') return String(va).localeCompare(String(vb)) * sign
@@ -180,7 +186,9 @@ export function Leaderboard() {
             {setBlurbOf(sets.data, set)}
             {info && (
               <span className="num ml-1">
-                {info.problems} 题，每题随机 {info.template_seeds ?? 32} 种牌序，所有算法打同一组。
+                {info.core?.length && scope !== 'all'
+                  ? `核心题单 ${info.core.length} 题，每题 ${info.core_seeds ?? 32} 种牌序（集合共 ${info.problems} 题），所有算法打同一组。`
+                  : `${info.problems} 题，每题随机 ${info.template_seeds ?? 32} 种牌序，所有算法打同一组。`}
               </span>
             )}
           </>
@@ -188,6 +196,14 @@ export function Leaderboard() {
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+        {!!info?.core?.length && (
+          <span className="inline-flex items-center gap-2 text-ink-2">
+            范围
+            <Select label="范围" value={scope} onChange={(v) => update({ scope: v })} width="11rem"
+              options={[{ value: '', label: `核心题单 ${info.core.length} 题` }, { value: 'all', label: `全部 ${info.problems} 题` }]} />
+            <Help tip={<>同一道题换牌序的分差远大于题和题之间的差别，所以少跑几个牌序、多放些题更准。核心题单按偶像、机制、关卡分层挑出，评测缺省只跑这些题、每题 {info.core_seeds ?? 32} 种牌序。其余题照样留在集合里，选「全部」看所有成绩（只跑了部分题的算法不能直接比）。</>} />
+          </span>
+        )}
         <span className="inline-flex items-center gap-2 text-ink-2">
           基准
           <Select label="基准" value={base} onChange={(v) => update({ base: v })} width="14rem"
@@ -256,7 +272,7 @@ export function Leaderboard() {
             </thead>
             <tbody>
               {items.map(({ r, kind, fam, count }) => {
-                if (kind !== 'child' && !r.privileged) rank++
+                if (kind !== 'child' && !r.privileged && !partial(r)) rank++
                 const open = fam ? openFam.has(fam) : false
                 const params = r.params ? Object.entries(r.params).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${v}`).join(' ') : ''
                 return (
@@ -266,7 +282,11 @@ export function Leaderboard() {
                     className={cx('group/row cursor-pointer border-b border-line last:border-0',
                       kind === 'child' ? 'bg-surface-2/50 hover:bg-brand-tint [&>td]:py-2' : kind === 'family' && open ? 'bg-surface-2/50 hover:bg-brand-tint' : r.privileged ? 'bg-surface-2 text-ink-2 hover:bg-surface-3' : r.algo === OFFICIAL_AI ? 'bg-brand-soft hover:bg-brand-tint' : 'hover:bg-brand-tint')}
                   >
-                    <td className="px-3 py-3 text-center">{kind === 'child' ? null : r.privileged ? <span className="text-[12px] whitespace-nowrap text-ink-3">分母</span> : <RankNum n={rank} />}</td>
+                    <td className="px-3 py-3 text-center">{kind === 'child' ? null : r.privileged ? <span className="text-[12px] whitespace-nowrap text-ink-3">分母</span> : partial(r) ? (
+                      <Tip tip={`只跑了核心题单 ${r.core_problems} 题里的 ${r.problems} 题，成绩只在这些题上算，不和跑全的比名次。`}>
+                        <span tabIndex={0} className="cursor-help text-[12px] whitespace-nowrap text-ink-3">未跑全</span>
+                      </Tip>
+                    ) : <RankNum n={rank} />}</td>
                     <td className={cx('max-w-[320px] pr-3', kind === 'child' ? 'py-2 pl-3' : 'relative py-3 pl-3')}>
                       {kind === 'family' && (
                         // 展开按钮挂在名字左边的空白里，家族名和其他行的算法名对齐
@@ -360,7 +380,7 @@ export function Leaderboard() {
                     <td className="num px-3 py-3 text-right">{r.privileged && r.params?.seconds != null ? `${String(r.params.seconds)} s` : secs(r.ep_think_s)}</td>
                     <td className="num px-3 py-3 text-right">
                       {r.n}
-                      <div className="text-[11px] text-ink-3">{r.problems} 题</div>
+                      <div className={cx('text-[11px]', partial(r) ? 'font-semibold text-brand-ink' : 'text-ink-3')}>{partial(r) ? `${r.problems} / ${r.core_problems} 题` : `${r.problems} 题`}</div>
                     </td>
                     <td className="num px-3 py-3 text-right">
                       <span className={r.over ? 'text-ink' : 'text-ink-3'}>{r.over}</span>

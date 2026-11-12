@@ -5,7 +5,7 @@ package main
 // 种子相同，所以排行和固定种子题一样按同题同种子配对比较（leaderboard.go 的 template 模式）。
 // 2026-11-09 以前的评测每次临时抽种子，运行里没有 template_seeds 字段，排行里标成旧版。
 //
-//	POST /api/evals                      {set, label, algo, params, step_seconds, seeds?, only?} -> {eval, run, slots: [{id, slot}]}
+//	POST /api/evals                      {set, label, algo, params, step_seconds, seeds?, only?, full?} -> {eval, run, slots: [{id, slot}]}；缺省按核心题单
 //	GET  /api/evals/{id}                 进度：total、done、已完成的格子
 //	POST /api/evals/{id}/episodes        {id, slot} -> 开局（之后用 /api/episodes/{episode}/step、/worlds）
 
@@ -60,6 +60,7 @@ func (a *App) handleEvalStart(w http.ResponseWriter, r *http.Request, u string) 
 		Params any      `json:"params"`
 		Seeds  int      `json:"seeds"`
 		Only   []string `json:"only"`
+		Full   bool     `json:"full"`  // 不按核心题单：全部题 × 32
 		About  any      `json:"about"` // 可选：算法说明 {summary, detail, sees, links}
 	}
 	if json.NewDecoder(r.Body).Decode(&body) != nil {
@@ -77,10 +78,8 @@ func (a *App) handleEvalStart(w http.ResponseWriter, r *http.Request, u string) 
 		fail(w, 500, "读固定种子失败："+err.Error())
 		return
 	}
-	n := body.Seeds // 只跑前 n 个（调试用）；成绩照样能和别的运行在这些格子上配对
-	if n <= 0 || n > TemplateSeeds {
-		n = TemplateSeeds
-	}
+	// 跑哪些题、每题前几个牌序：缺省按核心题单（见 SetConfig.evalScope）；成绩照样能和别的运行在这些格子上配对
+	n, core := a.store.SetConfigs()[body.Set].evalScope(body.Seeds, body.Full, body.Only)
 	label := slug(body.Label)
 	if label == "" {
 		label = "anon"
@@ -99,6 +98,9 @@ func (a *App) handleEvalStart(w http.ResponseWriter, r *http.Request, u string) 
 	var slots []slot
 	for _, p := range probs {
 		pid, _ := p["id"].(string)
+		if core != nil && !core[pid] {
+			continue
+		}
 		if len(body.Only) > 0 {
 			hit := false
 			for _, o := range body.Only {

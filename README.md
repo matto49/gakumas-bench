@@ -73,6 +73,8 @@
 
 保密种子怎么来：`HMAC-SHA256(私钥, "<题族编号>:<i>")` 前 8 字节 mod (2³¹−2) + 1，i 从 0 数，跳过重复的和固定种子题用过的，取满 32 个（`server/tseeds.go`）。题族编号是公开的，所以必须带私钥 `private/template-seed.key`；生成结果存在 `private/seeds/<题集>.template.json`，以后这道题永远用这一组。种子空间只有约 21 亿，`exam_sha`（种子十进制串的 SHA-256）和固定种子题编号都能穷举反推出种子，所以保密种子和测试集的这两样都不下发。
 
+**核心题单**（2026-11-12 起，目前只有 hif）：集合可以定一份核心题单和每题牌序数（`private/sets.json` 的 `core` / `core_seeds`，管理员 `PATCH /api/sets/{集合}` 设）。评测缺省只跑核心题、每题前 `core_seeds` 个保密种子（托管、管理员本机跑、评测机都一样；`--full` 跑全部题 × 32），排行缺省也只按这些格子算（`?scope=all` 看全部），没跑全核心题的行排在后面、不排名次。依据：同一道题换牌序的分差（对数 σ≈0.4）远大于相近算法在不同题上的差别（σ≈0.1～0.2），同样局数多放题、少几个牌序更准；hif 从 505 题 × 32（16160 局）减到 120 题 × 8（960 局），相近算法对比的标准误约 ±1.9%。题单用 `python -m gkbench.pick_core --set hif --n 120 --seeds 8` 分层挑（实战题全留、每张偶像卡至少一道、每个「机制 × 关卡」至少两道、其余按「偶像 × 关卡」题量分），再从多次随机里取和全量成绩最接近的一份；`--apply` 写到服务器。
+
 2026-11-09 以前的题模板评测是每次临时抽种子，各算法种子不同，和现在的成绩不可比；运行里没有 `template_seeds` 字段，排行里单独列在「旧版评测」（`kind=legacy`）。
 
 在哪台机器上跑：算法总在跑评测的那台机器上算。托管时裁判（推进对局、生成「可能的世界」）在服务器上，每一步都要来回一次网络；所以**管理员默认在自己机器上整局跑完再上传**：本机有 `private/seeds/<题集>.template.json` 时，`gkbench eval` 直接在本机跑保密种子（不受网络和服务器重启影响），跑完上传，服务器按它自己的保密种子逐局重放核对，记为「内置」（`mode=internal`）。要托管跑加 `--hosted`；没有种子文件的普通用户只能托管。只有管理员能上传保密种子运行和理论上限。
@@ -132,7 +134,7 @@
     .venv/bin/python -m gkbench upload $GKBENCH_DATA/runs/<运行>                     # 整次运行（self）
     .venv/bin/python -m gkbench upload-saves my.gksave.jsonl --label my-algo        # 存档里的答（只要路线，self）
     .venv/bin/python -m gkbench hosted --set hif-live --algo uinet                   # 固定种子托管跑（hosted）
-    .venv/bin/python -m gkbench eval --set hif-live --algo uinet --parallel 3        # 保密种子：每题 32 个固定种子（hosted）
+    .venv/bin/python -m gkbench eval --set hif --algo uinet --parallel 3             # 保密种子：缺省按核心题单（hif 120 题 × 8），没有核心题单时每题 32 个（hosted）
     .venv/bin/python -m gkbench eval --resume <评测编号> --algo uinet                  # 中断后接着跑
 
     # 审查存档

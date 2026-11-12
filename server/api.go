@@ -137,7 +137,8 @@ func (a *App) handleSets(w http.ResponseWriter, r *http.Request, u string) {
 		out = append(out, map[string]any{"set": s, "problems": len(a.store.Problems(s)), "seeds": map[string]int{"dev": dev, "test": test},
 			"template_seeds": TemplateSeeds, "idols": idols, "runs": len(a.store.Runs(s)), "public_seeds": c.PublicSeeds,
 			"title": c.Title, "blurb": c.Blurb, "owner": c.Owner, "status": c.status(), "created": c.Created,
-			"scenes": a.store.sceneCounts(s), "algos": a.store.algosOf(s), "can_edit": canEdit(c, u)})
+			"scenes": a.store.sceneCounts(s), "algos": a.store.algosOf(s), "can_edit": canEdit(c, u),
+			"core": c.Core, "core_seeds": c.CoreSeeds})
 	}
 	writeJSONResp(w, 200, out)
 }
@@ -146,6 +147,7 @@ func (a *App) handleSets(w http.ResponseWriter, r *http.Request, u string) {
 func (a *App) handleProblems(w http.ResponseWriter, r *http.Request, u string) {
 	set := r.PathValue("set")
 	seeds := a.store.Seeds(set)
+	core, _ := a.store.SetConfigs()[set].coreSet()
 	out := []map[string]any{}
 	for _, p := range a.store.Problems(set) {
 		id, _ := p["id"].(string)
@@ -158,7 +160,7 @@ func (a *App) handleProblems(w http.ResponseWriter, r *http.Request, u string) {
 			rows = append(rows, row)
 		}
 		out = append(out, map[string]any{"id": id, "name": nameOf(p), "family": metaOf(p)["family"], "tags": tagsOf(p),
-			"scene": a.store.sceneOf(p), "archive": p, "seeds": rows})
+			"scene": a.store.sceneOf(p), "archive": p, "seeds": rows, "core": core[id]})
 	}
 	writeJSONResp(w, 200, out)
 }
@@ -257,7 +259,7 @@ func (a *App) handleLeaderboard(w http.ResponseWriter, r *http.Request, u string
 	if kind == "" {
 		kind = q.Get("mode") // 旧参数名
 	}
-	rows, err := a.store.Leaderboard(q.Get("set"), q.Get("base"), q.Get("group"), kind)
+	rows, err := a.store.Leaderboard(q.Get("set"), q.Get("base"), q.Get("group"), kind, q.Get("scope"))
 	if err != nil {
 		fail(w, 500, err.Error())
 		return

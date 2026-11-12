@@ -45,6 +45,9 @@ export type SetInfo = {
   /** 跑过的算法（不含理论上限） */
   algos?: string[]
   can_edit?: boolean
+  /** 核心题单：评测和排行缺省只看这些题、每题前 core_seeds 个牌序（没有时全部题 × 32） */
+  core?: string[] | null
+  core_seeds?: number
 }
 
 export type Engine = { engine?: string; gkms_commit?: string; rules_version?: number; master_version?: string | null }
@@ -65,6 +68,8 @@ export type AlgoDoc = {
 }
 
 export type Row = {
+  /** 按核心题单算时核心题的总数（problems 是这一行覆盖了几道）；没按核心题单时没有 */
+  core_problems?: number
   /** 最新那次运行；同一算法的多次运行在服务器合成一行，runs 是全部（新的在前，只有一次时没有） */
   run: string
   runs?: string[]
@@ -253,6 +258,8 @@ export type Problem = {
   archive: Record<string, unknown>
   seeds: { index: number; split: string; label: string; exam_sha?: string; fixed_id?: string }[]
   scene?: Scene
+  /** 在集合的核心题单里 */
+  core?: boolean
 }
 
 /** 一道题的场景（服务器从编成和 meta 自动算） */

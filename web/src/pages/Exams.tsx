@@ -196,7 +196,7 @@ export function ExamSet() {
     return out
   }, [probs.data])
   const rows = useMemo(
-    () => (probs.data ?? []).filter((p) => FILTER_KEYS.every((k) => !q.get(k) || String(p.scene?.[k] ?? '') === q.get(k))),
+    () => (probs.data ?? []).filter((p) => (q.get('core') !== '1' || p.core) && FILTER_KEYS.every((k) => !q.get(k) || String(p.scene?.[k] ?? '') === q.get(k))),
     [probs.data, q],
   )
   const grouped = useMemo(() => {
@@ -269,6 +269,10 @@ export function ExamSet() {
       )}
 
       <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        {!!info?.core?.length && (
+          <Select label="核心题单" value={q.get('core') ?? ''} onChange={(v) => update({ core: v })} width="12rem"
+            options={[{ value: '', label: '全部题' }, { value: '1', label: `核心题单 ${info.core.length} 题` }]} />
+        )}
         {FILTER_KEYS.filter((k) => values[k].length > 1).map((k) => (
           <Select key={k} label={SCENE_LABEL[k]} value={q.get(k) ?? ''} onChange={(v) => update({ [k]: v })} width="14rem"
             options={[{ value: '', label: `全部${SCENE_LABEL[k]}` }, ...values[k].map((v) => ({
@@ -290,14 +294,14 @@ export function ExamSet() {
       {rows.length > 0 && grouped.map(([g, list]) => (
         <section key={g} className="mb-5">
           {group && <SectionTitle className="mb-2">{sceneValueLabel(group, g, idol)} <span className="text-[13px] font-normal text-ink-3">{list.length} 题</span></SectionTitle>}
-          <ProblemTable rows={list} canEdit={canEdit} onDelete={remove} />
+          <ProblemTable rows={list} canEdit={canEdit} onDelete={remove} coreSeeds={info?.core_seeds} />
         </section>
       ))}
     </div>
   )
 }
 
-function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: boolean; onDelete: (p: Problem) => void }) {
+function ProblemTable({ rows, canEdit, onDelete, coreSeeds }: { rows: Problem[]; canEdit: boolean; onDelete: (p: Problem) => void; coreSeeds?: number }) {
   const cat = useCatalog()
   const [q, setQ] = useSearchParams()
   const openId = q.get('deck')
@@ -329,7 +333,14 @@ function ProblemTable({ rows, canEdit, onDelete }: { rows: Problem[]; canEdit: b
                   <div className="flex items-center gap-2.5">
                     <IdolThumb id={sc.idol} size={30} />
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-ink" title={p.name}>{p.name}</p>
+                      <p className="flex items-center gap-1.5">
+                        <span className="truncate font-semibold text-ink" title={p.name}>{p.name}</span>
+                        {p.core && (
+                          <Tip tip={`在核心题单里：评测缺省只跑核心题，每题 ${coreSeeds ?? 32} 种牌序`}>
+                            <Badge tabIndex={0} variant="outline" className="shrink-0 whitespace-nowrap">核心</Badge>
+                          </Tip>
+                        )}
+                      </p>
                       <p className="truncate text-[11.5px] text-ink-3">{sc.idol ? idolShort(cat, sc.idol) : ''}</p>
                     </div>
                   </div>

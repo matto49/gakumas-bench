@@ -48,6 +48,43 @@ type SetConfig struct {
 	Owner       string `json:"owner,omitempty"`
 	Status      string `json:"status,omitempty"`
 	Created     string `json:"created,omitempty"`
+	// 核心题单：评测缺省只跑这些题、每题前 CoreSeeds 个保密牌序，排行缺省也只按它们算（?scope=all 看全部）。
+	// 其余题照样留在集合里，可以浏览、单独跑。空 = 没有核心题单，全部题 × 32。
+	Core      []string `json:"core,omitempty"`
+	CoreSeeds int      `json:"core_seeds,omitempty"`
+}
+
+// coreSet 核心题单（没有时 nil）和每题牌序数
+func (c SetConfig) coreSet() (map[string]bool, int) {
+	if len(c.Core) == 0 {
+		return nil, TemplateSeeds
+	}
+	m := map[string]bool{}
+	for _, id := range c.Core {
+		m[id] = true
+	}
+	n := c.CoreSeeds
+	if n <= 0 || n > TemplateSeeds {
+		n = TemplateSeeds
+	}
+	return m, n
+}
+
+// evalScope 一次评测跑哪些题、每题几个牌序：缺省核心题 × 核心牌序数；full 时全部题 × 32；
+// 给了 only 时按 only 筛题（不限于核心），牌序数照核心。seeds 只能往少里调（旧客户端总传 32，按核心封顶）。
+// 返回的 core 为 nil 表示不按核心题单筛题。
+func (c SetConfig) evalScope(seeds int, full bool, only []string) (int, map[string]bool) {
+	core, n := c.coreSet()
+	if full {
+		core, n = nil, TemplateSeeds
+	}
+	if seeds > 0 && seeds < n {
+		n = seeds
+	}
+	if len(only) > 0 {
+		core = nil
+	}
+	return n, core
 }
 
 func (c SetConfig) status() string {
@@ -304,11 +341,13 @@ func (a *App) handlePatchSet(w http.ResponseWriter, r *http.Request, u string) {
 		return
 	}
 	var b struct {
-		Title  *string `json:"title"`
-		Blurb  *string `json:"blurb"`
-		Status *string `json:"status"`
+		Title     *string   `json:"title"`
+		Blurb     *string   `json:"blurb"`
+		Status    *string   `json:"status"`
+		Core      *[]string `json:"core"`
+		CoreSeeds *int      `json:"core_seeds"`
 	}
-	if json.NewDecoder(http.MaxBytesReader(w, r.Body, 8192)).Decode(&b) != nil {
+	if json.NewDecoder(http.MaxBytesReader(w, r.Body, 256<<10)).Decode(&b) != nil {
 		fail(w, 400, "请求体不是 JSON")
 		return
 	}
@@ -326,6 +365,29 @@ func (a *App) handlePatchSet(w http.ResponseWriter, r *http.Request, u string) {
 		fail(w, 403, "只有提交人或管理员能改这个集合")
 		return
 	}
+	if b.Core != nil || b.CoreSeeds != nil {
+		if !isAdmin(u) {
+			fail(w, 403, "只有管理员能定核心题单")
+			return
+		}
+		if b.CoreSeeds != nil && (*b.CoreSeeds < 1 || *b.CoreSeeds > TemplateSeeds) {
+			fail(w, 400, fmt.Sprintf("core_seeds 要在 1～%d", TemplateSeeds))
+			return
+		}
+		if b.Core != nil {
+			have := map[string]bool{}
+			for _, p := range a.store.Problems(set) {
+				id, _ := p["id"].(string)
+				have[id] = true
+			}
+			for _, id := range *b.Core {
+				if !have[id] {
+					fail(w, 400, "集合里没有题 "+id)
+					return
+				}
+			}
+		}
+	}
 	err := a.store.updateSetConfig(set, func(c *SetConfig) {
 		if b.Title != nil && trimRunes(*b.Title, maxTitleRunes) != "" {
 			c.Title = trimRunes(*b.Title, maxTitleRunes)
@@ -335,6 +397,12 @@ func (a *App) handlePatchSet(w http.ResponseWriter, r *http.Request, u string) {
 		}
 		if b.Status != nil {
 			c.Status = *b.Status
+		}
+		if b.Core != nil {
+			c.Core = dedup(*b.Core)
+		}
+		if b.CoreSeeds != nil {
+			c.CoreSeeds = *b.CoreSeeds
 		}
 	})
 	if err != nil {
@@ -561,4 +629,16 @@ func (a *App) handleDeleteProblem(w http.ResponseWriter, r *http.Request, u stri
 		return
 	}
 	writeJSONResp(w, 200, map[string]any{"ok": true})
+}
+
+func dedup(xs []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, x := range xs {
+		if !seen[x] {
+			seen[x] = true
+			out = append(out, x)
+		}
+	}
+	return out
 }

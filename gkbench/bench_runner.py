@@ -237,7 +237,9 @@ def run_once(*, pull=False, dry_run=False, min_idle=600.0, max_load=3.0, only=No
                      "submission": {"dir": f"submissions/{sub['name']}", "commit": commit, "author": sub.get("author"),
                                     "hash": content_hash(sub["dir"]), "entry": sub["entry"], "params": sub.get("params") or {}},
                      "about": algo.about, "load_start": round(os.getloadavg()[0], 2)}
-            out = run(set_name, algo, sub["step_seconds"], None, None, sub["label"], keep_obs=True, template=True,
+            from .client import set_scope
+            idx, only = set_scope(set_name)          # 和托管评测一样按核心题单
+            out = run(set_name, algo, sub["step_seconds"], idx, only, sub["label"], keep_obs=True, template=True,
                       by=sub.get("author"), extra=extra, between=between,
                       progress=lambda m: None)
             info = json.loads((out / "run.json").read_text())
