@@ -274,7 +274,7 @@ export function Leaderboard() {
               {items.map(({ r, kind, fam, count }) => {
                 if (kind !== 'child' && !r.privileged && !partial(r)) rank++
                 const open = fam ? openFam.has(fam) : false
-                const params = r.params ? Object.entries(r.params).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${v}`).join(' ') : ''
+                const params = r.params ? Object.entries(r.params).filter(([, v]) => v != null && v !== '' && typeof v !== 'object').map(([k, v]) => `${k}=${v}`).join(' ') : ''
                 return (
                   <tr
                     key={kind === 'family' ? `fam:${fam}` : kind === 'child' ? `child:${r.run}` : r.run}

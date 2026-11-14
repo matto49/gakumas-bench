@@ -114,8 +114,9 @@ class RouteAlgo(Algorithm):
     privileged = True
     about = ABOUT
 
-    def __init__(self, routes, sources=None):
-        super().__init__(sources=sources)
+    def __init__(self, routes):
+        # 来源统计不放参数里：参数相同的运行才合成排行的一行，每批来源数不同会拆成很多行
+        super().__init__()
         self.routes = routes            # {(题模板编号, 种子): {"score", "route", "src"}}
 
     def begin(self, ctx):
@@ -176,9 +177,10 @@ def main(argv=None):
         raise SystemExit(f"{len(missing)} 局没有路线（先把它们搜出来）：{missing[:6]}…")
     print(f"{len(routes)} 局，路线来源：{src}", flush=True)
     t = time.time()
-    out = run(a.set, RouteAlgo(routes, sources=src), 5.0, idx, only, a.label, keep_obs=True, template=True)
+    out = run(a.set, RouteAlgo(routes), 5.0, idx, only, a.label, keep_obs=True, template=True)
     info = json.loads((out / "run.json").read_text())
     info.update(ABOUT)                                   # 算法说明写进运行表头，网页的运行页和排行会显示
+    info["route_sources"] = src                          # 路线来源统计（农场 / 以前的上限运行各几局）
     low = []
     for e in read_episodes(out):
         m = (e["steps"][0].get("algo_meta") or {}) if e.get("steps") else {}
