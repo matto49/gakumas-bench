@@ -223,12 +223,17 @@ func (s *Store) Leaderboard(set, base, group, kind, scope string) ([]Row, error)
 		runs = append(runs, run{info: info, eps: m, count: count, names: []string{name}})
 	}
 	runs = mergeRuns(runs, legacy)
-	oracle := map[key]float64{}
+	// 分母：每局取同一规则版本下所有上限运行的最高分。规则版本不同，同一条路线打出的分数也不同，不能混着比
+	oracles := map[string]map[key]float64{}
 	for _, r := range runs {
 		if privileged(r.info) {
+			rv := rulesOf(r.info)
+			if oracles[rv] == nil {
+				oracles[rv] = map[key]float64{}
+			}
 			for k, e := range r.eps {
-				if e.Score > oracle[k] {
-					oracle[k] = e.Score
+				if e.Score > oracles[rv][k] {
+					oracles[rv][k] = e.Score
 				}
 			}
 		}
@@ -260,6 +265,9 @@ func (s *Store) Leaderboard(set, base, group, kind, scope string) ([]Row, error)
 		row.Kind, _ = r.info["kind"].(string)
 		row.Params = r.info["params"]
 		row.SeesSeed, _ = r.info["sees_seed"].(bool)
+		if r.info["sees"] == "seed" { // 算法说明里自己写了看牌序（如从画面反推种子的 UIHorizon）
+			row.SeesSeed = true
+		}
 		row.About = algoDoc(r.info)
 		row.Family = familyOf(r.info)
 		if n, _ := r.info["family_name"].(string); cleanFamilyName(n) != "" {
@@ -272,6 +280,7 @@ func (s *Store) Leaderboard(set, base, group, kind, scope string) ([]Row, error)
 				row.Author, _ = s["author"].(string)
 			}
 		}
+		oracle := oracles[rulesOf(r.info)]
 		var think []float64
 		var vsO, vsB [][2]float64
 		sum, epThink := 0.0, 0.0
@@ -394,6 +403,14 @@ func runTime(info map[string]any) string {
 		if v, ok := info[k].(string); ok && v != "" {
 			return v
 		}
+	}
+	return ""
+}
+
+// rulesOf：运行用的考试规则版本（engine.rules_version），没有就是空串
+func rulesOf(info map[string]any) string {
+	if e, ok := info["engine"].(map[string]any); ok && e["rules_version"] != nil {
+		return fmt.Sprint(e["rules_version"])
 	}
 	return ""
 }
