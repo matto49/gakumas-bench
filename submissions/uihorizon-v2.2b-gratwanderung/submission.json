@@ -1,0 +1,8 @@
+{
+  "label": "uihorizon-v2-2b-gratwanderung",
+  "entry": "algo.py:UIHorizon",
+  "params": {},
+  "author": "yuzeis",
+  "sets": ["hif"],
+  "step_seconds": 5
+}
