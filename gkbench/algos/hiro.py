@@ -21,6 +21,17 @@ ATTR = {1: "Vo", 2: "Da", 3: "Vi"}
 STATUS_FIELD = {"aggressive": "motivation", "review": "impression"}   # UIObs 状态 → BattleState 字段
 
 
+def _card(card_id: str, upgrade: int):
+    """卡对象（同 KAA SkillCard 的属性名）：新版 hiro 用 hiro.master.card（1dad896 起删了 brain.cards.kaa_cards），旧版退回 kaa_cards。"""
+    try:
+        from hiro.master import card
+    except ImportError:
+        from hiro.brain.cards import kaa_cards
+
+        return kaa_cards().get((card_id, upgrade))
+    return card(card_id, int(upgrade or 0))
+
+
 def _import_hiro(playbook: bool):
     os.environ["HIRO_EXAM_PLAYBOOK"] = "1" if playbook else "0"
     os.environ.pop("HIRO_LLM", None)
@@ -69,7 +80,7 @@ class HiroRulesAlgo(Algorithm):
     def state(self, obs):
         from types import SimpleNamespace
 
-        from hiro.brain.cards import CardView, card_view, drink_view, kaa_cards, parse_tags, select
+        from hiro.brain.cards import CardView, card_view, drink_view, parse_tags, select
         from hiro.brain.state import BattleState
         ex, num = obs["exam"], obs["num"]
         legal = [tuple(a) for a in obs["legal"]]
@@ -77,7 +88,7 @@ class HiroRulesAlgo(Algorithm):
         drinkable = [a[1] for a in legal if a[0] == "drink"]
         hand = []
         for i, c in enumerate(obs["hand"]):
-            kaa = kaa_cards().get((c["id"], c.get("u", 0)))
+            kaa = _card(c["id"], c.get("u", 0))
             if kaa is None:
                 v = CardView(i, c["id"], c["id"], c.get("u", 0), i in plays, "unknown", 0, 0, None, "", parse_tags(c["id"], ""))
             else:
@@ -108,7 +119,7 @@ class HiroRulesAlgo(Algorithm):
         def names(zone):
             out = []
             for c in obs.get(zone) or []:
-                k = kaa_cards().get((c["id"], c.get("u", 0)))
+                k = _card(c["id"], c.get("u", 0))
                 out.append(k.name if k is not None else c["id"])
             return sorted(out)
 
