@@ -3,9 +3,10 @@
 
 export type UsageRow = { id: string; share: number }
 export type SupportUse = UsageRow & { limit: number | null }
-export type CardUse = UsageRow & { copies: number; upgraded: number; customized: number; w?: number; in_best?: number }
+export type CardUse = UsageRow & { copies: number; upgraded: number; from_memory?: number; w?: number; in_best?: number }
+export type MemCardUse = UsageRow & { upgraded: number }
 export type ItemUse = UsageRow & { up: number }
-export type IdolUsage = { n: number; produce: string[]; supports: SupportUse[]; cards: CardUse[]; items: ItemUse[] }
+export type IdolUsage = { n: number; produce: string[]; supports: SupportUse[]; cards: CardUse[]; items: ItemUse[]; mem_cards?: MemCardUse[]; mem_items?: UsageRow[] }
 
 export type UsageData = {
   format: string

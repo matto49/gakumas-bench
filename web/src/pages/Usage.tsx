@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useApi } from '../lib/hooks'
 import { cardName, idolShort, spriteUrl, useCatalog, useLang, useTerms } from '../lib/catalog'
-import { aggregate, avg, charOf, type Agg, type CardUse, type ItemUse, type SupportUse, type UsageData } from '../lib/usage'
+import { aggregate, avg, charOf, type Agg, type CardUse, type ItemUse, type MemCardUse, type SupportUse, type UsageData, type UsageRow } from '../lib/usage'
 import { pairBi } from '../lib/supports'
 import { IDOL_STYLE } from '../lib/game'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -73,6 +73,8 @@ export function Usage() {
   const supports = useMemo(() => (d ? aggregate<SupportUse>(scope.map((i) => d.idols[i].supports)) : []), [d, scope.join()])
   const items = useMemo(() => (d ? aggregate<ItemUse>(scope.map((i) => d.idols[i].items)) : []), [d, scope.join()])
   const cards = useMemo(() => (d ? aggregate<CardUse>(scope.map((i) => d.idols[i].cards)).filter((c) => sourceOf(c.id) !== 'idol') : []), [d, scope.join()])
+  const memCards = useMemo(() => (d ? aggregate<MemCardUse>(scope.map((i) => d.idols[i].mem_cards ?? [])) : []), [d, scope.join()])
+  const memItems = useMemo(() => (d ? aggregate<UsageRow>(scope.map((i) => d.idols[i].mem_items ?? [])) : []), [d, scope.join()])
   const records = scope.reduce((s, i) => s + (d?.idols[i]?.n ?? 0), 0)
 
   const scopeText = card ? `${cat?.idols[card]?.name ?? card} 的 ${records} 份记录`
@@ -131,7 +133,19 @@ export function Usage() {
           {tab === 'supports' && <SupportTable rows={supports} d={d} single={!!card} lang={lang} />}
           {tab === 'cards' && <CardTable rows={cards} single={!!card} onOpen={setOpenCard} />}
           {tab === 'items' && <ItemTable rows={items} single={!!card} onOpen={setOpenItem} />}
-          {tab === 'memories' && <Empty>回忆的数据在记录里，但还没解码出来。解码好以后这里会列出前 100 名常带的回忆和回忆能力。</Empty>}
+          {tab === 'memories' && (memCards.length === 0 ? <Empty>这批记录没有回忆数据。</Empty> : (
+            <div className="space-y-6">
+              <section>
+                <h3 className="mb-2 text-[14px] font-bold text-ink">回忆带进来的技能卡 <span className="font-normal text-ink-3">· 编成的 4 张回忆里有没有带这张卡</span></h3>
+                <MemCardTable rows={memCards} single={!!card} onOpen={setOpenCard} />
+              </section>
+              <section>
+                <h3 className="mb-2 text-[14px] font-bold text-ink">回忆带进考试的 P 道具</h3>
+                <ItemTable rows={memItems.map((r) => ({ ...r, rows: r.rows.map((x) => ({ ...x, up: 0 })) }))} single={!!card} onOpen={setOpenItem} noUp />
+              </section>
+              <p className="text-[12px] text-ink-3">记录里只有回忆带的卡和 P 道具，没有游戏里随机的回忆能力。</p>
+            </div>
+          ))}
         </>
       )}
       {openCard && cat?.cards[openCard] && <CardDetail id={openCard} c={cat.cards[openCard]} onClose={() => setOpenCard(null)} />}
@@ -184,7 +198,7 @@ function CardTable({ rows, single, onOpen }: { rows: Agg<CardUse>[]; single: boo
   return (
     <div className="overflow-x-auto rounded-2xl border border-line">
       <table className="w-full min-w-[720px] text-[13.5px]">
-        <Head cols={['#', '技能卡', '出现比例', <>带的话几张</>, <>定制过<Help tip="带的这张卡里做过定制（特別指導）的比例" /></>,
+        <Head cols={['#', '技能卡', '出现比例', <>带的话几张</>, <>回忆带入<Help tip="带的这张卡里，由回忆带进来（不是培育中拿的）的比例" /></>,
           <>权重<Help tip="强度榜 V 模型：这张卡在牌组里时本戦总分的相对变化（多张偶像卡时取平均）" /></>, ...(single ? [] : ['常用的偶像卡'])]} />
         <tbody>
           {rows.slice(0, 60).map((r, i) => {
@@ -204,7 +218,7 @@ function CardTable({ rows, single, onOpen }: { rows: Agg<CardUse>[]; single: boo
                 </td>
                 <td className="px-3 py-1.5"><span className="flex justify-end"><Bar v={r.mean} /></span></td>
                 <td className="num px-3 py-1.5 text-right text-ink-2">{avg(r.rows.map((x) => x.copies))?.toFixed(1)}</td>
-                <td className="num px-3 py-1.5 text-right text-ink-2">{Math.round((avg(r.rows.map((x) => x.customized)) ?? 0) * 100)}%</td>
+                <td className="num px-3 py-1.5 text-right text-ink-2">{Math.round((avg(r.rows.map((x) => x.from_memory)) ?? 0) * 100)}%</td>
                 <td className={cx('num px-3 py-1.5 text-right', w == null ? 'text-ink-3' : w >= 0 ? 'text-ink' : 'text-critical')}>{w == null ? '—' : `${w >= 0 ? '+' : ''}${w.toFixed(2)}`}</td>
                 {!single && <td className="num px-3 py-1.5 text-right text-ink-2">{r.strong} / {r.cards}</td>}
               </tr>
@@ -217,14 +231,14 @@ function CardTable({ rows, single, onOpen }: { rows: Agg<CardUse>[]; single: boo
   )
 }
 
-function ItemTable({ rows, single, onOpen }: { rows: Agg<ItemUse>[]; single: boolean; onOpen: (id: string) => void }) {
+function ItemTable({ rows, single, onOpen, noUp }: { rows: Agg<ItemUse>[]; single: boolean; onOpen: (id: string) => void; noUp?: boolean }) {
   const cat = useCatalog()
   const terms = useTerms()
   if (!rows.length) return <Empty>没有记录。</Empty>
   return (
     <div className="overflow-x-auto rounded-2xl border border-line">
       <table className="w-full min-w-[600px] text-[13.5px]">
-        <Head cols={['#', 'P 道具', '出现比例', <>特训后<Help tip="带的是特训后（名字带「+」）版本的比例" /></>, ...(single ? [] : ['常用的偶像卡'])]} />
+        <Head cols={['#', 'P 道具', '出现比例', ...(noUp ? [] : [<>特训后<Help tip="带的是特训后（名字带「+」）版本的比例" /></>]), ...(single ? [] : ['常用的偶像卡'])]} />
         <tbody>
           {rows.slice(0, 40).map((r, i) => {
             const it = cat?.items[r.id]
@@ -242,15 +256,46 @@ function ItemTable({ rows, single, onOpen }: { rows: Agg<ItemUse>[]; single: boo
                   </Tip>
                 </td>
                 <td className="px-3 py-1.5"><span className="flex justify-end"><Bar v={r.mean} /></span></td>
-                <td className="num px-3 py-1.5 text-right text-ink-2">{Math.round((avg(r.rows.map((x) => x.up)) ?? 0) * 100)}%</td>
+                {!noUp && <td className="num px-3 py-1.5 text-right text-ink-2">{Math.round((avg(r.rows.map((x) => x.up)) ?? 0) * 100)}%</td>}
                 {!single && <td className="num px-3 py-1.5 text-right text-ink-2">{r.strong} / {r.cards}</td>}
               </tr>
             )
           })}
         </tbody>
       </table>
-      <p className="border-t border-line bg-surface-2 px-3 py-2 text-[12px] text-ink-3">不含 H.I.F 人人都有的固定道具；特训前后算同一件。</p>
+      {!noUp && <p className="border-t border-line bg-surface-2 px-3 py-2 text-[12px] text-ink-3">不含 H.I.F 人人都有的固定道具；特训前后算同一件。</p>}
     </div>
   )
 }
 
+
+function MemCardTable({ rows, single, onOpen }: { rows: Agg<MemCardUse>[]; single: boolean; onOpen: (id: string) => void }) {
+  const cat = useCatalog()
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-line">
+      <table className="w-full min-w-[600px] text-[13.5px]">
+        <Head cols={['#', '技能卡', '出现比例', <>强化过<Help tip="回忆带进来的这张卡是强化版的比例" /></>, ...(single ? [] : ['常用的偶像卡'])]} />
+        <tbody>
+          {rows.slice(0, 40).map((r, i) => {
+            const c = cat?.cards[r.id]
+            return (
+              <tr key={r.id} className="border-t border-line hover:bg-brand-tint">
+                <td className="num w-10 px-3 py-1.5 text-ink-3">{i + 1}</td>
+                <td className="px-3 py-1.5">
+                  <button type="button" onClick={() => onOpen(r.id)} className="flex cursor-pointer items-center gap-2.5 text-left hover:text-brand-ink">
+                    {c ? <CardImage c={c} size={32} /> : <span className="size-8 rounded-lg bg-surface-3" />}
+                    <span className="truncate">{cardName(cat, r.id)}</span>
+                    {c && <RarityTag r={c.rarity} />}
+                  </button>
+                </td>
+                <td className="px-3 py-1.5"><span className="flex justify-end"><Bar v={r.mean} /></span></td>
+                <td className="num px-3 py-1.5 text-right text-ink-2">{Math.round((avg(r.rows.map((x) => x.upgraded)) ?? 0) * 100)}%</td>
+                {!single && <td className="num px-3 py-1.5 text-right text-ink-2">{r.strong} / {r.cards}</td>}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
