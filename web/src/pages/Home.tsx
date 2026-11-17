@@ -188,9 +188,9 @@ export function Home() {
       <section className="mx-[calc(50%-50vw)] -mt-7 mb-10 border-b border-line px-5 pt-12 pb-10">
         <div className="mx-auto flex max-w-[1120px] flex-wrap items-end justify-between gap-x-10 gap-y-6">
           <div>
-            <h1 className="text-[32px] leading-[1.16] font-bold tracking-tight text-ink sm:text-[42px]">学园偶像大师攻略站</h1>
+            <h1 className="text-[32px] leading-[1.16] font-bold tracking-tight text-ink sm:text-[42px]">初星数据室</h1>
             <p className="mt-4 max-w-[36em] text-[16px] leading-[1.8] text-ink-2">
-              学マス玩家做的中文攻略站，资料从游戏数据里直接导出。
+              学园偶像大师（学マス）玩家做的中文数据站，资料从游戏数据里直接导出。
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
