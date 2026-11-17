@@ -40,7 +40,7 @@ function Bar({ v, max = 1, tone = 'bg-da' }: { v: number; max?: number; tone?: s
 
 /** 六边形雷达：每维 0–100 */
 function Radar({ c, board }: { c: TierCard; board: TierBoard }) {
-  const W = 300, H = 260, cx0 = W / 2, cy0 = H / 2 + 4, R = 88
+  const W = 300, H = 284, cx0 = W / 2, cy0 = H / 2, R = 88
   const n = board.dims.length
   const pt = (i: number, f: number) => {
     const a = -Math.PI / 2 + (2 * Math.PI * i) / n
