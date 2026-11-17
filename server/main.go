@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -161,6 +162,22 @@ func main() {
 			}
 		}
 		http.ServeFile(w, r, filepath.Join(static, name))
+	})
+	// 强度榜：python -m gkbench.tierboard 导入到 $DATA/static/tiers/（index.json 是目录，<id>.json 是一张榜）
+	tierName := regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,63}$`)
+	mux.HandleFunc("GET /api/tiers/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		if !tierName.MatchString(id) {
+			http.NotFound(w, r)
+			return
+		}
+		p := filepath.Join(static, "tiers", id+".json")
+		if _, err := os.Stat(p); err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "public, no-cache")
+		http.ServeFile(w, r, p)
 	})
 	mux.HandleFunc("GET /api/auth", O(app.handleAuthInfo))
 	mux.HandleFunc("GET /api/auth/github", app.handleGithubStart)

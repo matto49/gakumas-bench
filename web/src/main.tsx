@@ -8,6 +8,8 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { Layout } from './components/Layout'
 import { Home } from './pages/Home'
+import { Tiers, TiersIndex } from './pages/Tiers'
+import { TierCardPage } from './pages/TierCard'
 import { Leaderboard } from './pages/Leaderboard'
 import { RunPage } from './pages/Run'
 import { Replay } from './pages/Replay'
@@ -24,6 +26,9 @@ const router = createBrowserRouter(
       element: <Layout />,
       children: [
         { path: '/', element: <Home /> },
+        { path: '/tiers', element: <TiersIndex /> },
+        { path: '/tiers/:board', element: <Tiers /> },
+        { path: '/tiers/:board/:card', element: <TierCardPage /> },
         { path: '/sets', element: <Leaderboard /> },
         { path: '/sets/:set', element: <Leaderboard /> },
         { path: '/runs/:run', element: <RunPage /> },

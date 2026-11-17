@@ -46,6 +46,7 @@ shadcn 的语义变量（`background` `foreground` `primary` `muted` `accent` `b
 | 首页节标题、重点数字 | `Home.tsx` 的 `HomeTitle`（21px，比内页的 `SectionTitle` 大一号，可带一行说明和右侧链接）；正文里的重点数字用 `N`：加粗，下半截垫一道 `brand` 40% 的荧光笔。只在首页的说明段落用 |
 | 首页「现在的排行」和题集列表 | `Home.tsx` 的 `NowBoard`：真实记录测试集的榜，相对上限旁边带一根 `brand` 的条，最后一行是理论上限。`SetRow`：题集一行一个，写题数、每题几种牌序、现在的第一名，整行点进排行。两者都用 `useBoard(set)` 取榜 |
 | 排行的算法家族行 | `Leaderboard.tsx`：同家族的各版本合成一行，名次和成绩取当前排序下最好的版本；展开键是名字左边空白里的灰色箭头（18px，相对整行垂直居中，不加边框，名字和其他行对齐），「N 个版本 · 成绩取 …」写在副标题；铅笔改名键只在悬停时出现。子项不排名次，左边一道 `line-strong` 竖线挂在家族下，只写版本部分（`uinet-2.0beta-x` 写 `2.0beta-x`，和家族同名的写「初版」），字号、评级徽章、平均分都小一号 |
+| 强度榜 | `pages/Tiers.tsx`（总榜）、`pages/TierCard.tsx`（单卡页），版式照原视频：S、A 档大卡带六维条，B 档以下小格；名次是黑底圆，右上角空心圆点表示换一批编成可能跨档。档位色块 `TIER_STYLE`（lib/tiers.ts），字母写在色块里，不单靠颜色。单卡页的分布图：最优饮料用 `da`，自带饮料用 `line-strong` |
 | `Empty` | 空状态：`surface-2` 浅灰底、虚线框 + 一句话说该做什么 |
 | 顶栏 | `Layout.tsx`：白底、底边一条 `line`；logo 前是 Vo 粉、Da 蓝、Vi 黄三道小斜杠；当前页是 `surface-2` 的浅灰胶囊。斜纹底（`.stripes`）已经去掉，不要再加 |
 

@@ -200,6 +200,12 @@
     # 防刷：同一 IP 每小时最多注册 5 个；同一 IP + 用户名 15 分钟内输错 8 次就要等（按 nginx 的 X-Real-IP）
     gkbench-server public-seeds <题集> on|off     # 开发集种子（和固定种子题存档）公开下载；测试集永不公开
 
+    # 强度榜（网页 /tiers）：「六维强度榜」数据包（gkms.strength.video.v1）导入成 $GKBENCH_DATA/static/tiers/<id>.json
+    # 和目录 index.json，接口 api/tiers/<id>。只放汇总，逐份的牌组和支援卡不出数据包（gkbench/tierboard.py）
+    .venv/bin/python -m gkbench.tierboard <数据包目录> --id hif-koinsho-202611 --title "H.I.F 模式 · 好印象 强度榜" \
+        --author <作者> --video <原视频> --out $GKBENCH_DATA/static/tiers
+    # 支援卡缩略图（support-<编号>.webp）：gkmas-assets/tools/export_support_icons.py，导出后拷到 $GKBENCH_DATA/static/sprites/
+
     # 卡牌目录和小图（主数据或素材更新后重跑）
     cd server && go run ./cmd/catalog -master $GKMS_ROOT/GakumasCLI/ro/master/tables \
         -cards <素材>/skill_cards,<补的卡面目录> -drinks <素材>/drinks -out $GKBENCH_DATA/static
