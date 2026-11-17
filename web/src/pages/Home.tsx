@@ -190,7 +190,7 @@ export function Home() {
           <div>
             <h1 className="text-[32px] leading-[1.16] font-bold tracking-tight text-ink sm:text-[42px]">学园偶像大师攻略站</h1>
             <p className="mt-4 max-w-[36em] text-[16px] leading-[1.8] text-ink-2">
-              强度榜、偶像卡打法和游戏资料。考试按游戏规则模拟，资料直接取自游戏数据，中日文对照。
+              学マス的强度榜和游戏资料。资料从游戏数据里直接导出，卡名日文、中文都能看。
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -203,7 +203,7 @@ export function Home() {
       <div className="mx-auto max-w-[1120px]">
         <section className="mb-14">
           <GuideTitle
-            sub="按六维总分分档：上限、实战、稳定、抗卡依赖、编成宽容、操作容错。只代表 H.I.F 本戦，其他模式和流派的榜陆续加。"
+            sub="H.I.F 本戦里理性 · 好印象的 31 张偶像卡，按六项得分加权分成 S 到 D 五档。别的流派和模式还没有榜。"
             right={<MoreLink to="/tiers">完整榜单和六维</MoreLink>}
           >
             强度榜
@@ -212,7 +212,7 @@ export function Home() {
         </section>
 
         <section className="mb-14">
-          <GuideTitle sub="每位偶像在这张榜上最好的卡。点进去看推荐牌组、常用搭配和分数分布。">按偶像看</GuideTitle>
+          <GuideTitle sub="每位偶像只列榜上名次最高的一张，点进去有推荐牌组、常用搭配和分数分布。">按偶像看</GuideTitle>
           <IdolEntries board={tiers.data} />
         </section>
 
@@ -224,7 +224,7 @@ export function Home() {
         <div className="mb-10 border-t border-line pt-10">
           <h2 className="text-[26px] leading-tight font-bold tracking-tight text-ink">出牌算法排行</h2>
           <p className="mt-3 max-w-[48em] leading-[1.8] text-ink-2">
-            所有算法打同一批真实开局的考试，每题同样的 32 种随机牌序，比分数和每步用时；牌序只有裁判知道，每一局都能点开看每一步出了哪张牌。攻略里的考试数据也在这里核对。
+            网站原来的内容：各种出牌算法打同一批实机开局的考试，每题 32 种随机牌序，比分数和每步用时。牌序只有裁判知道，每一局都能点开逐步回放。
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link to="/sets" className={btn.secondary}>看排行 <ArrowRight size={15} aria-hidden /></Link>

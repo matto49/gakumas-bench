@@ -29,7 +29,7 @@ function Tags({ d }: { d: SupportCard }) {
       <RarityTag r={d.rarity} />
       <TypeChip t={d.type} />
       <Meta>{d.plan === 'COMMON' ? '通用' : (terms.plan[d.plan] ?? d.plan)}</Meta>
-      {d.free && <Meta>免费获取</Meta>}
+      {d.free && <Meta>活动奖励</Meta>}
       {d.limited && <Meta>限定</Meta>}
     </span>
   )

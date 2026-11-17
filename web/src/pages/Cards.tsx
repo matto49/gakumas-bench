@@ -131,7 +131,7 @@ export function Cards() {
 
   return (
     <div>
-      <PageHeader title="游戏资源一览" sub="游戏里的技能卡、饮料、P 道具、偶像卡、支援卡和回忆能力。支援卡取完整主数据，其余和裁判用的是同一份 GKMS 主数据。编号旁边的按钮可以复制，上传编成时用。" />
+      <PageHeader title="游戏资源一览" sub="技能卡、饮料、P 道具、偶像卡、支援卡和回忆能力。支援卡的数据取自社区同步的完整游戏数据，其余和考试裁判用的是同一份。编号可以复制，上传编成时要填。" />
 
       <Tabs value={tab} onValueChange={(v) => update({ tab: v === 'cards' ? '' : String(v), rarity: '', cat: '', src: '', up: '', style: '', type: '' })}>
         <TabsList className="mb-4">

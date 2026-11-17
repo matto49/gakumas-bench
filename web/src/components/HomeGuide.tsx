@@ -114,11 +114,11 @@ export function IdolEntries({ board }: { board: TierBoard | null }) {
 
 const DATA_TILES = [
   { tab: '', title: '技能卡', body: '效果、强化和定制方向' },
-  { tab: 'supports', title: '支援卡', body: '各突破档的技能数值、事件' },
+  { tab: 'supports', title: '支援卡', body: '每个突破档的技能数值和事件' },
   { tab: 'idols', title: '偶像卡', body: '初始参数、成长率、固有卡和 P 道具' },
   { tab: 'items', title: 'P 道具', body: '效果和触发条件' },
   { tab: 'drinks', title: '饮料', body: '效果和解锁等级' },
-  { tab: 'memories', title: '回忆能力', body: '考试和培育中生效的能力' },
+  { tab: 'memories', title: '回忆能力', body: '考试里和培育中的效果' },
 ] as const
 
 export function DataTiles() {
