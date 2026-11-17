@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
-import { cardName, drinkName, spriteUrl, useCatalog } from '../lib/catalog'
-import { DIM_HELP, DIM_LABEL, supportThumbUrl, wan, type Battle, type TierBoard, type TierCard } from '../lib/tiers'
+import { spriteUrl, useCatalog } from '../lib/catalog'
+import { DIM_HELP, DIM_LABEL, supportThumbUrl, wan, type Battle, type Pair, type TierBoard, type TierCard } from '../lib/tiers'
 import { cx, ErrorState, Help, IdolThumb, Skeleton, Tip } from '../components/ui'
 import { CardDetail, CardImage, Meta, RarityTag } from '../components/CardDetail'
-import { SourceLine, TierBadge, TierMissing, useIdolLabel, useTierBoard } from './Tiers'
+import { Bi, SourceLine, TierBadge, TierMissing, useTierBoard, useTierNames } from './Tiers'
 
 /** 强度榜的单卡页：一张偶像卡在这张榜里的六维、推荐牌组、常用搭配、分数分布和实际成绩。版式参考原视频的单卡页 */
 
@@ -130,11 +130,11 @@ function Dumbbells({ c }: { c: TierCard }) {
   )
 }
 
-function CardChip({ id, upgrade, customized, onOpen, size = 44, children }: { id: string; upgrade: number; customized: boolean; onOpen: (id: string) => void; size?: number; children?: ReactNode }) {
+function CardChip({ id, name, customized, onOpen, size = 44, children }: { id: string; name: Pair; customized: boolean; onOpen: (id: string) => void; size?: number; children?: ReactNode }) {
   const cat = useCatalog()
   const c = cat?.cards[id]
   return (
-    <Tip tip={cardName(cat, id, upgrade) + (customized ? '（改造）' : '')}>
+    <Tip tip={<>{name.main}{customized ? '（改造）' : ''}{name.sub && <><br /><span className="opacity-75">{name.sub}</span></>}</>}>
       <button type="button" onClick={() => onOpen(id)} className="relative flex cursor-pointer flex-col items-center gap-0.5 rounded-lg p-0.5 hover:bg-surface-2">
         {c ? <CardImage c={c} size={size} /> : <span className="rounded-lg bg-surface-3" style={{ width: size, height: size }} />}
         {customized && <span className="absolute top-0 right-0 rounded-[3px] bg-brand-deep px-0.5 text-[9.5px] leading-tight font-bold text-white">改</span>}
@@ -156,13 +156,13 @@ export function TierCardPage() {
   const { board: boardId, card: cardId } = useParams()
   const { data: board, error, reload } = useTierBoard(boardId)
   const cat = useCatalog()
-  const label = useIdolLabel()
+  const names = useTierNames(board)
   const [open, setOpen] = useState<string | null>(null)
   if (error) return <ErrorState error={error} onRetry={reload} />
   if (!board) return <div className="space-y-3"><Skeleton className="h-24" /><Skeleton className="h-64" /></div>
   const c = board.cards.find((x) => x.id === cardId)
   if (!c) return <TierMissing />
-  const l = label(c)
+  const l = names.idol(c)
   const idol = cat?.idols[c.id]
   const u = c.usage
   const parts = board.dims.map((d) => ({ d, got: board.weights[d] * c.score[d], full: board.weights[d] * 100 }))
@@ -196,7 +196,8 @@ export function TierCardPage() {
           <div className="min-w-0">
             <p className="text-[13px] text-ink-3">{l.character}</p>
             <h1 className="text-[24px] leading-tight font-bold text-ink">{l.name}</h1>
-            <p className="mt-1.5 flex flex-wrap gap-1"><RarityTag r={c.rarity} /><Meta>{c.plan_label}</Meta><Meta>{c.style_label}</Meta>{c.low_confidence && <Meta>数据偏少</Meta>}</p>
+            {l.nameSub && <p className="text-[13px] text-ink-3">{l.nameSub}</p>}
+            <p className="mt-1.5 flex flex-wrap gap-1"><RarityTag r={c.rarity} /><Meta>{names.plan(c)}</Meta><Meta>{names.style(c)}</Meta>{c.low_confidence && <Meta>数据偏少</Meta>}</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -247,7 +248,7 @@ export function TierCardPage() {
         <Panel title="推荐牌组" sub="各卡入选率 · 改 = 改造" help="V 模型给出的最优牌组：每张卡在最优牌组里出现的比例。点卡看效果">
           <div className="flex flex-wrap gap-1">
             {deck.map((r) => (
-              <CardChip key={r.id + r.upgrade + r.customized} id={r.id} upgrade={r.upgrade} customized={r.customized} onOpen={setOpen}>
+              <CardChip key={r.id + r.upgrade + r.customized} id={r.id} name={names.card(r.id, r.upgrade)} customized={r.customized} onOpen={setOpen}>
                 <span className={cx('num text-[11px]', r.in_best === 1 ? 'font-semibold text-ink' : 'text-ink-3')}>{Math.round(r.in_best * 100)}%</span>
               </CardChip>
             ))}
@@ -261,7 +262,7 @@ export function TierCardPage() {
               <p className="mb-1.5 text-[12px] text-ink-3">最优饮料（{JSON.stringify(c.battles.mid1.best_drinks) === JSON.stringify(drinks) ? '前战、后战相同' : '后战'}）</p>
               <div className="flex flex-wrap gap-3">
                 {[...new Set(drinks)].map((d) => (
-                  <span key={d} className="inline-flex items-center gap-1.5 text-[13px]"><Thing asset={cat?.drinks[d]?.asset} size={30} />{drinkName(cat, d)} ×{drinks.filter((x) => x === d).length}</span>
+                  <span key={d} className="inline-flex items-center gap-1.5 text-[13px]"><Thing asset={cat?.drinks[d]?.asset} size={30} /><Bi p={names.drink(d)} subClass="text-[11.5px]" /> ×{drinks.filter((x) => x === d).length}</span>
                 ))}
               </div>
             </div>
@@ -273,8 +274,8 @@ export function TierCardPage() {
           <div className="space-y-1">
             {weights.map((r) => (
               <div key={r.id + r.upgrade + r.customized} className="grid grid-cols-[auto_1fr_38%_auto_auto] items-center gap-2 text-[13px]">
-                <CardChip id={r.id} upgrade={r.upgrade} customized={r.customized} onOpen={setOpen} size={28} />
-                <span className="truncate">{cardName(cat, r.id, r.upgrade)}</span>
+                <CardChip id={r.id} name={names.card(r.id, r.upgrade)} customized={r.customized} onOpen={setOpen} size={28} />
+                <Bi p={names.card(r.id, r.upgrade)} className="min-w-0 truncate" subClass="text-[11.5px]" />
                 <Bar v={r.w} max={topW} />
                 <span className="num w-12 text-right font-semibold">{r.w >= 0 ? '+' : ''}{r.w.toFixed(2)}</span>
                 <span className="num w-10 text-right text-ink-3">{Math.round(r.adoption * 100)}%</span>
@@ -285,8 +286,8 @@ export function TierCardPage() {
           <div className="space-y-1">
             {worst.map((k) => (
               <div key={k.name + k.customized} className="grid grid-cols-[auto_1fr_38%_auto_auto] items-center gap-2 text-[13px]">
-                {k.id ? <CardChip id={k.id} upgrade={k.name.endsWith('+') ? 1 : 0} customized={k.customized} onOpen={setOpen} size={28} /> : <span className="size-8" />}
-                <span className="truncate">{k.id ? cardName(cat, k.id, k.name.endsWith('+') ? 1 : 0) : k.name}</span>
+                {k.id ? <CardChip id={k.id} name={names.card(k.id, k.name.endsWith('+') ? 1 : 0)} customized={k.customized} onOpen={setOpen} size={28} /> : <span className="size-8" />}
+                <Bi p={k.id ? names.card(k.id, k.name.endsWith('+') ? 1 : 0) : { main: k.name }} className="min-w-0 truncate" subClass="text-[11.5px]" />
                 <Bar v={Math.abs(k.w)} max={topW} tone="bg-line-strong" />
                 <span className="num w-12 text-right font-semibold text-ink-2">{k.w.toFixed(2)}</span>
                 <span className="w-10" />
@@ -306,7 +307,7 @@ export function TierCardPage() {
                 return (
                   <div key={s.id} className="grid grid-cols-[auto_1fr_30%_auto] items-center gap-2 text-[13px]">
                     <img src={supportThumbUrl(s.id)} alt="" width={30} height={30} loading="lazy" className="size-[30px] rounded-md bg-surface-2 object-cover ring-1 ring-line" />
-                    <span className="min-w-0 truncate" title={sc?.zh ?? undefined}>{sc?.name ?? s.id}{sc?.rarity && <span className="ml-1.5 text-[11px] text-ink-3">{sc.rarity}</span>}</span>
+                    <span className="min-w-0 truncate"><RarityTag r={sc?.rarity} /> <Bi p={names.support(s.id)} subClass="text-[11.5px]" /></span>
                     <Bar v={s.share} />
                     <span className="num w-10 text-right font-semibold">{Math.round(s.share * 100)}%</span>
                   </div>
@@ -316,7 +317,7 @@ export function TierCardPage() {
             <p className="mt-3 mb-1.5 text-[12px] text-ink-3">P 道具（不含 H.I.F 固定道具）</p>
             <div className="flex flex-wrap gap-3">
               {u.items.map((it) => (
-                <Tip key={it.id} tip={<>{cat?.items[it.id]?.name ?? it.id}{cat?.items[it.id]?.text && <><br /><span className="whitespace-pre-line">{cat.items[it.id].text}</span></>}</>} wide>
+                <Tip key={it.id} tip={<><b>{names.item(it.id).main}</b>{names.item(it.id).sub && <span className="opacity-75">　{names.item(it.id).sub}</span>}{cat?.items[it.id]?.text && <><br /><span className="whitespace-pre-line">{cat.items[it.id].text}</span></>}</>} wide>
                   <span tabIndex={0} className="flex flex-col items-center gap-0.5"><Thing asset={cat?.items[it.id]?.asset} size={40} /><span className="num text-[11.5px] font-semibold">{Math.round(it.share * 100)}%</span></span>
                 </Tip>
               ))}
@@ -352,13 +353,13 @@ export function TierCardPage() {
                 {idol.card && cat?.cards[idol.card] && (
                   <button type="button" onClick={() => setOpen(idol.card!)} className="flex cursor-pointer items-center gap-2 rounded-lg text-left hover:bg-surface-2">
                     <CardImage c={cat.cards[idol.card]} size={36} />
-                    <span className="min-w-0"><span className="block text-[11px] text-ink-3">专属技能卡</span><span className="block truncate text-[13px]">{cat.cards[idol.card].name}</span></span>
+                    <span className="min-w-0"><span className="block text-[11px] text-ink-3">专属技能卡</span><Bi p={names.card(idol.card)} inline={false} className="block truncate text-[13px]" subClass="text-[11.5px] truncate" /></span>
                   </button>
                 )}
                 {idol.item && (
                   <span className="flex items-center gap-2">
                     <Thing asset={cat?.items[idol.item]?.asset} size={36} />
-                    <span className="min-w-0"><span className="block text-[11px] text-ink-3">专属 P 道具</span><span className="block truncate text-[13px]">{cat?.items[idol.item]?.name}</span></span>
+                    <span className="min-w-0"><span className="block text-[11px] text-ink-3">专属 P 道具</span><Bi p={names.item(idol.item)} inline={false} className="block truncate text-[13px]" subClass="text-[11.5px] truncate" /></span>
                   </span>
                 )}
               </div>

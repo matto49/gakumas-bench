@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowDown, ArrowUp, ChevronLeft, ExternalLink } from 'lucide-react'
 import { useApi } from '../lib/hooks'
-import { idolName, idolShort, useCatalog } from '../lib/catalog'
-import { DEFAULT_BOARD, DIM_HELP, DIM_LABEL, mayCross, tierLine, TIER_STYLE, type Dim, type Tier, type TierBoard, type TierCard } from '../lib/tiers'
+import { cardName, idolName, useCatalog, useLang, useTerms } from '../lib/catalog'
+import { DEFAULT_BOARD, DIM_HELP, DIM_LABEL, mayCross, pairOf, splitIdol, tierLine, TIER_STYLE, type Dim, type Pair, type Tier, type TierBoard, type TierCard } from '../lib/tiers'
 import { cx, Empty, ErrorState, Help, IdolThumb, PageHeader, SectionTitle, Skeleton } from '../components/ui'
 
 /** 强度榜：一张榜按 S～D 分档，每张卡点进单卡页（TierCardPage）。数据见 lib/tiers.ts */
@@ -12,14 +12,39 @@ export function useTierBoard(id: string | undefined) {
   return useApi<TierBoard>(`api/tiers/${id ?? DEFAULT_BOARD}`)
 }
 
-/** 卡名和人名：目录里是「【卡名】人名」，跟着日 / 中开关；目录还没到时用榜里的日文名 */
-export function useIdolLabel() {
+/** 榜上各种名字：主名跟着「日 / 中」开关，另一种语言做对照（board.names）；榜里没有的退回目录或原始名 */
+export function useTierNames(board: TierBoard | null) {
+  const { lang } = useLang()
   const cat = useCatalog()
-  return (c: TierCard) => {
-    const full = idolName(cat, c.id)
-    if (full === c.id || !full.includes('】')) return { name: c.name, character: c.character }
-    return { name: full.slice(1, full.indexOf('】')), character: idolShort(cat, c.id) }
+  const terms = useTerms()
+  const n = board?.names
+  return {
+    idol(c: TierCard) {
+      const p = pairOf(n?.idols[c.id], lang, idolName(cat, c.id) === c.id ? `【${c.name}】${c.character}` : idolName(cat, c.id))
+      const m = splitIdol(p.main)
+      const s = p.sub ? splitIdol(p.sub) : undefined
+      return { name: m.name, character: m.character || c.character, nameSub: s && s.name !== m.name ? s.name : undefined }
+    },
+    card(id: string, u = 0): Pair {
+      const e = n?.cards[id]
+      return pairOf({ ja: e?.ja?.[u], zh: e?.zh?.[u] }, lang, cardName(cat, id, u))
+    },
+    item: (id: string) => pairOf(n?.items[id], lang, cat?.items[id]?.name ?? id),
+    drink: (id: string) => pairOf(n?.drinks[id], lang, cat?.drinks[id]?.name ?? id),
+    support: (id: string) => pairOf(n?.supports[id] ?? { ja: board?.supports[id]?.name, zh: board?.supports[id]?.zh ?? undefined }, lang, id),
+    plan: (c: TierCard) => { const k = cat?.idols[c.id]?.plan; return (k && terms.plan[k]) || c.plan_label },
+    style: (c: TierCard) => { const k = cat?.idols[c.id]?.style; return (k && terms.style[k]) || c.style_label },
   }
+}
+
+/** 主名 + 灰色小字的另一种语言 */
+export function Bi({ p, className, subClass, inline = true }: { p: Pair; className?: string; subClass?: string; inline?: boolean }) {
+  return (
+    <span className={className}>
+      {p.main}
+      {p.sub && (inline ? <span className={cx('ml-1.5 font-normal text-ink-3', subClass ?? 'text-[0.85em]')}>{p.sub}</span> : <span className={cx('block font-normal text-ink-3', subClass ?? 'text-[0.85em]')}>{p.sub}</span>)}
+    </span>
+  )
 }
 
 export function TierBadge({ t, size = 'md' }: { t: Tier; size?: 'sm' | 'md' | 'lg' }) {
@@ -56,7 +81,7 @@ function RankDot({ c }: { c: TierCard }) {
 
 /** S、A 档：大卡，带六维条 */
 function BigCard({ c, board }: { c: TierCard; board: TierBoard }) {
-  const label = useIdolLabel()(c)
+  const label = useTierNames(board).idol(c)
   return (
     <Link
       to={`/tiers/${board.id}/${c.id}`}
@@ -69,6 +94,7 @@ function BigCard({ c, board }: { c: TierCard; board: TierBoard }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-[12px] text-ink-3">{label.character}</p>
         <p className="truncate font-bold text-ink group-hover:text-brand-ink">{label.name}</p>
+        {label.nameSub && <p className="-mt-0.5 truncate text-[11.5px] text-ink-3">{label.nameSub}</p>}
         <p className="mt-0.5 flex items-baseline gap-2">
           <span className="disp text-[30px] leading-none text-ink">{c.total.toFixed(1)}</span>
           <span className="text-[11.5px] text-ink-3">{mayCross(c) ? '可能跨档' : `区间 ${c.rank_interval[0]}–${c.rank_interval[1]}`}</span>
@@ -81,10 +107,11 @@ function BigCard({ c, board }: { c: TierCard; board: TierBoard }) {
 
 /** B 档以下：小格 */
 function SmallCard({ c, board }: { c: TierCard; board: TierBoard }) {
-  const label = useIdolLabel()(c)
+  const label = useTierNames(board).idol(c)
   return (
     <Link
       to={`/tiers/${board.id}/${c.id}`}
+      title={label.nameSub ? `${label.name}（${label.nameSub}）` : label.name}
       className="group flex w-[104px] flex-col items-center rounded-xl px-1 py-2 text-center transition-colors duration-150 hover:bg-surface-2"
     >
       <span className="relative">
@@ -99,7 +126,7 @@ function SmallCard({ c, board }: { c: TierCard; board: TierBoard }) {
 }
 
 function SortTable({ board }: { board: TierBoard }) {
-  const label = useIdolLabel()
+  const names = useTierNames(board)
   const [sort, setSort] = useState<{ k: 'total' | Dim | 'real'; desc: boolean }>({ k: 'total', desc: true })
   const val = (c: TierCard) => (sort.k === 'total' ? c.total : sort.k === 'real' ? c.real.median : c.score[sort.k])
   const rows = useMemo(() => [...board.cards].sort((a, b) => (sort.desc ? val(b) - val(a) : val(a) - val(b))), [board, sort])
@@ -125,14 +152,14 @@ function SortTable({ board }: { board: TierBoard }) {
         </thead>
         <tbody>
           {rows.map((c) => {
-            const l = label(c)
+            const l = names.idol(c)
             return (
               <tr key={c.id} className="border-t border-line hover:bg-brand-tint">
                 <td className="px-2 py-1.5"><span className="inline-flex items-center gap-1.5"><span className="num w-5 text-ink-2">{c.rank}</span><TierBadge t={c.tier} size="sm" /></span></td>
                 <td className="px-2 py-1.5">
                   <Link to={`/tiers/${board.id}/${c.id}`} className="inline-flex items-center gap-2 hover:text-brand-ink">
                     <IdolThumb id={c.id} size={26} title={false} />
-                    <span className="truncate">{l.character} <span className="text-ink-3">{l.name}</span></span>
+                    <span className="truncate">{l.character} <span className="text-ink-2">{l.name}</span>{l.nameSub && <span className="ml-1.5 text-[11.5px] text-ink-3">{l.nameSub}</span>}</span>
                   </Link>
                 </td>
                 <td className="num px-2 py-1.5 text-right font-semibold">{c.total.toFixed(1)}</td>
@@ -186,12 +213,18 @@ export function Tiers() {
   const { data: board, error, reload } = useTierBoard(id)
   if (error) return <ErrorState error={error} onRetry={reload} />
   if (!board) return <div className="space-y-3"><Skeleton className="h-10 w-80" /><Skeleton className="h-48" /><Skeleton className="h-48" /></div>
+  return <TiersBoard board={board} />
+}
+
+function TiersBoard({ board }: { board: TierBoard }) {
+  const names = useTierNames(board)
+  const klass = board.cards.length ? `${names.plan(board.cards[0])} · ${names.style(board.cards[0])}` : board.class
   const tiers = (['S', 'A', 'B', 'C', 'D'] as Tier[]).map((t) => ({ t, cards: board.cards.filter((c) => c.tier === t) })).filter((x) => x.cards.length)
   return (
     <div className="space-y-8">
       <PageHeader
         title={board.title}
-        sub={<>{board.class} · {board.cards.length} 张偶像卡 · 六维总分 · 收集的对局 {board.counts.records.toLocaleString()} 份 · 模拟 {Math.round((board.counts.games + board.counts.sim_games) / 10000).toLocaleString()} 万局</>}
+        sub={<>{klass} · {board.cards.length} 张偶像卡 · 六维总分 · 收集的对局 {board.counts.records.toLocaleString()} 份 · 模拟 {Math.round((board.counts.games + board.counts.sim_games) / 10000).toLocaleString()} 万局</>}
         right={<SourceLine board={board} />}
       />
       <div className="space-y-3">

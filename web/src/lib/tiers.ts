@@ -73,6 +73,7 @@ export type TierBoard = {
   counts: { cards: number; records: number; templates: number; games: number; sim_games: number }
   dims: Dim[]
   supports: Record<string, { name: string; zh?: string | null; asset?: string; rarity?: string }>
+  names?: TierNames
   cards: TierCard[]
 }
 
@@ -121,3 +122,26 @@ export const supportThumbUrl = (id: string) => `${BASE}sprites/support-${id}.web
 
 /** 本戦分数：412 万 */
 export const wan = (n: number, digits = 0) => `${(n / 10000).toLocaleString('zh-CN', { maximumFractionDigits: digits, minimumFractionDigits: digits })} 万`
+
+/** 榜里带的日文和中文名（tierboard.py 的 names）。技能卡按强化档存一串 */
+export type BiName = { ja?: string; zh?: string }
+export type TierNames = {
+  idols: Record<string, BiName>
+  cards: Record<string, { ja?: string[]; zh?: string[] }>
+  items: Record<string, BiName>
+  drinks: Record<string, BiName>
+  supports: Record<string, BiName>
+}
+
+/** 主名跟着「日 / 中」开关，另一种语言做对照；两种一样或缺一种时 sub 为空 */
+export type Pair = { main: string; sub?: string }
+export function pairOf(n: BiName | undefined, lang: 'ja' | 'zh', fallback: string): Pair {
+  const main = (lang === 'zh' ? n?.zh ?? n?.ja : n?.ja ?? n?.zh) ?? fallback
+  const other = lang === 'zh' ? n?.ja : n?.zh
+  return { main, sub: other && other !== main ? other : undefined }
+}
+
+/** 「【卡名】人名」拆成卡名和人名 */
+export function splitIdol(full: string) {
+  return full.includes('】') ? { name: full.slice(1, full.indexOf('】')), character: full.slice(full.indexOf('】') + 1) } : { name: full, character: '' }
+}

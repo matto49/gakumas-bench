@@ -9,7 +9,9 @@
     <out>/index.json  所有榜的目录（每次导入时更新这一项）
 
 只放汇总：收集记录里的支援卡、P 道具、三维只留比例和统计量，逐份的牌组和支援卡不出数据包。
-支援卡名字取 GKMS 主数据（SupportCard），有社区中文翻译时一并带上；饮料名字换成编号，网页按目录显示图标。"""
+支援卡名字取 GKMS 主数据（SupportCard），有社区中文翻译时一并带上；饮料名字换成编号，网页按目录显示图标。
+names：榜上用到的偶像卡、技能卡、P 道具、饮料、支援卡的日文和中文名（取 static/ 下的 catalog.json 和 catalog.zh.json），
+网页按「日 / 中」开关选主名，另一种语言做对照。"""
 from __future__ import annotations
 
 import argparse
@@ -116,7 +118,43 @@ def card_entry(summary: dict, page: dict, names: dict) -> dict:
     }
 
 
-def build(pkg: Path, master: Path, translation: Path | None, meta: dict) -> tuple[dict, dict]:
+def bilingual(cards: list[dict], supports: dict, catalogs: dict[str, dict]) -> dict:
+    """榜上用到的偶像卡、技能卡（各强化档）、P 道具、饮料的日文和中文名：网页「日 / 中」切换时主名换语言，另一种做对照"""
+    ids = {"idols": set(), "cards": set(), "items": set(), "drinks": set()}
+    for c in cards:
+        ids["idols"].add(c["id"])
+        ids["cards"].update(r["id"] for r in c["deck"]["rows"])
+        ids["cards"].update(k["id"] for side in c["key_cards"].values() for k in side if k.get("id"))
+        for b in c["battles"].values():
+            ids["drinks"].update(b.get("best_drinks") or [])
+        if c["usage"]:
+            ids["items"].update(x["id"] for x in c["usage"]["items"])
+    for lang in ("ja", "zh"):
+        idols = catalogs.get(lang, {}).get("idols", {})
+        for i in list(ids["idols"]):
+            d = idols.get(i) or {}
+            ids["cards"].update(x for x in (d.get("card"),) if x)
+            ids["items"].update(x for x in (d.get("item"), d.get("item_up")) if x)
+    out: dict = {k: {} for k in ids}
+    for kind, keys in ids.items():
+        for i in sorted(keys):
+            entry = {}
+            for lang in ("ja", "zh"):
+                d = catalogs.get(lang, {}).get(kind, {}).get(i)
+                if not d:
+                    continue
+                if kind == "cards":
+                    up = d.get("up") or {}
+                    entry[lang] = [up.get(str(u), {}).get("name") or d["name"] + "+" * u for u in range(max(1, len(up)))]
+                else:
+                    entry[lang] = d["name"]
+            if entry:
+                out[kind][i] = entry
+    out["supports"] = {i: {"ja": s["name"], **({"zh": s["zh"]} if s.get("zh") else {})} for i, s in supports.items()}
+    return out
+
+
+def build(pkg: Path, master: Path, translation: Path | None, meta: dict, catalogs: dict[str, dict] | None = None) -> tuple[dict, dict]:
     board_dir = pkg / "05_导出与榜单" / "六维总榜"
     page_dir = pkg / "06_视频画面_页面与数据" / "页面数据" / "cards"
     index = json.loads((board_dir / "index.json").read_text(encoding="utf-8"))
@@ -158,6 +196,7 @@ def build(pkg: Path, master: Path, translation: Path | None, meta: dict) -> tupl
         "counts": index["counts"],
         "dims": list(DIMS),
         "supports": supports,
+        "names": bilingual(cards, supports, catalogs or {}),
         "cards": sorted(cards, key=lambda c: c["rank"]),
     }
     entry = {k: board[k] for k in ("id", "title", "scenario", "class")} | {
@@ -177,8 +216,12 @@ def main() -> None:
     ap.add_argument("--master", type=Path, default=Path(os.environ.get("GKMS_ROOT", Path.home() / "github/_ext/GKMSProject"))
                     / "GakumasCLI/ro/master/tables")
     ap.add_argument("--translation", type=Path, default=Path.home() / "github/_ext/gakumas-master-translation/data")
+    ap.add_argument("--catalog", type=Path, help="catalog.json / catalog.zh.json 所在目录，默认 --out 的上一级（static/）")
     a = ap.parse_args()
-    board, entry = build(a.pkg, a.master, a.translation if a.translation.exists() else None, vars(a))
+    cat_dir = a.catalog or a.out.parent
+    catalogs = {lang: json.loads((cat_dir / f).read_text(encoding="utf-8"))
+                for lang, f in (("ja", "catalog.json"), ("zh", "catalog.zh.json")) if (cat_dir / f).exists()}
+    board, entry = build(a.pkg, a.master, a.translation if a.translation.exists() else None, vars(a), catalogs)
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / f"{a.id}.json").write_text(json.dumps(board, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     idx_path = a.out / "index.json"
