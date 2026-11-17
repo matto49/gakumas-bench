@@ -12,7 +12,7 @@ import { CardDetail, CardImage, Meta, RarityTag, sourceOf } from '../components/
 import { ItemDetail } from '../components/ItemDetail'
 import { SupportThumb, TypeChip } from '../components/SupportCard'
 
-/** 常用配置：排行榜上每张偶像卡前 100 名的配置里，各支援卡 / 技能卡 / P 道具出现的比例。
+/** 配置强度榜：排行榜上每张偶像卡前 100 名的配置里，各支援卡 / 技能卡 / P 道具出现的比例。
  * 方法照花吹雪また一年P 的强度榜：出现得越多，说明和这张偶像卡越合得来。选几张偶像卡（按偶像、流派）时每张权重相同，求平均 */
 
 const MODES = [
@@ -83,7 +83,7 @@ export function Usage() {
   return (
     <div>
       <PageHeader
-        title="常用配置"
+        title="配置强度榜"
         sub={<>排行榜上每张偶像卡前 100 名的配置里，各支援卡、技能卡、P 道具出现的比例。出现得越多，说明和这张偶像卡越合得来。</>}
       />
 
