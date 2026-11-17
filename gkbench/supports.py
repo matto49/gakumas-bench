@@ -136,6 +136,9 @@ def main() -> None:
                       "built": date.today().isoformat()}
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    # 首页只要日期和张数，不取整份目录
+    meta = {"source": data["source"], "cards": len(data["cards"])}
+    a.out.with_name("supports.meta.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
     print(f"{len(data['cards'])} 张支援卡 → {a.out}")
 
 

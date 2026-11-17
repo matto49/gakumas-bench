@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useTierNames, TierBadge } from '../pages/Tiers'
 import { mayCross, tierLine, type Tier, type TierBoard, type TierCard } from '../lib/tiers'
+import { useApi } from '../lib/hooks'
 import { cx, IdolThumb, Skeleton } from './ui'
 
 /** 首页的攻略部分：强度榜（第一屏）、按偶像看、游戏资料入口。强度榜数据见 lib/tiers.ts */
@@ -112,13 +113,14 @@ export function IdolEntries({ board }: { board: TierBoard | null }) {
   )
 }
 
+/** 资料入口：标题、一句玩家会问的话、里面有什么 */
 const DATA_TILES = [
-  { tab: '', title: '技能卡', body: '效果、强化和定制方向' },
-  { tab: 'supports', title: '支援卡', body: '每个突破档的技能数值和事件' },
-  { tab: 'idols', title: '偶像卡', body: '初始参数、成长率、固有卡和 P 道具' },
-  { tab: 'items', title: 'P 道具', body: '效果和触发条件' },
-  { tab: 'drinks', title: '饮料', body: '效果和解锁等级' },
-  { tab: 'memories', title: '回忆能力', body: '考试里和培育中的效果' },
+  { tab: '', title: '技能卡', ask: '强化以后变成什么样？', body: '效果、强化和定制方向' },
+  { tab: 'supports', title: '支援卡', ask: '满突有多强？', body: '每个突破档的技能数值和事件' },
+  { tab: 'idols', title: '偶像卡', ask: '专属卡和 P 道具是什么？', body: '初始参数、成长率、固有卡和 P 道具' },
+  { tab: 'items', title: 'P 道具', ask: '什么时候触发？', body: '效果和触发条件' },
+  { tab: 'drinks', title: '饮料', ask: '要几级才能拿到？', body: '效果和解锁等级' },
+  { tab: 'memories', title: '回忆能力', ask: '考试里有用吗？', body: '考试里和培育中的效果' },
 ] as const
 
 export function DataTiles() {
@@ -128,12 +130,20 @@ export function DataTiles() {
         <li key={d.title}>
           <Link to={d.tab ? `/cards?tab=${d.tab}` : '/cards'} className="group block h-full rounded-xl border border-line bg-surface p-3.5 hover:border-line-strong">
             <p className="flex items-center justify-between font-bold text-ink group-hover:text-brand-ink">{d.title}<ArrowRight size={14} className="text-ink-3 group-hover:text-brand-ink" aria-hidden /></p>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-ink-3">{d.body}</p>
+            <p className="mt-1 text-[13px] text-ink-2">「{d.ask}」</p>
+            <p className="mt-0.5 text-[12px] leading-relaxed text-ink-3">{d.body}</p>
           </Link>
         </li>
       ))}
     </ul>
   )
+}
+
+/** 资料的数据日期：支援卡取自社区同步的游戏数据（gakumasu-diff），写它的版本日期 */
+export function DataDate() {
+  const meta = useApi<{ source?: { master_date?: string }; cards?: number }>('api/supports/meta')
+  const d = meta.data?.source?.master_date
+  return <>技能卡、P 道具等和考试裁判用同一份数据；支援卡{d ? <>的游戏数据同步于 <span className="num">{d}</span></> : '另取自社区同步的游戏数据'}。</>
 }
 
 export { MoreLink }

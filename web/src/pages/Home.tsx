@@ -6,7 +6,7 @@ import { type Row, type SetInfo } from '../lib/api'
 import { int, ms, pct, pm } from '../lib/format'
 import { setBlurbOf, setTitleOf, sortSets } from '../lib/sets'
 import { Badge } from '@/components/ui/badge'
-import { GuideTitle, HomeTierBoard, IdolEntries, DataTiles, MoreLink } from '../components/HomeGuide'
+import { DataDate, GuideTitle, HomeTierBoard, IdolEntries, DataTiles, MoreLink } from '../components/HomeGuide'
 import { useTierBoard } from './Tiers'
 import { btn, Code, CodeBlock, Grade, IdolThumb, ModeBadge, RankNum, Skeleton, Tip, useRowLink } from '../components/ui'
 
@@ -190,7 +190,7 @@ export function Home() {
           <div>
             <h1 className="text-[32px] leading-[1.16] font-bold tracking-tight text-ink sm:text-[42px]">学园偶像大师攻略站</h1>
             <p className="mt-4 max-w-[36em] text-[16px] leading-[1.8] text-ink-2">
-              学マス的强度榜和游戏资料。资料从游戏数据里直接导出，卡名日文、中文都能看。
+              学マス玩家做的中文攻略站，资料从游戏数据里直接导出。
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -203,21 +203,21 @@ export function Home() {
       <div className="mx-auto max-w-[1120px]">
         <section className="mb-14">
           <GuideTitle
-            sub="H.I.F 本戦里理性 · 好印象的 31 张偶像卡，按六项得分加权分成 S 到 D 五档。别的流派和模式还没有榜。"
+            sub="理性 · 好印象 31 张偶像卡在 H.I.F 本戦里的六维强度，分 S 到 D 五档。数据：花吹雪また一年P，对局记录截至 11-14。别的流派和模式还没有榜。"
             right={<MoreLink to="/tiers">完整榜单和六维</MoreLink>}
           >
-            强度榜
+            H.I.F 好印象该练哪张？
           </GuideTitle>
           <HomeTierBoard board={tiers.data} />
         </section>
 
         <section className="mb-14">
-          <GuideTitle sub="每位偶像只列榜上名次最高的一张，点进去有推荐牌组、常用搭配和分数分布。">按偶像看</GuideTitle>
+          <GuideTitle sub="每位偶像列出榜上名次最高的一张，点进去看推荐牌组和常用搭配。">我的卡怎么配？</GuideTitle>
           <IdolEntries board={tiers.data} />
         </section>
 
         <section className="mb-16">
-          <GuideTitle right={<MoreLink to="/cards">游戏资源一览</MoreLink>}>游戏资料</GuideTitle>
+          <GuideTitle sub={<DataDate />} right={<MoreLink to="/cards">游戏资源一览</MoreLink>}>游戏资料</GuideTitle>
           <DataTiles />
         </section>
 

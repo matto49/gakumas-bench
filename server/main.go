@@ -173,6 +173,15 @@ func main() {
 		w.Header().Set("Cache-Control", "public, no-cache")
 		http.ServeFile(w, r, p)
 	})
+	mux.HandleFunc("GET /api/supports/meta", func(w http.ResponseWriter, r *http.Request) {
+		p := filepath.Join(static, "supports.meta.json")
+		if _, err := os.Stat(p); err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "public, no-cache")
+		http.ServeFile(w, r, p)
+	})
 	// 强度榜：python -m gkbench.tierboard 导入到 $DATA/static/tiers/（index.json 是目录，<id>.json 是一张榜）
 	tierName := regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,63}$`)
 	mux.HandleFunc("GET /api/tiers/{id}", func(w http.ResponseWriter, r *http.Request) {
