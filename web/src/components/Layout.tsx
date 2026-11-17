@@ -8,6 +8,7 @@ import { cx } from './ui'
 const nav = [
   { to: '/', label: '首页', end: true, wide: true }, // 小屏上藏起来，点 logo 回首页
   { to: '/tiers', label: '强度榜' },
+  { to: '/usage', label: '常用配置' },
   { to: '/exams', label: '試験集合' },
   { to: '/sets', label: '算法排行' },
   { to: '/cards', label: '游戏资源一览' },

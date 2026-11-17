@@ -184,6 +184,21 @@ func main() {
 	})
 	// 强度榜和首页小文件的名字：小写字母、数字、连字符
 	tierName := regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,63}$`)
+	// 配置频率：python -m gkbench.usage 生成 $DATA/static/usage/<模式>.json（排行榜前 100 名里各卡出现的比例）
+	mux.HandleFunc("GET /api/usage/{mode}", func(w http.ResponseWriter, r *http.Request) {
+		mode := r.PathValue("mode")
+		if !tierName.MatchString(mode) {
+			http.NotFound(w, r)
+			return
+		}
+		p := filepath.Join(static, "usage", mode+".json")
+		if _, err := os.Stat(p); err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "public, no-cache")
+		http.ServeFile(w, r, p)
+	})
 	// 首页用的小文件：$DATA/static/site/<名>.json。home 由 gkbench.homedata 生成（生日、新卡）；now（卡池、活动）和 updates（站内更新）手写
 	mux.HandleFunc("GET /api/site/{name}", func(w http.ResponseWriter, r *http.Request) {
 		name := r.PathValue("name")

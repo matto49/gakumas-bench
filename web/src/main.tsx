@@ -10,6 +10,7 @@ import { Layout } from './components/Layout'
 import { Home } from './pages/Home'
 import { Tiers, TiersIndex } from './pages/Tiers'
 import { About } from './pages/About'
+import { Usage } from './pages/Usage'
 import { TierCardPage } from './pages/TierCard'
 import { Leaderboard } from './pages/Leaderboard'
 import { RunPage } from './pages/Run'
@@ -28,6 +29,7 @@ const router = createBrowserRouter(
       children: [
         { path: '/', element: <Home /> },
         { path: '/about', element: <About /> },
+        { path: '/usage', element: <Usage /> },
         { path: '/tiers', element: <TiersIndex /> },
         { path: '/tiers/:board', element: <Tiers /> },
         { path: '/tiers/:board/:card', element: <TierCardPage /> },
