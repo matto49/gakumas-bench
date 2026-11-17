@@ -216,7 +216,9 @@
     .venv/bin/python -m gkbench.homedata --out $GKBENCH_DATA/static/site/home.json
     # 新偶像的卡没有缩略图时：gkmas-assets/tools/export_bench_icons.py <只含新卡编号的 catalog.json>，转 96px webp 存 sprites/idol-<编号>.webp
 
-    # 卡牌目录和小图（主数据或素材更新后重跑）
+    # 卡牌目录和小图（主数据或素材更新后重跑）。GKMS 上游的主数据先于引擎更新时，可以只取它的表、不动裁判用的克隆：
+    #   git -C <GKMS> fetch && git -C <GKMS> archive origin/main GakumasCLI/ro/master/tables | tar -x -C $GKBENCH_DATA/master-snap/gkms-<提交>
+    #   再把 -master 指到这份快照；新卡缺图时先 export_card_icons.py --out=<目录> <资源名>…，把目录加进 -cards
     cd server && go run ./cmd/catalog -master $GKMS_ROOT/GakumasCLI/ro/master/tables \
         -cards <素材>/skill_cards,<补的卡面目录> -drinks <素材>/drinks -out $GKBENCH_DATA/static
     # 新卡没图时：从游戏资源导出（digital-hiro-research/gkmas-assets/tools/export_card_icons.py <资源名>…），

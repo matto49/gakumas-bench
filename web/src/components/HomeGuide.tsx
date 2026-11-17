@@ -155,7 +155,7 @@ export function DataTiles() {
 export function DataDate() {
   const meta = useApi<{ source?: { master_date?: string }; cards?: number }>('api/supports/meta')
   const d = meta.data?.source?.master_date
-  return <>技能卡、P 道具等和考试裁判用同一份数据；支援卡{d ? <>的游戏数据同步于 <span className="num">{d}</span></> : '另取自社区同步的游戏数据'}。</>
+  return d ? <>游戏数据同步于 <span className="num">{d}</span>，新卡会跟着补上。</> : <>数据直接取自游戏。</>
 }
 
 export { MoreLink }

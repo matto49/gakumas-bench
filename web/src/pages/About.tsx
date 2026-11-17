@@ -14,7 +14,7 @@ const FEATURE_SET = 'hif'
 
 /** 数据来源：资料、翻译、考试规则、强度榜各自从哪来 */
 const SOURCES: [string, React.ReactNode][] = [
-  ['技能卡、P 道具、饮料、偶像卡、回忆能力', <>GKMS（yuzeis/GKMSProject）读出的游戏主数据，和考试裁判用的是同一份。</>],
+  ['技能卡、P 道具、饮料、偶像卡、回忆能力', <>GKMS（yuzeis/GKMSProject）读出的游戏主数据。资料先跟上新卡，可能比考试裁判用的那份新一点；裁判跟着 GKMS 的规则版本升级。</>],
   ['支援卡、生日、新卡', <>社区同步的完整游戏数据 <a href="https://github.com/vertesan/gakumasu-diff" className="text-brand-ink hover:underline">gakumasu-diff</a>；「新卡」的日期是这份数据第一次出现那张卡的日期，不一定是上线日。</>],
   ['中文卡名和效果', <><a href="https://github.com/imas-tools/gakumas-master-translation" className="text-brand-ink hover:underline">学マス汉化插件的翻译数据</a>；还没翻译的显示日文。</>],
   ['强度榜', <>花吹雪また一年P 的「H.I.F 好印象强度榜」数据包（<a href="https://www.bilibili.com/video/BV1mGsJ6AEJ1/" className="text-brand-ink hover:underline">原视频</a>），站上只放汇总。</>],
