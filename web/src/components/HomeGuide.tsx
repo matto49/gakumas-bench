@@ -3,6 +3,11 @@ import { ArrowRight } from 'lucide-react'
 import { useTierNames, TierBadge } from '../pages/Tiers'
 import { mayCross, tierLine, type Tier, type TierBoard, type TierCard } from '../lib/tiers'
 import { useApi } from '../lib/hooks'
+import { useCatalog, useLang } from '../lib/catalog'
+import type { SetInfo } from '../lib/api'
+import { jst, upcomingBirthdays, type SiteHome, type SiteNow, type SiteUpdates } from '../lib/site'
+import { pick } from '../lib/supports'
+import { SupportThumb } from './SupportCard'
 import { cx, IdolThumb, Skeleton } from './ui'
 
 /** 首页的攻略部分：强度榜（第一屏）、按偶像看、游戏资料入口。强度榜数据见 lib/tiers.ts */
@@ -52,9 +57,10 @@ function Cell({ c, board, big }: { c: TierCard; board: TierBoard; big?: boolean 
 }
 
 /** 首页的强度榜：每档一行，档位色块 + 这一档的卡。完整的六维和单卡页在 /tiers */
-export function HomeTierBoard({ board }: { board: TierBoard | null }) {
-  if (!board) return <Skeleton className="h-[420px] rounded-2xl" />
-  const tiers = (['S', 'A', 'B', 'C', 'D'] as Tier[]).map((t) => ({ t, cards: board.cards.filter((c) => c.tier === t) })).filter((x) => x.cards.length)
+export function HomeTierBoard({ board, only }: { board: TierBoard | null; only?: Tier[] }) {
+  if (!board) return <Skeleton className="h-[260px] rounded-2xl" />
+  const tiers = (['S', 'A', 'B', 'C', 'D'] as Tier[]).filter((t) => !only || only.includes(t)).map((t) => ({ t, cards: board.cards.filter((c) => c.tier === t) })).filter((x) => x.cards.length)
+  const rest = board.cards.filter((c) => only && !only.includes(c.tier))
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-surface">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-line bg-surface-2 px-4 py-2.5">
@@ -74,6 +80,12 @@ export function HomeTierBoard({ board }: { board: TierBoard | null }) {
           </li>
         ))}
       </ol>
+      {rest.length > 0 && (
+        <Link to={`/tiers/${board.id}`} className="flex items-center justify-between border-t border-line px-4 py-2.5 text-[13px] text-ink-2 hover:bg-surface-2 hover:text-brand-ink">
+          <span>还有 {[...new Set(rest.map((c) => c.tier))].join('、')} 档 {rest.length} 张</span>
+          <ArrowRight size={14} aria-hidden />
+        </Link>
+      )}
     </div>
   )
 }
@@ -147,3 +159,165 @@ export function DataDate() {
 }
 
 export { MoreLink }
+
+function Box({ title, right, children, className }: { title: React.ReactNode; right?: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <section className={cx('rounded-2xl border border-line bg-surface p-4', className)}>
+      <h3 className="mb-3 flex items-baseline justify-between gap-3 text-[15px] font-bold text-ink">{title}{right && <span className="text-[12px] font-normal text-ink-3">{right}</span>}</h3>
+      {children}
+    </section>
+  )
+}
+
+/** 某位偶像的一张头像：她编号最小的偶像卡 */
+function useCharThumb() {
+  const cat = useCatalog()
+  return (cid: string) => Object.keys(cat?.idols ?? {}).filter((k) => k.startsWith(`i_card-${cid}-`)).sort()[0] ?? `i_card-${cid}-1-000`
+}
+
+const md = (d: string) => d.slice(5).replace('-', '-')
+
+/** 「现在」：进行中的卡池和活动（手写，空的就不出现）、最近加入游戏数据的新卡、接下来的生日 */
+export function NowSection({ home, now, board }: { home: SiteHome | null; now: SiteNow | null; board: TierBoard | null }) {
+  const { lang } = useLang()
+  const cat = useCatalog()
+  const thumb = useCharThumb()
+  const t = Date.now()
+  const live = (now?.items ?? []).filter((x) => !x.end || jst(x.end) > t)
+  if (!home) return <Skeleton className="h-[220px] rounded-2xl" />
+  const dates = [...new Set(home.new_cards.map((c) => c.date))].slice(0, 3)
+  const births = upcomingBirthdays(home.birthdays).slice(0, 3)
+  const inBoard = new Set(board?.cards.map((c) => c.id))
+  const cardLink = (c: SiteHome['new_cards'][number]) =>
+    c.kind === 'support' ? `/cards?tab=supports&support=${c.id}`
+      : inBoard.has(c.id) && board ? `/tiers/${board.id}/${c.id}`
+      : cat?.idols[c.id] ? `/cards?tab=idols&idol=${c.id}` : `/cards?tab=idols&q=${encodeURIComponent(pick(c.character_name, lang))}`
+  return (
+    <div className={cx('grid gap-4', live.length ? 'lg:grid-cols-[1fr_1.4fr_0.9fr]' : 'lg:grid-cols-[1.6fr_1fr]')}>
+      {live.length > 0 && (
+        <Box title="进行中" right={now?.updated && `整理于 ${now.updated}`}>
+          <ul className="space-y-3">
+            {live.map((x, i) => {
+              const left = x.end ? Math.ceil((jst(x.end) - t) / 86400000) : null
+              const body = (
+                <>
+                  <p className="flex items-center gap-2">
+                    <span className="rounded-[4px] bg-brand-soft px-1.5 text-[11px] font-semibold text-brand-ink">{x.kind === 'gacha' ? '卡池' : '活动'}</span>
+                    <span className="min-w-0 truncate font-semibold text-ink">{x.title}</span>
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-ink-3">{x.end ? `到 ${x.end.slice(5)}（日本时间）· 还有 ${left} 天` : ''}{x.note ? ` · ${x.note}` : ''}</p>
+                  {x.cards && x.cards.length > 0 && (
+                    <span className="mt-1.5 flex gap-1.5">
+                      {x.cards.map((c) => (c.startsWith('s_card') ? <SupportThumb key={c} id={c} size={40} /> : <IdolThumb key={c} id={c} size={40} title={false} />))}
+                    </span>
+                  )}
+                </>
+              )
+              return <li key={i}>{x.link ? <Link to={x.link} className="block hover:text-brand-ink">{body}</Link> : body}</li>
+            })}
+          </ul>
+        </Box>
+      )}
+
+      <Box title="新卡" right={`加入游戏数据的日期 · 最近 ${home.source.days ?? 60} 天`}>
+        <div className="space-y-3">
+          {dates.map((d) => (
+            <div key={d} className="flex gap-3">
+              <span className="num w-12 shrink-0 pt-1 text-[12.5px] font-semibold whitespace-nowrap text-ink-2">{md(d)}</span>
+              <span className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                {home.new_cards.filter((c) => c.date === d).map((c) => (
+                  <Link key={c.id} to={cardLink(c)} title={c.kind === 'idol' ? `【${pick(c.name, lang)}】${pick(c.character_name, lang)}` : pick(c.name, lang)}
+                    className="group flex w-[148px] items-center gap-2 rounded-lg p-1 hover:bg-surface-2">
+                    {c.kind === 'idol' ? <IdolThumb id={c.id} size={40} title={false} /> : <SupportThumb id={c.id} size={40} />}
+                    <span className="min-w-0 leading-tight">
+                      <span className="block truncate text-[12.5px] text-ink group-hover:text-brand-ink">{c.kind === 'idol' ? pick(c.character_name, lang) : pick(c.name, lang)}</span>
+                      <span className="block truncate text-[11px] text-ink-3">{c.rarity} {c.kind === 'idol' ? `偶像卡 · ${pick(c.name, lang)}` : '支援卡'}</span>
+                    </span>
+                  </Link>
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Box>
+
+      <Box title="生日">
+        <ul className="space-y-2">
+          {births.map((b) => (
+            <li key={b.id} className={cx('flex items-center gap-3 rounded-xl p-1.5', b.days === 0 && 'bg-brand-soft')}>
+              <IdolThumb id={thumb(b.id)} size={40} title={false} />
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-ink">{pick(b.name, lang)}</span>
+                <span className="num block text-[12px] text-ink-3">{b.month} 月 {b.day} 日</span>
+              </span>
+              <span className={cx('num shrink-0 text-[12.5px]', b.days === 0 ? 'font-bold text-brand-ink' : 'text-ink-2')}>{b.days === 0 ? '今天' : `还有 ${b.days} 天`}</span>
+            </li>
+          ))}
+        </ul>
+      </Box>
+    </div>
+  )
+}
+
+/** 站内更新：日期 + 一句话，有链接的整行可点 */
+export function UpdateList({ items, limit }: { items: SiteUpdates['items']; limit?: number }) {
+  const list = limit ? items.slice(0, limit) : items
+  return (
+    <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+      {list.map((u, i) => {
+        const body = (
+          <span className="flex items-baseline gap-4 px-4 py-2.5">
+            <span className="num w-12 shrink-0 text-[12.5px] text-ink-3">{u.date.slice(5)}</span>
+            <span className="min-w-0 flex-1 text-[14px] text-ink">{u.text}</span>
+            {u.link && <ArrowRight size={14} className="shrink-0 text-ink-3" aria-hidden />}
+          </span>
+        )
+        return <li key={i}>{u.link ? <Link to={u.link} className="block hover:bg-surface-2">{body}</Link> : body}</li>
+      })}
+    </ul>
+  )
+}
+
+/** 按培育模式：每个模式现在有什么（强度榜、考试题库），没有的照实写 */
+export function ModeEntries({ sets, board }: { sets: SetInfo[] | null; board: TierBoard | null }) {
+  const count = (k: string) => sets?.find((s) => s.set === k)?.problems
+  const modes = [
+    { key: 'hif', name: 'H.I.F', tier: board ? <Link to={`/tiers/${board.id}`} className="font-semibold text-brand-ink hover:underline">好印象 · {board.cards.length} 张</Link> : null },
+    { key: 'nia', name: 'N.I.A', tier: null },
+    { key: 'hajime', name: '初', tier: null },
+  ]
+  return (
+    <ul className="grid gap-3 sm:grid-cols-3">
+      {modes.map((m) => (
+        <li key={m.key} className="rounded-2xl border border-line bg-surface">
+          <p className="disp border-b border-line px-4 py-2.5 text-[24px] leading-none text-ink">{m.name}</p>
+          <dl className="divide-y divide-line px-4 text-[13px]">
+            <div className="flex justify-between py-2"><dt className="text-ink-2">强度榜</dt><dd>{m.tier ?? <span className="text-ink-3">还没有</span>}</dd></div>
+            <div className="flex justify-between py-2"><dt className="text-ink-2">打法指南</dt><dd className="text-ink-3">还没有</dd></div>
+            <div className="flex justify-between py-2"><dt className="text-ink-2">考试题库</dt><dd><Link to={`/exams/${m.key}`} className="num font-semibold text-ink hover:text-brand-ink">{count(m.key) ?? '—'} 题</Link></dd></div>
+          </dl>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+const TOOLS = [
+  { to: '/sets', title: '出牌算法排行', body: '各种出牌算法打同一批实机开局的考试，比分数和每步用时' },
+  { to: '/exams', title: '考试题库', body: '收集来的考试开局，每一局都能逐步回放' },
+] as const
+
+export function ToolTiles() {
+  return (
+    <ul className="grid gap-3 sm:grid-cols-2">
+      {TOOLS.map((d) => (
+        <li key={d.to}>
+          <Link to={d.to} className="group block h-full rounded-xl border border-line bg-surface p-3.5 hover:border-line-strong">
+            <p className="flex items-center justify-between font-bold text-ink group-hover:text-brand-ink">{d.title}<ArrowRight size={14} className="text-ink-3 group-hover:text-brand-ink" aria-hidden /></p>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-ink-3">{d.body}</p>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
+}

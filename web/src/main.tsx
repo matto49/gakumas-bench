@@ -9,6 +9,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { Layout } from './components/Layout'
 import { Home } from './pages/Home'
 import { Tiers, TiersIndex } from './pages/Tiers'
+import { About } from './pages/About'
 import { TierCardPage } from './pages/TierCard'
 import { Leaderboard } from './pages/Leaderboard'
 import { RunPage } from './pages/Run'
@@ -26,6 +27,7 @@ const router = createBrowserRouter(
       element: <Layout />,
       children: [
         { path: '/', element: <Home /> },
+        { path: '/about', element: <About /> },
         { path: '/tiers', element: <TiersIndex /> },
         { path: '/tiers/:board', element: <Tiers /> },
         { path: '/tiers/:board/:card', element: <TierCardPage /> },

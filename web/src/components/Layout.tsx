@@ -103,6 +103,7 @@ export function Layout() {
       <footer className="border-t border-line bg-surface-2">
         <div className="mx-auto flex max-w-[1320px] flex-wrap gap-x-6 gap-y-1 px-5 py-5 text-[12px] text-ink-3">
           <span>裁判：<a href="https://github.com/yuzeis/GKMSProject" className="hover:text-brand-ink">GKMS</a> 原生核心</span>
+          <span><Link to="/about" className="hover:text-brand-ink">关于本站</Link></span>
           <span><a href="https://github.com/matto49/gakumas-bench" className="hover:text-brand-ink">源代码</a></span>
           <span>
             中文卡名和效果：<a href="https://github.com/imas-tools/gakumas-master-translation" className="hover:text-brand-ink">学マス汉化插件的翻译数据</a>

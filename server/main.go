@@ -182,8 +182,24 @@ func main() {
 		w.Header().Set("Cache-Control", "public, no-cache")
 		http.ServeFile(w, r, p)
 	})
-	// 强度榜：python -m gkbench.tierboard 导入到 $DATA/static/tiers/（index.json 是目录，<id>.json 是一张榜）
+	// 强度榜和首页小文件的名字：小写字母、数字、连字符
 	tierName := regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,63}$`)
+	// 首页用的小文件：$DATA/static/site/<名>.json。home 由 gkbench.homedata 生成（生日、新卡）；now（卡池、活动）和 updates（站内更新）手写
+	mux.HandleFunc("GET /api/site/{name}", func(w http.ResponseWriter, r *http.Request) {
+		name := r.PathValue("name")
+		if !tierName.MatchString(name) {
+			http.NotFound(w, r)
+			return
+		}
+		p := filepath.Join(static, "site", name+".json")
+		if _, err := os.Stat(p); err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "public, no-cache")
+		http.ServeFile(w, r, p)
+	})
+	// 强度榜：python -m gkbench.tierboard 导入到 $DATA/static/tiers/（index.json 是目录，<id>.json 是一张榜）
 	mux.HandleFunc("GET /api/tiers/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		if !tierName.MatchString(id) {

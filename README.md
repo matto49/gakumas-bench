@@ -211,6 +211,11 @@
     .venv/bin/python -m gkbench.supports --master <gakumasu-diff> --translation <汉化数据>/data --out $GKBENCH_DATA/static/supports.json
     # 新支援卡的缩略图：gkmas-assets/tools/export_support_icons.py <gakumasu-diff>/SupportCard.yaml（清单旧了先 refresh_android_manifest.py）
 
+    # 首页「现在」：生日和新卡由 gkbench.homedata 从 gakumasu-diff 的 git 历史算（要完整历史，先 git fetch --unshallow）；
+    # 卡池、活动手写 $GKBENCH_DATA/static/site/now.json，站内更新手写 static/site/updates.json（接口 api/site/<名>）
+    .venv/bin/python -m gkbench.homedata --out $GKBENCH_DATA/static/site/home.json
+    # 新偶像的卡没有缩略图时：gkmas-assets/tools/export_bench_icons.py <只含新卡编号的 catalog.json>，转 96px webp 存 sprites/idol-<编号>.webp
+
     # 卡牌目录和小图（主数据或素材更新后重跑）
     cd server && go run ./cmd/catalog -master $GKMS_ROOT/GakumasCLI/ro/master/tables \
         -cards <素材>/skill_cards,<补的卡面目录> -drinks <素材>/drinks -out $GKBENCH_DATA/static
