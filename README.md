@@ -206,6 +206,11 @@
         --author <作者> --video <原视频> --out $GKBENCH_DATA/static/tiers
     # 支援卡缩略图（support-<编号>.webp）：gkmas-assets/tools/export_support_icons.py，导出后拷到 $GKBENCH_DATA/static/sprites/
 
+    # 支援卡目录（网页「游戏资源一览 · 支援卡」，接口 api/supports）：GKMS 的主数据没有支援卡技能和事件，
+    # 改读完整主数据 gakumasu-diff（git clone https://github.com/vertesan/gakumasu-diff，YAML），中文取汉化数据；要 pyyaml
+    .venv/bin/python -m gkbench.supports --master <gakumasu-diff> --translation <汉化数据>/data --out $GKBENCH_DATA/static/supports.json
+    # 新支援卡的缩略图：gkmas-assets/tools/export_support_icons.py <gakumasu-diff>/SupportCard.yaml（清单旧了先 refresh_android_manifest.py）
+
     # 卡牌目录和小图（主数据或素材更新后重跑）
     cd server && go run ./cmd/catalog -master $GKMS_ROOT/GakumasCLI/ro/master/tables \
         -cards <素材>/skill_cards,<补的卡面目录> -drinks <素材>/drinks -out $GKBENCH_DATA/static

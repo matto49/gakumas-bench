@@ -2,13 +2,16 @@ import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import type { CatalogCard, CatalogThing } from '../lib/api'
-import { spriteUrl, useCatalog, useTerms } from '../lib/catalog'
+import { spriteUrl, useCatalog, useLang, useTerms } from '../lib/catalog'
+import { useApi } from '../lib/hooks'
+import { SUPPORT_TYPE_LABEL, type SupportCatalog } from '../lib/supports'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select } from '../components/Select'
 import { CopyId, Empty, PageHeader, Skeleton } from '../components/ui'
 import { CardDetail, CardImage, CardTags, Meta, RarityTag, SOURCE, sourceOf, UnlockTag, UP_LABEL } from '../components/CardDetail'
 import { IdolDetail, IdolTile, MemoryTile } from '../components/IdolCard'
+import { SupportDetail, SupportTile } from '../components/SupportCard'
 
 /** 游戏资源一览（原「牌库」）：游戏里的技能卡、饮料、P 道具、偶像卡、回忆能力图鉴，带编号（上传编成时要填）。数据是 GKMS 主数据生成的 catalog.json */
 
@@ -36,8 +39,11 @@ const opt = (all: string, entries: [string, string][]) => [{ value: '', label: a
 export function Cards() {
   const cat = useCatalog()
   const terms = useTerms()
+  const { lang } = useLang()
   const [q, setQ] = useSearchParams()
   const tab = q.get('tab') ?? 'cards'
+  // 支援卡目录单独一份（完整主数据生成，约 700 KB），只在用到时取
+  const sup = useApi<SupportCatalog>(tab === 'supports' || q.get('support') ? 'api/supports' : null)
   const get = (k: string) => q.get(k) ?? ''
   const update = (patch: Record<string, string>) => {
     const n = new URLSearchParams(q)
@@ -105,23 +111,35 @@ export function Cards() {
     .filter(([id, d]) => !text || (d.text ?? '').toLowerCase().includes(text) || id.includes(text))
     .sort(([a], [b]) => a.localeCompare(b)), [cat, q])
 
-  const counts = { cards: cards.length, drinks: drinks.length, items: items.length, idols: idols.length, memories: memories.length }
+  // 支援卡：SSR 在前，同稀有度里新卡在前（编号大的新）。名字（日、中）、技能、事件文字都能搜
+  const supports = useMemo(() => Object.entries(sup.data?.cards ?? {})
+    .filter(([, d]) => (!get('plan') || d.plan === get('plan')) && (!get('rarity') || d.rarity === get('rarity')) && (!get('type') || d.type === get('type')))
+    .filter(([id, d]) => {
+      if (!text) return true
+      const hay = [id, d.name.ja, d.name.zh, ...d.abilities.flatMap((a) => a.steps.flatMap((s) => [s.ja, s.zh])), ...d.events.flatMap((e) => [e.ja, e.zh, e.card && cat?.cards[e.card]?.name, e.item && cat?.items[e.item]?.name])]
+      return hay.some((x) => x && x.toLowerCase().includes(text))
+    })
+    .sort(([a, x], [b, y]) => RARITY_ORDER.indexOf(x.rarity) - RARITY_ORDER.indexOf(y.rarity) || b.localeCompare(a)), [sup.data, cat, q])
+
+  const counts = { cards: cards.length, drinks: drinks.length, items: items.length, idols: idols.length, supports: supports.length, memories: memories.length }
   const open = get('card')
   const openIdol = get('idol')
+  const openSupport = get('support')
   const planOpts = opt('全部计划', PLAN_ORDER.map((p) => [p, p === 'COMMON' ? '通用' : terms.plan[p]]))
-  const rarities = tab === 'cards' ? ['LEGEND', 'SSR', 'SR', 'R', 'N'] : tab === 'memories' ? ['UR', 'SSR', 'SR', 'R'] : tab === 'idols' ? ['SSR', 'SR', 'R'] : ['SSR', 'SR', 'R', 'N']
+  const rarities = tab === 'cards' ? ['LEGEND', 'SSR', 'SR', 'R', 'N'] : tab === 'memories' ? ['UR', 'SSR', 'SR', 'R'] : tab === 'idols' || tab === 'supports' ? ['SSR', 'SR', 'R'] : ['SSR', 'SR', 'R', 'N']
   const rarityOpts = opt('全部稀有度', rarities.map((r) => [r, r]))
 
   return (
     <div>
-      <PageHeader title="游戏资源一览" sub="游戏里的技能卡、饮料、P 道具、偶像卡和回忆能力，数据来自 GKMS 读的主数据，和裁判用的是同一份。编号旁边的按钮可以复制，上传编成时用。" />
+      <PageHeader title="游戏资源一览" sub="游戏里的技能卡、饮料、P 道具、偶像卡、支援卡和回忆能力。支援卡取完整主数据，其余和裁判用的是同一份 GKMS 主数据。编号旁边的按钮可以复制，上传编成时用。" />
 
-      <Tabs value={tab} onValueChange={(v) => update({ tab: v === 'cards' ? '' : String(v), rarity: '', cat: '', src: '', up: '', style: '' })}>
+      <Tabs value={tab} onValueChange={(v) => update({ tab: v === 'cards' ? '' : String(v), rarity: '', cat: '', src: '', up: '', style: '', type: '' })}>
         <TabsList className="mb-4">
           <TabsTrigger value="cards">技能卡</TabsTrigger>
           <TabsTrigger value="drinks">饮料</TabsTrigger>
           <TabsTrigger value="items">P 道具</TabsTrigger>
           <TabsTrigger value="idols">偶像卡</TabsTrigger>
+          <TabsTrigger value="supports">支援卡</TabsTrigger>
           <TabsTrigger value="memories">回忆能力</TabsTrigger>
         </TabsList>
       </Tabs>
@@ -129,10 +147,11 @@ export function Cards() {
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="relative w-64 max-w-full">
           <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-3" aria-hidden />
-          <Input value={get('q')} onChange={(e) => update({ q: e.target.value })} placeholder={tab === 'idols' ? '搜名字、编号或固有卡 / P 道具' : tab === 'memories' ? '搜效果，如 体力回復' : '搜名字或效果，如 好印象'} aria-label="搜索" className="h-8 rounded-full pl-8" />
+          <Input value={get('q')} onChange={(e) => update({ q: e.target.value })} placeholder={tab === 'idols' ? '搜名字、编号或固有卡 / P 道具' : tab === 'supports' ? '搜名字、技能或事件，如 SP レッスン' : tab === 'memories' ? '搜效果，如 体力回復' : '搜名字或效果，如 好印象'} aria-label="搜索" className="h-8 rounded-full pl-8" />
         </div>
         <Select label="培育计划" value={get('plan')} onChange={(v) => update({ plan: v })} options={tab === 'idols' ? planOpts.filter((o) => o.value !== 'COMMON') : planOpts} />
         <Select label="稀有度" value={get('rarity')} onChange={(v) => update({ rarity: v })} options={rarityOpts} />
+        {tab === 'supports' && <Select label="属性" value={get('type')} onChange={(v) => update({ type: v })} options={opt('全部属性', Object.entries(SUPPORT_TYPE_LABEL[lang]))} />}
         {tab === 'idols' && <Select label="流派" value={get('style')} onChange={(v) => update({ style: v })} options={opt('全部流派', Object.entries(terms.style))} />}
         {(tab === 'cards' || tab === 'drinks') && (
           <Select label="P 等级" value={get('lv')} onChange={(v) => update({ lv: v })}
@@ -183,6 +202,20 @@ export function Cards() {
 
       {cat && openIdol && cat.idols[openIdol] && (
         <IdolDetail id={openIdol} d={cat.idols[openIdol]} cat={cat} onClose={() => update({ idol: '' })} onOpenCard={(c) => update({ idol: '', card: c })} />
+      )}
+
+      {tab === 'supports' && (
+        sup.error ? <Empty>支援卡目录没取到：{sup.error.message}</Empty>
+          : !sup.data || !cat ? <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">{Array.from({ length: 9 }, (_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
+          : supports.length === 0 ? <Empty>没有符合条件的支援卡。</Empty> : (
+            <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+              {supports.map(([id, d]) => <SupportTile key={id} id={id} d={d} cat={cat} onOpen={() => update({ support: id })} />)}
+            </div>
+          )
+      )}
+
+      {cat && sup.data && openSupport && sup.data.cards[openSupport] && (
+        <SupportDetail id={openSupport} d={sup.data.cards[openSupport]} all={sup.data} cat={cat} onClose={() => update({ support: '' })} onOpenCard={(c) => update({ support: '', card: c })} />
       )}
 
       {cat && tab === 'memories' && (

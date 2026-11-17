@@ -307,7 +307,7 @@ export function TierCardPage() {
                 return (
                   <div key={s.id} className="grid grid-cols-[auto_1fr_30%_auto] items-center gap-2 text-[13px]">
                     <img src={supportThumbUrl(s.id)} alt="" width={30} height={30} loading="lazy" className="size-[30px] rounded-md bg-surface-2 object-cover ring-1 ring-line" />
-                    <span className="min-w-0 truncate"><RarityTag r={sc?.rarity} /> <Bi p={names.support(s.id)} subClass="text-[11.5px]" /></span>
+                    <Link to={`/cards?tab=supports&support=${s.id}`} className="min-w-0 truncate hover:text-brand-ink"><RarityTag r={sc?.rarity} /> <Bi p={names.support(s.id)} subClass="text-[11.5px]" /></Link>
                     <Bar v={s.share} />
                     <span className="num w-10 text-right font-semibold">{Math.round(s.share * 100)}%</span>
                   </div>
