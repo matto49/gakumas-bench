@@ -77,8 +77,8 @@ export function Layout() {
                 <span className="h-4 w-1 -skew-x-12 rounded-[1px] bg-da" />
                 <span className="h-4 w-1 -skew-x-12 rounded-[1px] bg-vi" />
               </span>
-              <span className="disp text-[18px] leading-none tracking-wide not-italic sm:text-[21px]">gakumas-bench</span>
-              <span className="hidden text-[12px] text-ink-3 md:inline">学マス出牌算法排行</span>
+              <span className="text-[16px] leading-none font-bold tracking-tight sm:text-[17px]">学园偶像大师攻略站</span>
+              <span className="disp hidden text-[13px] leading-none tracking-wide text-ink-3 not-italic md:inline">gakumas-bench</span>
             </Link>
             <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1">
               {nav.map((n) => (
