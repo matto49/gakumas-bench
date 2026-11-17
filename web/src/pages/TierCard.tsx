@@ -6,6 +6,7 @@ import { DIM_HELP, DIM_LABEL, supportThumbUrl, wan, type Battle, type Pair, type
 import { cx, ErrorState, Help, IdolThumb, Skeleton, Tip } from '../components/ui'
 import { CardDetail, CardImage, Meta, RarityTag } from '../components/CardDetail'
 import { ItemDetail } from '../components/ItemDetail'
+import { useDetailPopup } from '../components/DetailPopups'
 import { Bi, SourceLine, TierBadge, TierMissing, useTierBoard, useTierNames } from './Tiers'
 
 /** 强度榜的单卡页：一张偶像卡在这张榜里的六维、推荐牌组、常用搭配、分数分布和实际成绩。版式参考原视频的单卡页 */
@@ -160,6 +161,7 @@ export function TierCardPage() {
   const names = useTierNames(board)
   const [open, setOpen] = useState<string | null>(null)
   const [item, setItem] = useState<string | null>(null)
+  const detail = useDetailPopup()
   if (error) return <ErrorState error={error} onRetry={reload} />
   if (!board) return <div className="space-y-3"><Skeleton className="h-24" /><Skeleton className="h-64" /></div>
   const c = board.cards.find((x) => x.id === cardId)
@@ -309,7 +311,7 @@ export function TierCardPage() {
                 return (
                   <div key={s.id} className="grid grid-cols-[auto_1fr_30%_auto] items-center gap-2 text-[13px]">
                     <img src={supportThumbUrl(s.id)} alt="" width={30} height={30} loading="lazy" className="size-[30px] rounded-md bg-surface-2 object-cover ring-1 ring-line" />
-                    <Link to={`/cards?tab=supports&support=${s.id}`} className="min-w-0 truncate hover:text-brand-ink"><RarityTag r={sc?.rarity} /> <Bi p={names.support(s.id)} subClass="text-[11.5px]" /></Link>
+                    <button type="button" onClick={() => detail.open('support', s.id)} className="min-w-0 cursor-pointer truncate text-left hover:text-brand-ink"><RarityTag r={sc?.rarity} /> <Bi p={names.support(s.id)} subClass="text-[11.5px]" /></button>
                     <Bar v={s.share} />
                     <span className="num w-10 text-right font-semibold">{Math.round(s.share * 100)}%</span>
                   </div>
@@ -427,6 +429,7 @@ export function TierCardPage() {
 
       {open && cat?.cards[open] && <CardDetail id={open} c={cat.cards[open]} onClose={() => setOpen(null)} />}
       {item && cat && <ItemDetail id={item} cat={cat} onClose={() => setItem(null)} />}
+      {detail.popup}
     </div>
   )
 }

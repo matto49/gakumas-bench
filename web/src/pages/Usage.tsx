@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../lib/hooks'
 import { cardName, idolShort, spriteUrl, useCatalog, useLang, useTerms } from '../lib/catalog'
 import { aggregate, avg, charOf, type Agg, type CardUse, type ItemUse, type MemCardUse, type SupportUse, type UsageData, type UsageRow } from '../lib/usage'
@@ -10,6 +10,7 @@ import { Select } from '../components/Select'
 import { cx, Empty, ErrorState, Help, IdolThumb, PageHeader, Skeleton, Tip } from '../components/ui'
 import { CardDetail, CardImage, Meta, RarityTag, sourceOf } from '../components/CardDetail'
 import { ItemDetail } from '../components/ItemDetail'
+import { useDetailPopup } from '../components/DetailPopups'
 import { SupportThumb, TypeChip } from '../components/SupportCard'
 
 /** 配置强度榜：排行榜上每张偶像卡前 100 名的配置里，各支援卡 / 技能卡 / P 道具出现的比例。
@@ -56,6 +57,7 @@ export function Usage() {
   const data = useApi<UsageData>(mode === 'hif' ? `api/usage/${mode}` : null)
   const [openCard, setOpenCard] = useState<string | null>(null)
   const [openItem, setOpenItem] = useState<string | null>(null)
+  const detail = useDetailPopup()
 
   const d = data.data
   // 有数据的偶像卡，及其流派、角色
@@ -130,7 +132,7 @@ export function Usage() {
             {scopeText}。数据：{d.source.author}，{d.source.note}。
             {!card && <Help tip="每张偶像卡权重相同：某张卡在 A 偶像卡里 98%、B 偶像卡里没带，平均就是 49%。「常用的偶像卡」是比例 ≥ 50% 的偶像卡有几张。" />}
           </p>
-          {tab === 'supports' && <SupportTable rows={supports} d={d} single={!!card} lang={lang} />}
+          {tab === 'supports' && <SupportTable rows={supports} d={d} single={!!card} lang={lang} onOpen={(id) => detail.open('support', id)} />}
           {tab === 'cards' && <CardTable rows={cards} single={!!card} onOpen={setOpenCard} />}
           {tab === 'items' && <ItemTable rows={items} single={!!card} onOpen={setOpenItem} />}
           {tab === 'memories' && (memCards.length === 0 ? <Empty>这批记录没有回忆数据。</Empty> : (
@@ -150,6 +152,7 @@ export function Usage() {
       )}
       {openCard && cat?.cards[openCard] && <CardDetail id={openCard} c={cat.cards[openCard]} onClose={() => setOpenCard(null)} />}
       {openItem && cat && <ItemDetail id={openItem} cat={cat} onClose={() => setOpenItem(null)} />}
+      {detail.popup}
     </div>
   )
 }
@@ -158,7 +161,7 @@ function Head({ cols }: { cols: React.ReactNode[] }) {
   return <thead className="bg-surface-2 text-[12px] text-ink-3"><tr>{cols.map((c, i) => <th key={i} className={cx('px-3 py-2 font-semibold', i < 2 ? 'text-left' : 'text-right')}>{c}</th>)}</tr></thead>
 }
 
-function SupportTable({ rows, d, single, lang }: { rows: Agg<SupportUse>[]; d: UsageData; single: boolean; lang: 'ja' | 'zh' }) {
+function SupportTable({ rows, d, single, lang, onOpen }: { rows: Agg<SupportUse>[]; d: UsageData; single: boolean; lang: 'ja' | 'zh'; onOpen: (id: string) => void }) {
   if (!rows.length) return <Empty>没有记录。</Empty>
   return (
     <div className="overflow-x-auto rounded-2xl border border-line">
@@ -172,13 +175,13 @@ function SupportTable({ rows, d, single, lang }: { rows: Agg<SupportUse>[]; d: U
               <tr key={r.id} className="border-t border-line hover:bg-brand-tint">
                 <td className="num w-10 px-3 py-1.5 text-ink-3">{i + 1}</td>
                 <td className="px-3 py-1.5">
-                  <Link to={`/cards?tab=supports&support=${r.id}`} className="flex items-center gap-2.5 hover:text-brand-ink">
+                  <button type="button" onClick={() => onOpen(r.id)} className="flex cursor-pointer items-center gap-2.5 text-left hover:text-brand-ink">
                     <SupportThumb id={r.id} size={34} />
                     <span className="min-w-0">
                       <span className="block truncate">{name.main}</span>
                       <span className="flex items-center gap-1 text-[11px] text-ink-3">{s && <><RarityTag r={s.rarity} /><TypeChip t={s.type as never} /></>}{name.sub && <span className="truncate">{name.sub}</span>}</span>
                     </span>
-                  </Link>
+                  </button>
                 </td>
                 <td className="px-3 py-1.5"><span className="flex justify-end"><Bar v={r.mean} /></span></td>
                 <td className="num px-3 py-1.5 text-right text-ink-2">{avg(r.rows.map((x) => x.limit))?.toFixed(1) ?? '—'}</td>

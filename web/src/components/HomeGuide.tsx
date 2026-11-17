@@ -8,6 +8,7 @@ import type { SetInfo } from '../lib/api'
 import { jst, upcomingBirthdays, type SiteHome, type SiteNow, type SiteUpdates } from '../lib/site'
 import { pick } from '../lib/supports'
 import { SupportThumb } from './SupportCard'
+import { useDetailPopup } from './DetailPopups'
 import { cx, IdolThumb, Skeleton } from './ui'
 
 /** 首页的攻略部分：强度榜（第一屏）、按偶像看、游戏资料入口。强度榜数据见 lib/tiers.ts */
@@ -178,20 +179,18 @@ function useCharThumb() {
 const md = (d: string) => d.slice(5).replace('-', '-')
 
 /** 「现在」：进行中的卡池和活动（手写，空的就不出现）、最近加入游戏数据的新卡、接下来的生日 */
-export function NowSection({ home, now, board }: { home: SiteHome | null; now: SiteNow | null; board: TierBoard | null }) {
+export function NowSection({ home, now }: { home: SiteHome | null; now: SiteNow | null; board?: TierBoard | null }) {
   const { lang } = useLang()
   const cat = useCatalog()
   const thumb = useCharThumb()
+  const detail = useDetailPopup()
   const t = Date.now()
   const live = (now?.items ?? []).filter((x) => !x.end || jst(x.end) > t)
   if (!home) return <Skeleton className="h-[220px] rounded-2xl" />
   const dates = [...new Set(home.new_cards.map((c) => c.date))].slice(0, 3)
   const births = upcomingBirthdays(home.birthdays).slice(0, 3)
-  const inBoard = new Set(board?.cards.map((c) => c.id))
-  const cardLink = (c: SiteHome['new_cards'][number]) =>
-    c.kind === 'support' ? `/cards?tab=supports&support=${c.id}`
-      : inBoard.has(c.id) && board ? `/tiers/${board.id}/${c.id}`
-      : cat?.idols[c.id] ? `/cards?tab=idols&idol=${c.id}` : `/cards?tab=idols&q=${encodeURIComponent(pick(c.character_name, lang))}`
+  // 点新卡原地弹详情，不跳页；目录里还没有的偶像卡点不开
+  const canOpen = (c: SiteHome['new_cards'][number]) => c.kind === 'support' || !!cat?.idols[c.id]
   return (
     <div className={cx('grid gap-4', live.length ? 'lg:grid-cols-[1fr_1.4fr_0.9fr]' : 'lg:grid-cols-[1.6fr_1fr]')}>
       {live.length > 0 && (
@@ -226,14 +225,15 @@ export function NowSection({ home, now, board }: { home: SiteHome | null; now: S
               <span className="num w-12 shrink-0 pt-1 text-[12.5px] font-semibold whitespace-nowrap text-ink-2">{md(d)}</span>
               <span className="flex min-w-0 flex-1 flex-wrap gap-1.5">
                 {home.new_cards.filter((c) => c.date === d).map((c) => (
-                  <Link key={c.id} to={cardLink(c)} title={c.kind === 'idol' ? `【${pick(c.name, lang)}】${pick(c.character_name, lang)}` : pick(c.name, lang)}
-                    className="group flex w-[148px] items-center gap-2 rounded-lg p-1 hover:bg-surface-2">
+                  <button type="button" key={c.id} disabled={!canOpen(c)} onClick={() => detail.open(c.kind, c.id)}
+                    title={c.kind === 'idol' ? `【${pick(c.name, lang)}】${pick(c.character_name, lang)}` : pick(c.name, lang)}
+                    className="group flex w-[148px] cursor-pointer items-center gap-2 rounded-lg p-1 text-left hover:bg-surface-2 disabled:cursor-default">
                     {c.kind === 'idol' ? <IdolThumb id={c.id} size={40} title={false} /> : <SupportThumb id={c.id} size={40} />}
                     <span className="min-w-0 leading-tight">
                       <span className="block truncate text-[12.5px] text-ink group-hover:text-brand-ink">{c.kind === 'idol' ? pick(c.character_name, lang) : pick(c.name, lang)}</span>
                       <span className="block truncate text-[11px] text-ink-3">{c.rarity} {c.kind === 'idol' ? `偶像卡 · ${pick(c.name, lang)}` : '支援卡'}</span>
                     </span>
-                  </Link>
+                  </button>
                 ))}
               </span>
             </div>
@@ -255,6 +255,7 @@ export function NowSection({ home, now, board }: { home: SiteHome | null; now: S
           ))}
         </ul>
       </Box>
+      {detail.popup}
     </div>
   )
 }
