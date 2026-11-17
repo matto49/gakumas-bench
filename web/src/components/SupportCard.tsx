@@ -4,7 +4,8 @@ import { cardName, spriteUrl, useLang, useTerms } from '../lib/catalog'
 import { abilityAt, LIMIT_LABEL, pairBi, pick, SUPPORT_TYPE_LABEL, supportThumbUrl, TYPE_ATTR, type SupportCard, type SupportCatalog, type SupportType } from '../lib/supports'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AttrChip, CopyId, cx, Tip } from './ui'
-import { CardImage, Meta, RarityTag } from './CardDetail'
+import { CardDetail, CardImage, Meta, RarityTag } from './CardDetail'
+import { ItemDetail } from './ItemDetail'
 
 /** 支援卡的格子和详情：游戏资源一览用。数据见 lib/supports.ts */
 
@@ -36,7 +37,7 @@ function Tags({ d }: { d: SupportCard }) {
 }
 
 /** 事件拿到的东西：技能卡 / P 道具带小图，参数之类只写文字 */
-function EventThing({ e, cat, size = 28, onOpenCard }: { e: SupportCard['events'][number]; cat: Catalog; size?: number; onOpenCard?: (id: string) => void }) {
+function EventThing({ e, cat, size = 28, onOpenCard, onOpenItem }: { e: SupportCard['events'][number]; cat: Catalog; size?: number; onOpenCard?: (id: string) => void; onOpenItem?: (id: string) => void }) {
   const { lang } = useLang()
   if (e.card && cat.cards[e.card]) {
     const name = cardName(cat, e.card)
@@ -47,16 +48,21 @@ function EventThing({ e, cat, size = 28, onOpenCard }: { e: SupportCard['events'
   }
   if (e.item && cat.items[e.item]) {
     const it = cat.items[e.item]
-    return (
-      <Tip tip={<span className="whitespace-pre-line">{it.text}</span>} wide>
-        <span tabIndex={0} className="flex min-w-0 items-center gap-2">
-          <span className="shrink-0 overflow-hidden rounded-md bg-surface-2 ring-1 ring-line" style={{ width: size, height: size }}>
-            {it.asset && <img src={spriteUrl(it.asset)} alt="" width={size} height={size} loading="lazy" className="size-full object-contain" />}
-          </span>
-          <span className="min-w-0 truncate">获得 {it.name}</span>
+    const body = (
+      <>
+        <span className="shrink-0 overflow-hidden rounded-md bg-surface-2 ring-1 ring-line" style={{ width: size, height: size }}>
+          {it.asset && <img src={spriteUrl(it.asset)} alt="" width={size} height={size} loading="lazy" className="size-full object-contain" />}
         </span>
-      </Tip>
+        <span className="min-w-0 truncate">获得 {it.name}</span>
+      </>
     )
+    return onOpenItem
+      ? <button type="button" onClick={() => onOpenItem(e.item!)} className="flex min-w-0 cursor-pointer items-center gap-2 text-left hover:text-brand-ink">{body}</button>
+      : (
+        <Tip tip={<span className="whitespace-pre-line">{it.text}</span>} wide>
+          <span tabIndex={0} className="flex min-w-0 items-center gap-2">{body}</span>
+        </Tip>
+      )
   }
   return <span className="min-w-0 truncate">{pick(e, lang)}</span>
 }
@@ -89,9 +95,12 @@ export function SupportTile({ id, d, cat, onOpen }: { id: string; d: SupportCard
   )
 }
 
-export function SupportDetail({ id, d, all, cat, onClose, onOpenCard }: { id: string; d: SupportCard; all: SupportCatalog; cat: Catalog; onClose: () => void; onOpenCard: (card: string) => void }) {
+export function SupportDetail({ id, d, all, cat, onClose }: { id: string; d: SupportCard; all: SupportCatalog; cat: Catalog; onClose: () => void }) {
   const { lang } = useLang()
   const [rank, setRank] = useState(4)
+  // 事件拿到的技能卡 / P 道具：在这层上面再开一层详情，关掉回到这张支援卡
+  // 关掉时只把 open 设成 false、保留编号：直接卸载的话外层弹窗不知道里层已经关了，Esc 关不掉外层（见 CardDetail）
+  const [inner, setInner] = useState<{ card?: string; item?: string; open?: 'card' | 'item' }>({})
   const cap = d.caps[rank] ?? d.caps[d.caps.length - 1] ?? 0
   const name = pairBi(d.name, lang)
   const lessonParam = d.lesson.param ? { vocal: 'Vo', dance: 'Da', visual: 'Vi' }[d.lesson.param] : null
@@ -154,7 +163,7 @@ export function SupportDetail({ id, d, all, cat, onClose, onOpenCard }: { id: st
             {d.events.map((e) => (
               <li key={e.level} className="flex items-center gap-3 px-3 py-2 text-[13px]">
                 <span className="num w-14 shrink-0 text-[11.5px] text-ink-3">Lv {e.level}</span>
-                <EventThing e={e} cat={cat} size={32} onOpenCard={onOpenCard} />
+                <EventThing e={e} cat={cat} size={32} onOpenCard={(c) => setInner((x) => ({ ...x, card: c, open: 'card' }))} onOpenItem={(i) => setInner((x) => ({ ...x, item: i, open: 'item' }))} />
               </li>
             ))}
           </ol>
@@ -168,6 +177,8 @@ export function SupportDetail({ id, d, all, cat, onClose, onOpenCard }: { id: st
             </p>
           </section>
         )}
+        {inner.card && cat.cards[inner.card] && <CardDetail id={inner.card} c={cat.cards[inner.card]} open={inner.open === 'card'} onClose={() => setInner((x) => ({ ...x, open: undefined }))} />}
+        {inner.item && <ItemDetail id={inner.item} cat={cat} supports={all} open={inner.open === 'item'} onClose={() => setInner((x) => ({ ...x, open: undefined }))} />}
       </DialogContent>
     </Dialog>
   )

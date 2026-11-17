@@ -12,6 +12,7 @@ import { CopyId, Empty, PageHeader, Skeleton } from '../components/ui'
 import { CardDetail, CardImage, CardTags, Meta, RarityTag, SOURCE, sourceOf, UnlockTag, UP_LABEL } from '../components/CardDetail'
 import { IdolDetail, IdolTile, MemoryTile } from '../components/IdolCard'
 import { SupportDetail, SupportTile } from '../components/SupportCard'
+import { ItemDetail } from '../components/ItemDetail'
 
 /** 游戏资源一览（原「牌库」）：游戏里的技能卡、饮料、P 道具、偶像卡、回忆能力图鉴，带编号（上传编成时要填）。数据是 GKMS 主数据生成的 catalog.json */
 
@@ -43,7 +44,8 @@ export function Cards() {
   const [q, setQ] = useSearchParams()
   const tab = q.get('tab') ?? 'cards'
   // 支援卡目录单独一份（完整主数据生成，约 700 KB），只在用到时取
-  const sup = useApi<SupportCatalog>(tab === 'supports' || q.get('support') ? 'api/supports' : null)
+  // P 道具详情要列「哪些支援卡事件给它」，也用这份
+  const sup = useApi<SupportCatalog>(tab === 'supports' || q.get('support') || q.get('item') ? 'api/supports' : null)
   const get = (k: string) => q.get(k) ?? ''
   const update = (patch: Record<string, string>) => {
     const n = new URLSearchParams(q)
@@ -125,6 +127,7 @@ export function Cards() {
   const open = get('card')
   const openIdol = get('idol')
   const openSupport = get('support')
+  const openItem = get('item')
   const planOpts = opt('全部计划', PLAN_ORDER.map((p) => [p, p === 'COMMON' ? '通用' : terms.plan[p]]))
   const rarities = tab === 'cards' ? ['LEGEND', 'SSR', 'SR', 'R', 'N'] : tab === 'memories' ? ['UR', 'SSR', 'SR', 'R'] : tab === 'idols' || tab === 'supports' ? ['SSR', 'SR', 'R'] : ['SSR', 'SR', 'R', 'N']
   const rarityOpts = opt('全部稀有度', rarities.map((r) => [r, r]))
@@ -215,8 +218,10 @@ export function Cards() {
       )}
 
       {cat && sup.data && openSupport && sup.data.cards[openSupport] && (
-        <SupportDetail id={openSupport} d={sup.data.cards[openSupport]} all={sup.data} cat={cat} onClose={() => update({ support: '' })} onOpenCard={(c) => update({ support: '', card: c })} />
+        <SupportDetail id={openSupport} d={sup.data.cards[openSupport]} all={sup.data} cat={cat} onClose={() => update({ support: '' })} />
       )}
+
+      {cat && openItem && cat.items[openItem] && <ItemDetail id={openItem} cat={cat} supports={sup.data} onClose={() => update({ item: '' })} />}
 
       {cat && tab === 'memories' && (
         memories.length === 0 ? <Empty>没有符合条件的回忆能力。</Empty> : (
@@ -229,7 +234,7 @@ export function Cards() {
       {cat && (tab === 'drinks' || tab === 'items') && (
         (tab === 'drinks' ? drinks : items).length === 0 ? <Empty>没有符合条件的{tab === 'drinks' ? '饮料' : 'P 道具'}。</Empty> : (
           <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
-            {(tab === 'drinks' ? drinks : items).map(([id, d]) => <ThingTile key={id} id={id} d={d} />)}
+            {(tab === 'drinks' ? drinks : items).map(([id, d]) => <ThingTile key={id} id={id} d={d} onOpen={tab === 'items' ? () => update({ item: id }) : undefined} />)}
           </div>
         )
       )}
@@ -255,22 +260,24 @@ function CardTile({ id, c, name, text, onOpen }: { id: string; c: CatalogCard; n
   )
 }
 
-function ThingTile({ id, d }: { id: string; d: CatalogThing }) {
+function ThingTile({ id, d, onOpen }: { id: string; d: CatalogThing; onOpen?: () => void }) {
   const terms = useTerms()
   return (
-    <div className="flex gap-3 rounded-xl border border-line bg-surface p-3">
+    <div className="group relative flex gap-3 rounded-xl border border-line bg-surface p-3 transition-colors duration-150 hover:border-line-strong">
       {d.asset && (
         <img src={spriteUrl(d.asset)} alt="" width={48} height={48} loading="lazy" className="size-12 shrink-0 rounded-lg bg-surface-2 object-contain p-0.5 ring-1 ring-line" />
       )}
       <div className="min-w-0 flex-1">
-        <p className="font-bold text-ink">{d.name}</p>
+        <p className="font-bold text-ink">
+          {onOpen ? <button type="button" onClick={onOpen} className="cursor-pointer text-left after:absolute after:inset-0 after:rounded-xl group-hover:text-brand-ink">{d.name}</button> : d.name}
+        </p>
         <div className="mt-1 flex flex-wrap gap-1">
           <RarityTag r={d.rarity} />
           {d.plan && <Meta>{terms.plan[d.plan] ?? d.plan}</Meta>}
           {d.unlock ? <UnlockTag lv={d.unlock} /> : null}
         </div>
         {d.text && <p className="mt-1.5 text-[12.5px] leading-relaxed whitespace-pre-line text-ink-2">{d.text}</p>}
-        <CopyId id={id} className="mt-1" />
+        <CopyId id={id} className="relative z-10 mt-1" />
       </div>
     </div>
   )

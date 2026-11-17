@@ -5,6 +5,7 @@ import { spriteUrl, useCatalog } from '../lib/catalog'
 import { DIM_HELP, DIM_LABEL, supportThumbUrl, wan, type Battle, type Pair, type TierBoard, type TierCard } from '../lib/tiers'
 import { cx, ErrorState, Help, IdolThumb, Skeleton, Tip } from '../components/ui'
 import { CardDetail, CardImage, Meta, RarityTag } from '../components/CardDetail'
+import { ItemDetail } from '../components/ItemDetail'
 import { Bi, SourceLine, TierBadge, TierMissing, useTierBoard, useTierNames } from './Tiers'
 
 /** 强度榜的单卡页：一张偶像卡在这张榜里的六维、推荐牌组、常用搭配、分数分布和实际成绩。版式参考原视频的单卡页 */
@@ -158,6 +159,7 @@ export function TierCardPage() {
   const cat = useCatalog()
   const names = useTierNames(board)
   const [open, setOpen] = useState<string | null>(null)
+  const [item, setItem] = useState<string | null>(null)
   if (error) return <ErrorState error={error} onRetry={reload} />
   if (!board) return <div className="space-y-3"><Skeleton className="h-24" /><Skeleton className="h-64" /></div>
   const c = board.cards.find((x) => x.id === cardId)
@@ -318,7 +320,7 @@ export function TierCardPage() {
             <div className="flex flex-wrap gap-3">
               {u.items.map((it) => (
                 <Tip key={it.id} tip={<><b>{names.item(it.id).main}</b>{names.item(it.id).sub && <span className="opacity-75">　{names.item(it.id).sub}</span>}{cat?.items[it.id]?.text && <><br /><span className="whitespace-pre-line">{cat.items[it.id].text}</span></>}</>} wide>
-                  <span tabIndex={0} className="flex flex-col items-center gap-0.5"><Thing asset={cat?.items[it.id]?.asset} size={40} /><span className="num text-[11.5px] font-semibold">{Math.round(it.share * 100)}%</span></span>
+                  <button type="button" onClick={() => setItem(it.id)} className="flex cursor-pointer flex-col items-center gap-0.5 rounded-md hover:bg-surface-2"><Thing asset={cat?.items[it.id]?.asset} size={40} /><span className="num text-[11.5px] font-semibold">{Math.round(it.share * 100)}%</span></button>
                 </Tip>
               ))}
             </div>
@@ -357,10 +359,10 @@ export function TierCardPage() {
                   </button>
                 )}
                 {idol.item && (
-                  <span className="flex items-center gap-2">
+                  <button type="button" onClick={() => setItem(idol.item!)} className="flex cursor-pointer items-center gap-2 rounded-lg text-left hover:bg-surface-2">
                     <Thing asset={cat?.items[idol.item]?.asset} size={36} />
                     <span className="min-w-0"><span className="block text-[11px] text-ink-3">专属 P 道具</span><Bi p={names.item(idol.item)} inline={false} className="block truncate text-[13px]" subClass="text-[11.5px] truncate" /></span>
-                  </span>
+                  </button>
                 )}
               </div>
             )}
@@ -424,6 +426,7 @@ export function TierCardPage() {
       </div>
 
       {open && cat?.cards[open] && <CardDetail id={open} c={cat.cards[open]} onClose={() => setOpen(null)} />}
+      {item && cat && <ItemDetail id={item} cat={cat} onClose={() => setItem(null)} />}
     </div>
   )
 }
