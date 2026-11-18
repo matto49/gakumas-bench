@@ -8,7 +8,7 @@ import { BootSplash } from './BootSplash'
 
 const nav = [
   { to: '/', label: '首页', end: true, wide: true }, // 小屏上藏起来，点 logo 回首页
-  { to: '/tiers', label: '强度榜' },
+  { to: '/tiers', label: '角色强度榜' },
   { to: '/usage', label: '配置强度榜' },
   { to: '/exams', label: '試験集合' },
   { to: '/sets', label: '算法排行' },

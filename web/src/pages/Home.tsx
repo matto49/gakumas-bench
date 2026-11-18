@@ -39,7 +39,7 @@ export function Home() {
             sub="理性 · 好印象 31 张偶像卡在 H.I.F 本戦里的六维强度。数据：花吹雪また一年P，对局记录截至 11-14。"
             right={<MoreLink to="/tiers">完整榜单和六维</MoreLink>}
           >
-            强度榜
+            角色强度榜
           </GuideTitle>
           <HomeTierBoard board={tiers.data} only={['S', 'A']} />
         </section>

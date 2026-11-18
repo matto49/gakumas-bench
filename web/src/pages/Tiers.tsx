@@ -264,7 +264,7 @@ export function TiersIndex() {
 export function TierMissing() {
   return (
     <div className="space-y-4">
-      <Link to="/tiers" className="inline-flex items-center gap-1 text-[13px] text-brand-ink hover:underline"><ChevronLeft className="size-4" />回强度榜</Link>
+      <Link to="/tiers" className="inline-flex items-center gap-1 text-[13px] text-brand-ink hover:underline"><ChevronLeft className="size-4" />回角色强度榜</Link>
       <Empty>这张榜里没有这张偶像卡。</Empty>
     </div>
   )

@@ -294,7 +294,7 @@ export function ModeEntries({ sets, board }: { sets: SetInfo[] | null; board: Ti
         <li key={m.key} className="rounded-2xl border border-line bg-surface">
           <p className="disp border-b border-line px-4 py-2.5 text-[24px] leading-none text-ink">{m.name}</p>
           <dl className="divide-y divide-line px-4 text-[13px]">
-            <div className="flex justify-between py-2"><dt className="text-ink-2">强度榜</dt><dd>{m.tier ?? <span className="text-ink-3">还没有</span>}</dd></div>
+            <div className="flex justify-between py-2"><dt className="text-ink-2">角色强度榜</dt><dd>{m.tier ?? <span className="text-ink-3">还没有</span>}</dd></div>
             <div className="flex justify-between py-2"><dt className="text-ink-2">打法指南</dt><dd className="text-ink-3">还没有</dd></div>
             <div className="flex justify-between py-2"><dt className="text-ink-2">考试题库</dt><dd><Link to={`/exams/${m.key}`} className="num font-semibold text-ink hover:text-brand-ink">{count(m.key) ?? '—'} 题</Link></dd></div>
           </dl>

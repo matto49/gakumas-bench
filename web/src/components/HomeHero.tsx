@@ -51,7 +51,7 @@ export function HomeHero({ home }: { home: SiteHome | null }) {
         <p className="mt-4 max-w-[26em] text-[15px] leading-[1.75] text-white/85 sm:text-[17px]">学园偶像大师（学マス）玩家做的中文攻略站，资料从游戏数据里直接导出。</p>
         <div className="mt-7 flex flex-wrap gap-3">
           <Link to="/tiers" className="inline-flex items-center gap-1.5 rounded-full bg-white px-6 py-3 text-[15px] font-bold text-ink transition-transform duration-150 hover:-translate-y-px">
-            看强度榜 <ArrowRight size={16} aria-hidden />
+            看角色强度榜 <ArrowRight size={16} aria-hidden />
           </Link>
           <Link to="/cards" className="inline-flex items-center rounded-full border-[1.5px] border-white/55 px-6 py-[10.5px] text-[15px] font-bold text-white backdrop-blur-sm transition-colors duration-150 hover:bg-white/10">
             查游戏资料
