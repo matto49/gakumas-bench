@@ -5,6 +5,7 @@ import type { SiteHome, SiteNow, SiteUpdates } from '../lib/site'
 import { DataDate, DataTiles, GuideTitle, HomeTierBoard, ModeEntries, MoreLink, NowSection, ToolTiles, UpdateList } from '../components/HomeGuide'
 import { useTierBoard } from './Tiers'
 import { HomeHero } from '../components/HomeHero'
+import { HomeBackdrop } from '../components/HomeBackdrop'
 
 /** 首页：官方卡面头图（HomeHero，最新 SSR 偶像卡）→ 压在头图下沿的「现在」浮层；后面照一般攻略站的骨架排——现在（卡池活动、新卡、生日）→ 最近更新 → 强度榜 → 按模式 → 游戏资料 → 工具 → 关于本站。
  * 长期内容（完整强度榜、图鉴）首页只放入口；原来首页上的算法排行说明搬到 /about */
@@ -18,6 +19,9 @@ export function Home() {
     <div>
       <HomeHero home={home.data} />
 
+      {/* flow-root：浮层的负 margin 不会把这一块的顶顶进头图里，底色从头图下沿开始 */}
+      <div className="relative isolate -mb-16 flow-root pb-16">
+      <HomeBackdrop />
       <div className="mx-auto max-w-[1120px]">
         {/* 「现在」浮在头图下沿上：第一屏就能看到新卡和生日 */}
         <section className="relative z-10 -mt-24 mb-12 rounded-2xl bg-surface p-5 shadow-[0_1px_0_rgba(0,0,0,.04),0_24px_50px_-24px_rgba(20,16,30,.35)] sm:-mt-[104px] sm:px-6">
@@ -61,6 +65,7 @@ export function Home() {
             不定期更新。<Link to="/about" className="font-semibold text-brand-ink hover:underline">数据来源、更新记录和出牌算法排行的说明 →</Link>
           </p>
         </section>
+      </div>
       </div>
     </div>
   )
