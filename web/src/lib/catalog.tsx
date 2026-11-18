@@ -7,13 +7,14 @@ export type Lang = 'ja' | 'zh'
 const LANG_KEY = 'gkb-lang'
 
 const Ctx = createContext<Catalog | null>(null)
-const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'ja', setLang: () => {} })
+const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'zh', setLang: () => {} })
 
+/** 默认中文；只有自己点过「日」的人（存了 ja）才用日文原文 */
 function savedLang(): Lang {
   try {
-    return localStorage.getItem(LANG_KEY) === 'zh' ? 'zh' : 'ja'
+    return localStorage.getItem(LANG_KEY) === 'ja' ? 'ja' : 'zh'
   } catch {
-    return 'ja'
+    return 'zh'
   }
 }
 

@@ -2,7 +2,7 @@
 
 /** 游戏用语用日文还是中文：CatalogProvider 按右上角「日 / 中」开关设（切换时整页重绘）。
  * 下面带 bi() 的表都跟着它走：中文照学マス汉化插件的叫法，中文表里没有的键照用日文。 */
-let gameLang: 'ja' | 'zh' = 'ja'
+let gameLang: 'ja' | 'zh' = 'zh'
 export function setGameLang(l: 'ja' | 'zh') {
   gameLang = l
 }
