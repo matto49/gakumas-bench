@@ -22,8 +22,8 @@ const MODES = [
   { key: 'hajime', label: '初' },
 ] as const
 
-/** 已经有统计数据的模式（$DATA/static/usage/<模式>.json）；初的排行榜还在抓 */
-const USAGE_MODES = new Set(['hif', 'nia'])
+/** 已经有统计数据的模式（$DATA/static/usage/<模式>.json） */
+const USAGE_MODES = new Set(['hif', 'nia', 'hajime'])
 
 function Chip({ on, disabled, children, onClick, hint }: { on?: boolean; disabled?: boolean; children: React.ReactNode; onClick?: () => void; hint?: string }) {
   return (
