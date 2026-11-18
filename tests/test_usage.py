@@ -27,3 +27,17 @@ def test_memory_usage():
     cards, items = memory_usage(recs)
     assert cards == [{"id": "c1", "share": 0.5, "upgraded": 1.0}, {"id": "c2", "share": 0.5, "upgraded": 0.0}]
     assert items == [{"id": "i1", "share": 1.0}]
+
+
+def test_main_writes_mode(tmp_path, monkeypatch):
+    import json
+    import sys
+    from gkbench import usage
+    recs = tmp_path / "recs"
+    recs.mkdir()
+    (recs / "rec_i_card-shro-3-007.json").write_text(json.dumps([{"support_cards": [], "deck_cards": [], "produce_item_ids": [], "memories": []}]))
+    out = tmp_path / "static" / "usage" / "nia.json"
+    monkeypatch.setattr(sys, "argv", ["usage", str(recs), "--out", str(out), "--mode", "nia", "--note", "N.I.A MASTER"])
+    usage.main()
+    d = json.loads(out.read_text())
+    assert d["mode"] == "nia" and d["source"]["note"] == "N.I.A MASTER"

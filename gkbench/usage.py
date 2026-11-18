@@ -3,6 +3,7 @@
 方法照小泉ケンタロう 的强度榜：抓每张偶像卡的前 100 名配置，按出现频率衡量这张卡和偶像卡合不合、强不强。
 
     python -m gkbench.usage <记录目录> --out $GKBENCH_DATA/static/usage/hif.json [--tierboard static/tiers/<id>.json]
+    python -m gkbench.usage <记录目录> --out …/usage/nia.json --mode nia --author 本站抓取 --note "N.I.A MASTER 排行榜前 100 名"
 
 记录目录里每张偶像卡一份 rec_<偶像卡>.json（gakumas-bench-data/scripts/ranking_decode.py 从排行榜存档解出来）：
     [{support_cards:[{id, level, level_limit_rank_number}], deck_cards:[{produce_card_id, current_upgrade_count, from_memory}],
@@ -140,6 +141,7 @@ def main() -> None:
     ap.add_argument("--tierboard", type=Path)
     ap.add_argument("--supports", type=Path, help="static/supports.json（取支援卡名字、稀有度、属性）；默认 --out 上两级的 supports.json")
     ap.add_argument("--catalog", type=Path, help="static/catalog.json（认出 H.I.F 固定道具，统计时去掉）；默认 --out 上两级的 catalog.json")
+    ap.add_argument("--mode", default="hif", help="hif / nia / hajime：写进输出，网页按它分模式")
     ap.add_argument("--author", default="小泉ケンタロう")
     ap.add_argument("--note", default="H.I.F 本戦排行榜前 100 名（理性 · 好印象 31 张偶像卡）")
     a = ap.parse_args()
@@ -151,7 +153,7 @@ def main() -> None:
     cat = json.loads(cat_path.read_text(encoding="utf-8")) if cat_path.exists() else {"items": {}}
     skip = {k for k, v in cat["items"].items() if str(v.get("name", "")).startswith("H.I.F")}
     data = build(a.records, tb, master, skip, {k: v.get("name", "") for k, v in cat["items"].items()})
-    data = {"format": "gkbench.usage.v1", "mode": "hif",
+    data = {"format": "gkbench.usage.v1", "mode": a.mode,
             "source": {"author": a.author, "note": a.note, "records": sum(v["n"] for v in data["idols"].values()),
                        "built": date.today().isoformat(), "tierboard": tb["id"] if tb else None}, **data}
     a.out.parent.mkdir(parents=True, exist_ok=True)

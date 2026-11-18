@@ -22,6 +22,9 @@ const MODES = [
   { key: 'hajime', label: '初' },
 ] as const
 
+/** 已经有统计数据的模式（$DATA/static/usage/<模式>.json）；初的排行榜还在抓 */
+const USAGE_MODES = new Set(['hif', 'nia'])
+
 function Chip({ on, disabled, children, onClick, hint }: { on?: boolean; disabled?: boolean; children: React.ReactNode; onClick?: () => void; hint?: string }) {
   return (
     <button type="button" disabled={disabled} onClick={onClick} title={hint}
@@ -54,7 +57,7 @@ export function Usage() {
   }
   const mode = get('mode') || 'hif'
   const tab = get('tab') || 'supports'
-  const data = useApi<UsageData>(mode === 'hif' ? `api/usage/${mode}` : null)
+  const data = useApi<UsageData>(USAGE_MODES.has(mode) ? `api/usage/${mode}` : null)
   const [openCard, setOpenCard] = useState<string | null>(null)
   const [openItem, setOpenItem] = useState<string | null>(null)
   const detail = useDetailPopup()
@@ -92,8 +95,8 @@ export function Usage() {
       <div className="mb-5 space-y-3 rounded-2xl border border-line bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-12 text-[12.5px] text-ink-3">模式</span>
-          {MODES.map((m) => <Chip key={m.key} on={mode === m.key} disabled={m.key !== 'hif'} hint={m.key !== 'hif' ? '游戏里初和 N.I.A 也有排行榜，本站还没抓' : undefined} onClick={() => set({ mode: m.key === 'hif' ? '' : m.key })}>{m.label}</Chip>)}
-          <span className="text-[12px] text-ink-3">初和 N.I.A 的排行榜还没抓，现在只有 H.I.F</span>
+          {MODES.map((m) => <Chip key={m.key} on={mode === m.key} disabled={!USAGE_MODES.has(m.key)} hint={!USAGE_MODES.has(m.key) ? '这个模式的排行榜还在抓' : undefined} onClick={() => set({ mode: m.key === 'hif' ? '' : m.key, style: '', idol: '', card: '' })}>{m.label}</Chip>)}
+          {MODES.some((m) => !USAGE_MODES.has(m.key)) && <span className="text-[12px] text-ink-3">虚线的模式排行榜还在抓</span>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-12 text-[12.5px] text-ink-3">流派</span>
@@ -125,7 +128,7 @@ export function Usage() {
       </Tabs>
 
       {data.error && <ErrorState error={data.error} onRetry={data.reload} />}
-      {mode === 'hif' && !d && !data.error && <Skeleton className="h-96 rounded-2xl" />}
+      {USAGE_MODES.has(mode) && !d && !data.error && <Skeleton className="h-96 rounded-2xl" />}
       {d && (
         <>
           <p className="mb-3 text-[12.5px] text-ink-3">
