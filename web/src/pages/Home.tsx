@@ -36,7 +36,7 @@ export function Home() {
 
         <section className="mb-12">
           <GuideTitle
-            sub="理性 · 好印象 31 张偶像卡在 H.I.F 本戦里的六维强度。数据：花吹雪また一年P，对局记录截至 11-14。"
+            sub="理性 · 好印象 31 张偶像卡在 H.I.F 本戦里的六维强度。数据：小泉ケンタロう，对局记录截至 11-14。"
             right={<MoreLink to="/tiers">完整榜单和六维</MoreLink>}
           >
             角色强度榜
@@ -61,7 +61,7 @@ export function Home() {
 
         <section className="rounded-2xl bg-surface-2 px-5 py-4 text-[13.5px] leading-relaxed text-ink-2">
           <p>
-            <b className="text-ink">关于本站</b>：资料取自游戏数据，中文用学マス汉化插件的翻译，考试模拟用 GKMS。强度榜的数据和方法来自花吹雪また一年P。
+            <b className="text-ink">关于本站</b>：资料取自游戏数据，中文用学マス汉化插件的翻译，考试模拟用 GKMS。强度榜的数据和方法来自小泉ケンタロう。
             不定期更新。<Link to="/about" className="font-semibold text-brand-ink hover:underline">数据来源、更新记录和出牌算法排行的说明 →</Link>
           </p>
         </section>

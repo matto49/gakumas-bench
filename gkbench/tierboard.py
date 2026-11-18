@@ -1,7 +1,7 @@
 """强度榜导入：把「六维强度榜」数据包（gkms.strength.video.v1）转成网站用的 JSON。
 
     python -m gkbench.tierboard <数据包目录> --id hif-koinsho-202611 --out $GKBENCH_DATA/static/tiers \\
-        --title "H.I.F 模式 · 好印象 强度榜" --author "花吹雪また一年P" --video https://www.bilibili.com/video/BV1mGsJ6AEJ1/
+        --title "H.I.F 模式 · 好印象 强度榜" --author "小泉ケンタロう" --video https://www.bilibili.com/video/BV1mGsJ6AEJ1/
 
 数据包目录里要有 05_导出与榜单/六维总榜/index.json（榜单）和 06_视频画面_页面与数据/页面数据/cards/*.json（单卡页数据）。
 输出

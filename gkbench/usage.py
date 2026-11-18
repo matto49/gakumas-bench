@@ -1,6 +1,6 @@
 """配置频率：H.I.F 排行榜上每张偶像卡前 100 名的培育记录里，各支援卡 / 技能卡 / P 道具出现的比例。
 
-方法照花吹雪また一年P 的强度榜：抓每张偶像卡的前 100 名配置，按出现频率衡量这张卡和偶像卡合不合、强不强。
+方法照小泉ケンタロう 的强度榜：抓每张偶像卡的前 100 名配置，按出现频率衡量这张卡和偶像卡合不合、强不强。
 
     python -m gkbench.usage <记录目录> --out $GKBENCH_DATA/static/usage/hif.json [--tierboard static/tiers/<id>.json]
 
@@ -140,7 +140,7 @@ def main() -> None:
     ap.add_argument("--tierboard", type=Path)
     ap.add_argument("--supports", type=Path, help="static/supports.json（取支援卡名字、稀有度、属性）；默认 --out 上两级的 supports.json")
     ap.add_argument("--catalog", type=Path, help="static/catalog.json（认出 H.I.F 固定道具，统计时去掉）；默认 --out 上两级的 catalog.json")
-    ap.add_argument("--author", default="花吹雪また一年P")
+    ap.add_argument("--author", default="小泉ケンタロう")
     ap.add_argument("--note", default="H.I.F 本戦排行榜前 100 名（理性 · 好印象 31 张偶像卡）")
     a = ap.parse_args()
     sup_path = a.supports or a.out.parent.parent / "supports.json"
