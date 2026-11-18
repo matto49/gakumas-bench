@@ -72,8 +72,8 @@ function LangSwitch({ onArt }: { onArt: boolean }) {
         {other === 'zh' ? '中' : '日'}
       </button>
       <div role="group" aria-label="游戏文字语言" className={cx('hidden items-center gap-0.5 rounded-full p-0.5 sm:flex', onArt ? 'bg-white/14' : 'bg-surface-2')}>
-        {opt('ja', '日', '卡名和效果用游戏原文（日文）')}
         {opt('zh', '中', '卡名和效果用中文（学マス汉化插件的翻译）')}
+        {opt('ja', '日', '卡名和效果用游戏原文（日文）')}
       </div>
     </>
   )
