@@ -92,8 +92,8 @@ export function Usage() {
       <div className="mb-5 space-y-3 rounded-2xl border border-line bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-12 text-[12.5px] text-ink-3">模式</span>
-          {MODES.map((m) => <Chip key={m.key} on={mode === m.key} disabled={m.key !== 'hif'} hint={m.key !== 'hif' ? '游戏里只有 H.I.F 有排行榜，初和 N.I.A 没有可统计的记录' : undefined} onClick={() => set({ mode: m.key === 'hif' ? '' : m.key })}>{m.label}</Chip>)}
-          <span className="text-[12px] text-ink-3">初和 N.I.A 游戏里没有排行榜</span>
+          {MODES.map((m) => <Chip key={m.key} on={mode === m.key} disabled={m.key !== 'hif'} hint={m.key !== 'hif' ? '游戏里初和 N.I.A 也有排行榜，本站还没抓' : undefined} onClick={() => set({ mode: m.key === 'hif' ? '' : m.key })}>{m.label}</Chip>)}
+          <span className="text-[12px] text-ink-3">初和 N.I.A 的排行榜还没抓，现在只有 H.I.F</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-12 text-[12.5px] text-ink-3">流派</span>
