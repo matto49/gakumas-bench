@@ -55,8 +55,8 @@ export function BootSplash() {
           <i className="bg-vi" />
         </div>
         <div className="overflow-hidden">
-          <span className="boot-sub disp not-italic">HATSUBOSHI DATA ROOM</span>
-          <span className="boot-title">初星数据室</span>
+          <span className="boot-sub disp not-italic">HATSUBOSHI GUIDE</span>
+          <span className="boot-title">初星攻略站</span>
         </div>
       </div>
     </div>

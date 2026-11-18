@@ -195,7 +195,7 @@ export function About() {
   const updates = useApi<SiteUpdates>('api/site/updates')
   return (
     <div className="mx-auto max-w-[1120px]">
-      <PageHeader title="关于初星数据室" sub="学园偶像大师（学マス）玩家做的中文数据站。这里写数据从哪来、更新了什么，以及出牌算法排行是怎么回事。" />
+      <PageHeader title="关于初星攻略站" sub="学园偶像大师（学マス）玩家做的中文攻略站。这里写数据从哪来、更新了什么，以及出牌算法排行是怎么回事。" />
 
       <section className="mb-14">
         <HomeTitle>数据从哪来</HomeTitle>

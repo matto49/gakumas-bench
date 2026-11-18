@@ -100,7 +100,7 @@ export function Layout() {
                 <span className="h-4 w-1 -skew-x-12 rounded-[1px] bg-da" />
                 <span className="h-4 w-1 -skew-x-12 rounded-[1px] bg-vi" />
               </span>
-              <span className="text-[16px] leading-none font-bold tracking-tight sm:text-[17px]">初星数据室</span>
+              <span className="text-[16px] leading-none font-bold tracking-tight sm:text-[17px]">初星攻略站</span>
               <span className={cx('disp hidden text-[13px] leading-none tracking-wide not-italic md:inline', onArt ? 'text-white/60' : 'text-ink-3')}>gakumas-bench</span>
             </Link>
             <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1">
