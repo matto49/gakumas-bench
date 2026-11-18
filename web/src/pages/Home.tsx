@@ -4,8 +4,9 @@ import type { SetInfo } from '../lib/api'
 import type { SiteHome, SiteNow, SiteUpdates } from '../lib/site'
 import { DataDate, DataTiles, GuideTitle, HomeTierBoard, ModeEntries, MoreLink, NowSection, ToolTiles, UpdateList } from '../components/HomeGuide'
 import { useTierBoard } from './Tiers'
+import { HomeHero } from '../components/HomeHero'
 
-/** 首页：照一般攻略站的骨架排——现在（卡池活动、新卡、生日）→ 最近更新 → 强度榜 → 按模式 → 游戏资料 → 工具 → 关于本站。
+/** 首页：官方卡面头图（HomeHero，最新 SSR 偶像卡）→ 压在头图下沿的「现在」浮层；后面照一般攻略站的骨架排——现在（卡池活动、新卡、生日）→ 最近更新 → 强度榜 → 按模式 → 游戏资料 → 工具 → 关于本站。
  * 长期内容（完整强度榜、图鉴）首页只放入口；原来首页上的算法排行说明搬到 /about */
 export function Home() {
   const sets = useApi<SetInfo[]>('api/sets')
@@ -15,19 +16,13 @@ export function Home() {
   const tiers = useTierBoard(undefined)
   return (
     <div>
-      <section className="mx-[calc(50%-50vw)] -mt-7 mb-8 border-b border-line px-5 pt-10 pb-8">
-        <div className="mx-auto max-w-[1120px]">
-          <h1 className="text-[30px] leading-[1.16] font-bold tracking-tight text-ink sm:text-[38px]">初星数据室</h1>
-          <p className="mt-3 max-w-[40em] text-[15.5px] leading-[1.8] text-ink-2">
-            学园偶像大师（学マス）玩家做的中文数据站，资料从游戏数据里直接导出。
-          </p>
-        </div>
-      </section>
+      <HomeHero home={home.data} />
 
       <div className="mx-auto max-w-[1120px]">
-        <section className="mb-12">
-          <GuideTitle sub={home.data?.source.master_date ? <>游戏数据同步于 <span className="num">{home.data.source.master_date}</span></> : undefined}>现在</GuideTitle>
-          <NowSection home={home.data} now={now.data} board={tiers.data} />
+        {/* 「现在」浮在头图下沿上：第一屏就能看到新卡和生日 */}
+        <section className="relative z-10 -mt-24 mb-12 rounded-2xl bg-surface p-5 shadow-[0_1px_0_rgba(0,0,0,.04),0_24px_50px_-24px_rgba(20,16,30,.35)] sm:-mt-[104px] sm:px-6">
+          <NowSection home={home.data} now={now.data} flat />
+          {home.data?.source.master_date && <p className="mt-4 text-[12px] text-ink-3 lg:text-right">游戏数据同步于 <span className="num">{home.data.source.master_date}</span></p>}
         </section>
 
         <section className="mb-12">

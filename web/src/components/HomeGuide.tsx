@@ -161,9 +161,9 @@ export function DataDate() {
 
 export { MoreLink }
 
-function Box({ title, right, children, className }: { title: React.ReactNode; right?: React.ReactNode; children: React.ReactNode; className?: string }) {
+function Box({ title, right, children, className, flat }: { title: React.ReactNode; right?: React.ReactNode; children: React.ReactNode; className?: string; flat?: boolean }) {
   return (
-    <section className={cx('rounded-2xl border border-line bg-surface p-4', className)}>
+    <section className={cx(flat ? 'min-w-0 py-4 first:pt-0 last:pb-0 lg:px-6 lg:py-0 lg:first:pl-0 lg:last:pr-0' : 'rounded-2xl border border-line bg-surface p-4', className)}>
       <h3 className="mb-3 flex items-baseline justify-between gap-3 text-[15px] font-bold text-ink">{title}{right && <span className="text-[12px] font-normal text-ink-3">{right}</span>}</h3>
       {children}
     </section>
@@ -179,7 +179,8 @@ function useCharThumb() {
 const md = (d: string) => d.slice(5).replace('-', '-')
 
 /** 「现在」：进行中的卡池和活动（手写，空的就不出现）、最近加入游戏数据的新卡、接下来的生日 */
-export function NowSection({ home, now }: { home: SiteHome | null; now: SiteNow | null; board?: TierBoard | null }) {
+/** flat：放在首页压着头图的白色浮层里，各栏不再各自带框，栏间一道分隔线 */
+export function NowSection({ home, now, flat }: { home: SiteHome | null; now: SiteNow | null; board?: TierBoard | null; flat?: boolean }) {
   const { lang } = useLang()
   const cat = useCatalog()
   const thumb = useCharThumb()
@@ -192,9 +193,9 @@ export function NowSection({ home, now }: { home: SiteHome | null; now: SiteNow 
   // 点新卡原地弹详情，不跳页；目录里还没有的偶像卡点不开
   const canOpen = (c: SiteHome['new_cards'][number]) => c.kind === 'support' || !!cat?.idols[c.id]
   return (
-    <div className={cx('grid gap-4', live.length ? 'lg:grid-cols-[1fr_1.4fr_0.9fr]' : 'lg:grid-cols-[1.6fr_1fr]')}>
+    <div className={cx('grid', flat ? 'divide-y divide-line lg:divide-x lg:divide-y-0' : 'gap-4', live.length ? 'lg:grid-cols-[1fr_1.4fr_0.9fr]' : 'lg:grid-cols-[1.6fr_1fr]')}>
       {live.length > 0 && (
-        <Box title="进行中" right={now?.updated && `整理于 ${now.updated}`}>
+        <Box flat={flat} title="进行中" right={now?.updated && `整理于 ${now.updated}`}>
           <ul className="space-y-3">
             {live.map((x, i) => {
               const left = x.end ? Math.ceil((jst(x.end) - t) / 86400000) : null
@@ -218,7 +219,7 @@ export function NowSection({ home, now }: { home: SiteHome | null; now: SiteNow 
         </Box>
       )}
 
-      <Box title="新卡" right={`加入游戏数据的日期 · 最近 ${home.source.days ?? 60} 天`}>
+      <Box flat={flat} title="新卡" right={`加入游戏数据的日期 · 最近 ${home.source.days ?? 60} 天`}>
         <div className="space-y-3">
           {dates.map((d) => (
             <div key={d} className="flex gap-3">
@@ -227,7 +228,7 @@ export function NowSection({ home, now }: { home: SiteHome | null; now: SiteNow 
                 {home.new_cards.filter((c) => c.date === d).map((c) => (
                   <button type="button" key={c.id} disabled={!canOpen(c)} onClick={() => detail.open(c.kind, c.id)}
                     title={c.kind === 'idol' ? `【${pick(c.name, lang)}】${pick(c.character_name, lang)}` : pick(c.name, lang)}
-                    className="group flex w-[148px] cursor-pointer items-center gap-2 rounded-lg p-1 text-left hover:bg-surface-2 disabled:cursor-default">
+                    className="group flex w-[calc(50%-3px)] cursor-pointer items-center gap-2 rounded-lg p-1 text-left hover:bg-surface-2 disabled:cursor-default sm:w-[148px]">
                     {c.kind === 'idol' ? <IdolThumb id={c.id} size={40} title={false} /> : <SupportThumb id={c.id} size={40} />}
                     <span className="min-w-0 leading-tight">
                       <span className="block truncate text-[12.5px] text-ink group-hover:text-brand-ink">{c.kind === 'idol' ? pick(c.character_name, lang) : pick(c.name, lang)}</span>
@@ -241,7 +242,7 @@ export function NowSection({ home, now }: { home: SiteHome | null; now: SiteNow 
         </div>
       </Box>
 
-      <Box title="生日">
+      <Box flat={flat} title="生日">
         <ul className="space-y-2">
           {births.map((b) => (
             <li key={b.id} className={cx('flex items-center gap-3 rounded-xl p-1.5', b.days === 0 && 'bg-brand-soft')}>

@@ -30,3 +30,11 @@ export function upcomingBirthdays(list: SiteHome['birthdays'], now = new Date())
     })
     .sort((a, b) => a.days - b.days)
 }
+
+/** 首页头图：最新的 SSR 偶像卡（特训后的横版卡面，digital-hiro-research/gkmas-assets/tools/export_card_art.py 导出到 sprites/art-<编号>.webp）。
+ * 新卡数据里没有 SSR 偶像卡、或这张的卡面还没导出时，用 HERO_FALLBACK */
+export const HERO_FALLBACK = 'i_card-hkne-3-000'
+
+export function heroCard(home: SiteHome | null) {
+  return home?.new_cards.filter((c) => c.kind === 'idol' && c.rarity === 'SSR').sort((a, b) => b.date.localeCompare(a.date))[0] ?? null
+}

@@ -178,3 +178,75 @@ body {
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 }
+
+/* 进站动画（components/BootSplash.tsx）：白底，三道斜杠落下、站名滑出，然后斜着擦走 */
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: var(--color-surface);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+.boot-out {
+  animation: boot-wipe 0.42s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+@keyframes boot-wipe {
+  to { clip-path: polygon(115% 0, 100% 0, 100% 100%, 100% 100%); }
+}
+.boot-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 96px;
+}
+.boot-bars i {
+  display: block;
+  width: 24px;
+  border-radius: 6px;
+  opacity: 0;
+  transform-origin: bottom;
+  transform: skewX(-16deg) translateY(-140%) scaleY(0.3);
+  animation: boot-drop 0.46s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.boot-bars i:nth-child(1) { height: 78px; }
+.boot-bars i:nth-child(2) { height: 96px; animation-delay: 0.07s; }
+.boot-bars i:nth-child(3) { height: 68px; animation-delay: 0.14s; }
+@keyframes boot-drop {
+  to { opacity: 1; transform: skewX(-16deg) translateY(0) scaleY(1); }
+}
+.boot-wait .boot-bars i { animation: boot-pulse 1.1s ease-in-out infinite; opacity: 1; transform: skewX(-16deg); }
+.boot-wait .boot-bars i:nth-child(2) { animation-delay: 0.15s; }
+.boot-wait .boot-bars i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes boot-pulse {
+  50% { filter: brightness(1.12); transform: skewX(-16deg) translateY(-6px); }
+}
+.boot-sub,
+.boot-title {
+  display: block;
+  transform: translateX(-110%);
+  animation: boot-slide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.boot-sub {
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  color: var(--color-ink-3);
+  animation-delay: 0.42s;
+}
+.boot-title {
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  animation-delay: 0.32s;
+}
+@media (min-width: 640px) {
+  .boot-bars { height: 120px; gap: 12px; }
+  .boot-bars i { width: 30px; }
+  .boot-bars i:nth-child(1) { height: 96px; }
+  .boot-bars i:nth-child(2) { height: 120px; }
+  .boot-bars i:nth-child(3) { height: 84px; }
+  .boot-title { font-size: 60px; }
+}
