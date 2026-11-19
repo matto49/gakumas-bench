@@ -196,7 +196,7 @@ func (s *Store) leaderboardUncached(set, base, group, kind, scope string) ([]Row
 			continue
 		}
 		name, _ := info["run"].(string)
-		idx, err := s.Index(name)
+		idx, err := s.lbEpisodes(name, group != "") // 只取排行用得到的列；分组时才带标签
 		if err != nil || len(idx) == 0 {
 			continue
 		}

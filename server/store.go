@@ -8,6 +8,7 @@ package main
 //   $DATA/runs/<运行>/run.json                    gkbench.run.v2：算法表的表头 + 题集、引擎版本等
 //   $DATA/runs/<运行>/episodes.jsonl.zst          每局一行 gkbench.episode.v2（逐局追加的运行是多帧文件）
 //   $DATA/runs/<运行>/index.json(l)               每局摘要（排行榜只读这个；没有时从 episodes 生成）
+//   $DATA/cache/episodes.sqlite                 每局摘要的 SQLite 索引（episodedb.go，按上面的文件同步；删掉会自动重建）
 
 import (
 	"bufio"
@@ -35,7 +36,8 @@ type Store struct {
 	cacheMu sync.Mutex
 	cache   map[string]setCache // 题集 -> 题模板（按文件修改时间失效）
 
-	rc runCache // 运行目录的 run.json 和每局摘要（runcache.go）
+	rc runCache  // 运行目录的 run.json、排行结果（runcache.go）
+	ep episodeDB // 每局摘要的 SQLite 索引（episodedb.go）
 }
 
 type setCache struct {

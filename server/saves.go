@@ -199,12 +199,12 @@ func (a *App) answersFor(set, tid string, row *SeedRow) []map[string]any {
 		if info["template_seeds"] != nil { // 固定保密种子上的答只写得出 exam_sha，而它能穷举反推出种子，所以不进公开存档
 			continue
 		}
-		idx, err := a.store.Index(str(info["run"]))
+		idx, err := a.store.ProblemEpisodes(str(info["run"]), tid) // 按题号查，不读整个运行
 		if err != nil {
 			continue
 		}
 		for _, e := range idx {
-			if e.ID != tid || (row != nil && e.SeedIndex != row.Index) || e.Route == "" {
+			if (row != nil && e.SeedIndex != row.Index) || e.Route == "" {
 				continue
 			}
 			out = append(out, answerOf(info, e, isTpl))

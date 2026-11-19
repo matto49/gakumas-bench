@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"sync"
 	"time"
 )
@@ -35,17 +34,9 @@ type runInfoEntry struct {
 	info  map[string]any // nil：不是 gkbench.run.v2 或读不了
 }
 
-type indexEntry struct {
-	path  string
-	stamp fileStamp
-	eps   []EpisodeSummary
-	err   error // episodes 文件坏了也缓存：文件不变就不再每次解压一遍再失败
-}
-
 type runCache struct {
 	mu    sync.Mutex
 	infos map[string]runInfoEntry // run.json 路径 ->
-	index map[string]indexEntry   // 运行目录 ->
 	lb    map[string]lbEntry      // 排行请求参数 ->
 }
 
@@ -103,37 +94,6 @@ func indexSource(dir string) (string, fileStamp, bool) {
 	return "", fileStamp{}, false
 }
 
-// Index：一次运行的每局摘要（带缓存，返回副本）
-func (s *Store) Index(run string) ([]EpisodeSummary, error) {
-	dir := s.RunDir(run)
-	src, st, ok := indexSource(dir)
-	if ok {
-		s.rc.mu.Lock()
-		e, hit := s.rc.index[dir]
-		s.rc.mu.Unlock()
-		if hit && e.path == src && e.stamp == st {
-			if e.err != nil {
-				return nil, e.err
-			}
-			return slices.Clone(e.eps), nil
-		}
-	}
-	eps, err := s.indexUncached(run)
-	// 从 episodes 生成成功时顺手写了 index.json：重新取一次来源，下次直接命中
-	if src, st, ok = indexSource(dir); ok {
-		s.rc.mu.Lock()
-		if s.rc.index == nil {
-			s.rc.index = map[string]indexEntry{}
-		}
-		s.rc.index[dir] = indexEntry{src, st, eps, err}
-		s.rc.mu.Unlock()
-	}
-	if err != nil {
-		return nil, err
-	}
-	return slices.Clone(eps), nil
-}
-
 func cloneInfos(in []map[string]any) []map[string]any {
 	out := make([]map[string]any, len(in))
 	for i, m := range in {
@@ -187,7 +147,7 @@ func (s *Store) Leaderboard(set, base, group, kind, scope string) ([]Row, error)
 	return rows, nil
 }
 
-// prefetchIndexes：并行读一个集合（空 = 全部）所有运行的摘要进缓存。已经在缓存里、文件没变的只 stat 一下
+// prefetchIndexes：并行同步一个集合（空 = 全部）所有运行的摘要到 SQLite（episodedb.go）。解析 JSON 并行，写库一次一个
 func (s *Store) prefetchIndexes(set string) {
 	var names []string
 	for _, info := range s.Runs(set) {
@@ -202,7 +162,7 @@ func (s *Store) prefetchIndexes(set string) {
 		go func() {
 			defer wg.Done()
 			for n := range jobs {
-				_, _ = s.Index(n)
+				_ = s.syncRun(n) // 文件变了的导入 SQLite；没变的只 stat 一下
 			}
 		}()
 	}
