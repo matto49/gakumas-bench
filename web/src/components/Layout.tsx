@@ -12,6 +12,7 @@ const nav = [
   { to: '/usage', label: '配置强度榜' },
   { to: '/exams', label: '試験集合' },
   { to: '/sets', label: '算法排行' },
+  { to: '/gallery', label: '图鉴' },
   { to: '/cards', label: '游戏资源一览' },
   // 「对比」不放导航：从复盘页的「和别的算法对比」进（/compare 路由还在）
 ]

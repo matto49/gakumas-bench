@@ -216,6 +216,12 @@
     .venv/bin/python -m gkbench.homedata --out $GKBENCH_DATA/static/site/home.json
     # 新偶像的卡没有缩略图时：gkmas-assets/tools/export_bench_icons.py <只含新卡编号的 catalog.json>，转 96px webp 存 sprites/idol-<编号>.webp
 
+    # 图鉴（网页 /gallery，数据 api/site/gallery）：立绘、偶像卡卡面（含「光景」换装卡面）、支援卡卡面、衣装、发型。
+    # 先从游戏资源导图（约 1,900 个资源包、180 MB，已导出的跳过）：
+    #   (gkmas-assets venv) python tools/export_gallery.py $GKBENCH_DATA/static/sprites/gallery
+    # 再生成目录（只列导出了图的条目；支援卡名字取 supports.json）：
+    .venv/bin/python -m gkbench.gallery --images $GKBENCH_DATA/static/sprites/gallery --supports $GKBENCH_DATA/static/supports.json --out $GKBENCH_DATA/static/site/gallery.json
+
     # 配置强度榜（网页 /usage，接口 api/usage/<模式>）：排行榜前 100 名记录里各卡出现的比例，只放比例和统计量
     .venv/bin/python -m gkbench.usage <数据包目录> --tierboard $GKBENCH_DATA/static/tiers/<id>.json --out $GKBENCH_DATA/static/usage/hif.json
 

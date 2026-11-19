@@ -31,6 +31,7 @@ const router = createBrowserRouter(
         { path: '/runs/:run/:problem/:seed', lazy: page(() => import('./pages/Replay'), 'Replay') },
         { path: '/compare', lazy: page(() => import('./pages/Compare'), 'Compare') },
         { path: '/cards', lazy: page(() => import('./pages/Cards'), 'Cards') },
+        { path: '/gallery', lazy: page(() => import('./pages/Gallery'), 'Gallery') },
         { path: '/exams', lazy: page(() => import('./pages/Exams'), 'Exams') },
         { path: '/exams/:set', lazy: page(() => import('./pages/Exams'), 'ExamSet') },
         { path: '/me', lazy: page(() => import('./pages/Me'), 'Me') },
