@@ -295,3 +295,9 @@ def test_build_cli_idolroad_packs_layer_summaries(tmp_path):
     assert sorted(pack["summary"]["seasons"]) == ["current-20261101", "previous-20260801"]
     assert pack["summary"]["seasons"]["current-20261101"]["towers"]["tower_001-shro"]["layers"][0]["layer"] == 1
     assert pack["entries"] == []
+
+
+def test_genki_cash_card_class_is_accepted():
+    e = written(id="hajime.style-review.card_remove.x", decision="card_remove")
+    e["content"] = {"avoid": ["class:genki_cash", "class:other_buff"], "why": "x"}
+    assert check_one(e) == []

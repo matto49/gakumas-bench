@@ -69,7 +69,7 @@ by: bench
 **ID 规范**：技能卡写不带强化的基础 ID（`p_card-…`），强化写在 `upgrade`；偶像卡写 `i_card-…`（不带 skin）；支援卡 `s_card-…`；P 道具 `pitem_…`；饮料 `pdrink_…`。还有几类不是卡的 ID：
 - 行动：课程 `lesson_vo` / `lesson_da` / `lesson_vi`；SP 课 `sp_lesson`（配合 Item 的 `attr: vo|da|vi`）；追い込み `oikomi`；其它 `class`（授業）/ `outing`（外出）/ `consult`（相談）/ `rest`（休息）/ `allowance`（活動支給）/ `gift`（差し入れ）/ `business`（営業）/ `special_guidance`（特別指導）。和 `ProduceStepType` 的映射由数字小广做
 - 属性：`vo` / `da` / `vi`
-- 卡类：`class:basic`（基本卡）/ `class:trouble`（トラブル）/ `class:off_plan`（プラン不一致）/ `class:other_buff`（同プラン里主打另一种 buff 的卡，例如好印象偶像拿到的やる気卡；和 `off_plan` 不是一回事）
+- 卡类：`class:basic`（基本卡）/ `class:trouble`（トラブル）/ `class:off_plan`（プラン不一致）/ `class:other_buff`（同プラン里主打另一种 buff 的卡：卡面的出分或使用条件挂在那种 buff 上，对好印象偶像就是写「やる気のN%分」「やる気がN以上の場合、使用可」的卡；和 `off_plan` 不是一回事）/ `class:genki_cash`（卡面写「元気のN%分パラメータ上昇」、靠元気出分的卡）。卡类按卡面文字由程序判断，含义固定，不随条目说明变
 
 **Evidence**：
 
@@ -131,7 +131,7 @@ unless:
 
 ## 3. 作用标签 `role`
 
-**技能卡**：用数字小广 `hiro.state.knowledge.ROLES` 现成的词：`finisher` 终结、`delayed` 延迟兑现、`sustained` 持续兑现、`loop` 循环 / 抽牌、`compress` 压缩、`extend` 加回合、`cash` 不清零兑现、`motivation` やる気、`genki` 元気、`hp` 控血、`item` 道具触发、`idol` 偶像固有卡、`conflict` 冲突。别的流派要新词时（例如好印象的 `impression`），两边商量后加进这张表。
+**技能卡**：用数字小广 `hiro.state.knowledge.ROLES` 现成的词，加上好印象流派的 `impression` 攒好印象、`impression_cash` 按好印象出分（11-20 3940a9 审过）：`finisher` 终结、`delayed` 延迟兑现、`sustained` 持续兑现、`loop` 循环 / 抽牌、`compress` 压缩、`extend` 加回合、`cash` 不清零兑现、`motivation` やる気、`genki` 元気、`hp` 控血、`item` 道具触发、`idol` 偶像固有卡、`conflict` 冲突。别的流派要新词时（例如好印象的 `impression`），两边商量后加进这张表。
 
 **支援卡**：`sp_rate` SP 发生率、`param_bonus` 属性加成 / 课程得点、`event_card` 支援事件给卡、`event_item` 给 P 道具、`p_point` P 点、`stamina` 体力回复、`card_trigger` 获得 / 强化 / 删卡时触发。
 

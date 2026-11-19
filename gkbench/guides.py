@@ -214,7 +214,7 @@ MODES = ("hajime", "nia", "hif", "idolroad")
 DIFFICULTIES = {"hajime": ("regular", "pro", "master", "legend"), "nia": ("pro", "master")}
 ACTIONS = ("lesson_vo", "lesson_da", "lesson_vi", "sp_lesson", "oikomi", "class", "outing", "consult", "rest", "allowance",
            "gift", "business", "special_guidance")
-CLASSES = ("class:basic", "class:trouble", "class:off_plan", "class:other_buff")
+CLASSES = ("class:basic", "class:trouble", "class:off_plan", "class:other_buff", "class:genki_cash")
 CARD_PREFIXES = ("p_card-", "s_card-", "pitem_", "pdrink_", "i_card-")
 PREDICATES = {"deck_count", "deck_has_any", "deck_has_all", "deck_size_gte", "deck_size_lte", "has_pitem", "p_point_lt",
               "stamina_lt", "week_gte", "next_exam"}

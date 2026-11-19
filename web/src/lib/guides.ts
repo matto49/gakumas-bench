@@ -135,5 +135,5 @@ export const DECISIONS: { key: string; group: '开局编成' | '培育' | '考�
 export const ACTION_LABEL: Record<string, string> = {
   lesson_vo: 'Vo 课程', lesson_da: 'Da 课程', lesson_vi: 'Vi 课程', sp_lesson: 'SP 课程', oikomi: '追い込み', class: '授業', outing: '外出',
   consult: '相談', rest: '休息', allowance: '活動支給', gift: '差し入れ', business: '営業', special_guidance: '特別指導',
-  vo: 'Vo', da: 'Da', vi: 'Vi', 'class:basic': '基本卡', 'class:trouble': 'トラブル卡', 'class:off_plan': 'プラン不一致的卡', 'class:other_buff': '主打另一种 buff 的卡',
+  vo: 'Vo', da: 'Da', vi: 'Vi', 'class:basic': '基本卡', 'class:trouble': 'トラブル卡', 'class:off_plan': 'プラン不一致的卡', 'class:other_buff': '主打另一种 buff 的卡', 'class:genki_cash': '靠元気出分的卡',
 }

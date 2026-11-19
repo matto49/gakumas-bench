@@ -119,13 +119,14 @@
       - {id: p_card-02-act-0_032, note: 排行榜上删得最多}
       - {id: p_card-02-men-0_035}
       - class:basic
+      - class:genki_cash
       - class:other_buff
     prefer:
       - {id: p_card-02-men-2_111, note: やる気来源，不删}
       - {id: p_card-02-men-2_004, note: 同上}
     why: >-
       相談里先删没用的卡，让强卡更常进手牌。初的排行榜里好印象偶像卡删得最多的是ファンサの基本，其余基本卡大多留着；
-      靠元気出分的やる気流派卡对好印象没用，可以删。但给やる気的卡不要删，它们是好印象强卡的费用来源。
+      靠元気出分的卡（genki_cash）和主打やる気的卡（other_buff）对好印象没用，可以删。但给やる気的卡不要删，它们是好印象强卡的费用来源。
   evidence:
     - {kind: guide, ref: game8 難易度プロの攻略, url: "https://game8.jp/gakuen-idolmaster/610357", date: 2026-11-17}
     - {kind: ranking, mode: hajime, n: 2300, fetched: 2026-11-19}

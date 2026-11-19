@@ -103,7 +103,7 @@
    "description": "card_remove：avoid = 先删的、prefer = 保护不删的"
   },
   "item": {
-   "description": "字符串（只写 ID）或对象。ID：技能卡 p_card-（不带强化）、支援卡 s_card-、P 道具 pitem_、饮料 pdrink_、偶像卡 i_card-（不带 skin）；行动、属性 vo/da/vi、卡类 class:…",
+   "description": "字符串（只写 ID）或对象。ID：技能卡 p_card-（不带强化）、支援卡 s_card-、P 道具 pitem_、饮料 pdrink_、偶像卡 i_card-（不带 skin）；行动、属性 vo/da/vi、卡类 class:basic / trouble / off_plan / other_buff / genki_cash",
    "oneOf": [
     {
      "type": "string"
@@ -120,7 +120,7 @@
       },
       "role": {
        "type": "string",
-       "description": "作用标签（docs/guides.md 第 3 节）"
+       "description": "作用标签（docs/guides.md 第 3 节），好印象新加 impression、impression_cash"
       },
       "weight": {
        "type": "number",

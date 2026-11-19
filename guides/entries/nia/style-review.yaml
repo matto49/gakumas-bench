@@ -58,6 +58,7 @@
     avoid:
       - class:basic
       - {id: p_card-02-act-0_009, note: 初始牌组里的非循环件}
+      - class:genki_cash
       - class:other_buff
     prefer:
       - {id: p_card-02-act-2_049, role: loop}
@@ -66,7 +67,7 @@
     why: >-
       「○○の基本」这类卡用了不除外、效果又弱，会混进循环，决赛前要全部删掉。
       N.I.A MASTER 排行榜上好印象偶像卡的基本卡只剩 1%–3%。基本卡用挑战 P 道具删，相談的删卡留给基本卡以外的非循环件；
-      3 张循环件不删。
+      3 张循环件不删。靠元気出分的卡和主打やる気的卡对好印象没用，排在基本卡后面删。
   evidence:
     - {kind: guide, ref: game8 NIAマスター攻略, url: "https://game8.jp/gakuen-idolmaster/688368", date: 2026-11-17}
     - {kind: ranking, mode: nia, n: 2300, fetched: 2026-11-18}
