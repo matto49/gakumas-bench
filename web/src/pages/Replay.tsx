@@ -1,3 +1,4 @@
+import { runDisplay, type RunDisplayCatalog } from '../lib/runDisplay'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, GitCompareArrows } from 'lucide-react'
@@ -33,7 +34,9 @@ export function Replay() {
   const [q, setQ] = useSearchParams()
   const cat = useCatalog()
   const ep = useApi<Episode>(`api/runs/${encodeURIComponent(run)}/episodes/${encodeURIComponent(problem)}/${seed}`)
+  const catalog = useApi<RunDisplayCatalog>('api/site/run-presentations').data
   const runInfo = useApi<RunInfo>(`api/runs/${encodeURIComponent(run)}`)
+  const display = runDisplay(catalog, runInfo.data)
   const oracle = useOracle(runInfo.data?.set, runInfo.data?.kind, runInfo.data?.template_seeds)
   const steps = ep.data?.steps ?? []
   const cur = Math.max(0, Math.min(steps.length - 1, Number(q.get('i') ?? 0)))
@@ -76,7 +79,7 @@ export function Replay() {
   return (
     <div>
       <p className="mb-3 text-[12.5px] text-ink-3">
-        <Link to={`/sets/${e.set}`} className="hover:text-brand-ink">算法排行</Link> / <Link to={`/runs/${run}`} className="hover:text-brand-ink">{runInfo.data?.label ?? run}</Link> / 复盘
+        <Link to={`/sets/${e.set}`} className="hover:text-brand-ink">算法排行</Link> / <Link to={`/runs/${run}`} className="hover:text-brand-ink">{display?.name ?? runInfo.data?.label ?? run}</Link> / 复盘
       </p>
       <header className="mb-5 overflow-hidden rounded-2xl border border-line bg-surface">
         <div className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5">
@@ -90,7 +93,7 @@ export function Replay() {
           <div className="flex items-center gap-3">
             {ratio != null && <Grade ratio={ratio} size={48} />}
             <div className="text-right">
-              <p className="text-[11.5px] text-ink-3">{runInfo.data?.label ?? '终局'}{best ? ` · 上限 ${int(best)}` : ''}</p>
+              <p className="text-[11.5px] text-ink-3">{display?.name ?? runInfo.data?.label ?? '终局'}{best ? ` · 上限 ${int(best)}` : ''}</p>
               <p className="disp text-[32px] leading-none text-ink">{int(e.final.score)}</p>
             </div>
           </div>

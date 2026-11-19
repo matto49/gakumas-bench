@@ -1,0 +1,178 @@
+{
+  "profiles": {
+    "ghl-b0-random": {
+      "owner": "yzhouwang",
+      "name": "随机合法动作 / Uniform Random",
+      "summary": "从合法动作中均匀抽取一个。 Uniformly sample a legal action.",
+      "detail": [
+        "沿用 GKBench 内置 random 的决策规则，出牌、饮料、结束回合等合法动作均可抽中。",
+        "Uses the same decision rule as the SDK random policy. The policy RNG samples from all legal actions."
+      ],
+      "source_url": "https://github.com/yzhouwang/gkbench-baselines"
+    },
+    "ghl-b1-logic": {
+      "owner": "yzhouwang",
+      "name": "Logic 卡牌估值 / Logic Card Heuristic",
+      "summary": "按当前牌效与剩余回合选择动作。 Rank actions by card effects and remaining turns.",
+      "detail": [
+        "估算得分、增益、体力消耗和额外行动，只读取公开画面和开局配置。B3 在独立考试里也调用这条规则。",
+        "Estimates score, buffs, stamina costs and extra actions from the public state. B3 delegates exams to this rule."
+      ],
+      "source_url": "https://github.com/yzhouwang/gkbench-baselines"
+    },
+    "ghl-b1v2-logic": {
+      "owner": "yzhouwang",
+      "name": "Logic 分流启发式 / Logic Subtype Heuristic",
+      "summary": "按偶像的好印象或干劲类型选择规则。 Choose a rule for the idol’s Logic subtype.",
+      "detail": [
+        "好印象型使用好印象出牌与饮料规则。干劲型会估算后续元气积累及可兑现的得分。",
+        "Uses the Good Impression card and drink rule for that subtype. For Motivation, it values future Genki gains and scoring opportunities."
+      ],
+      "source_url": "https://github.com/yzhouwang/gkbench-baselines"
+    },
+    "ghl-b1v2gi-logic": {
+      "owner": "yzhouwang",
+      "name": "好印象固定策略 / Good Impression Only",
+      "summary": "对所有支持的 Logic 开局固定使用好印象规则。 Always use the Good Impression rule.",
+      "detail": [
+        "用于检验分流是否有用。在好印象型上与分流策略使用同一个分支，在干劲型上仍按好印象处理。",
+        "An ablation of subtype routing. It shares the Good Impression branch and forces it on Motivation idols too."
+      ],
+      "source_url": "https://github.com/yzhouwang/gkbench-baselines"
+    },
+    "ghl-b3-campaign-b1": {
+      "owner": "yzhouwang",
+      "name": "Logic 卡牌估值（B3 考试别名） / Logic Card Heuristic (B3 Exam Alias)",
+      "summary": "B3 的独立考试入口调用 B1。 B3 delegates standalone exams to the Logic Card Heuristic.",
+      "detail": [
+        "保留旧入口以复跑历史配置。育成阶段的规划在独立考试中不会执行。",
+        "Kept for reproducing historical commands. Campaign planning runs outside standalone exams."
+      ],
+      "source_url": "https://github.com/yzhouwang/gkbench-baselines"
+    },
+    "ghl-b2-battle-projection-gkms": {
+      "owner": "yzhouwang",
+      "name": "单步估值搜索 / One-Step Value Search",
+      "summary": "在采样世界中将每个动作推进一步，再比较考试估值。 Compare one-step exam values across sampled worlds.",
+      "detail": [
+        "每个候选动作使用同一批重新采样的牌序。估值结合当前得分、增益与剩余回合，仅计入完整的一轮比较。",
+        "Each candidate gets the same resampled worlds. The evaluation uses current score, buffs and turns left. Only complete sweeps count."
+      ],
+      "source_url": "https://github.com/yzhouwang/gkbench-baselines"
+    },
+    "ghl-b4-gkms": {
+      "owner": "yzhouwang",
+      "name": "终局得分搜索 / Final Score Rollout",
+      "summary": "从每个候选动作推演到考试结束，比较平均得分。 Compare actions by mean final exam score.",
+      "detail": [
+        "在重新采样的世界中，后续出牌由 Logic 分流启发式决定。只计入所有候选动作都完成的采样轮次。",
+        "Uses the Logic Subtype Heuristic for continuation in resampled worlds. Only complete sweeps across candidates count."
+      ],
+      "source_url": "https://github.com/yzhouwang/gkbench-baselines"
+    },
+    "ghl-b4v2-expected-rank-gkms": {
+      "owner": "yzhouwang",
+      "name": "名次与饮料保留搜索 / Rank and Drink Rollout",
+      "summary": "中间审查权衡预计名次与保留饮料的价值，最终审查比较得分。 Balance midterm rank and drink reserves, then maximize final score.",
+      "detail": [
+        "中间审查按公开对手区间估计名次。推演尽量保留饮料，用第十周的补给先验估值。最终审查与终局得分搜索共用目标。",
+        "Midterms model each rival uniformly within its public score range and value retained drinks using a week-ten prior. Finals use the same score objective as Final Score Rollout."
+      ],
+      "source_url": "https://github.com/yzhouwang/gkbench-baselines"
+    },
+    "hif-legacy-smoke": {
+      "owner": "yzhouwang",
+      "name": "HIF 旧版分流试跑 / Legacy HIF Smoke Test",
+      "summary": "旧版 HIF 适配器的四局试跑。 Four smoke-test games using the legacy HIF adapter.",
+      "detail": [
+        "本次只检验四局的接口连通性和动作合法性。",
+        "The four games are a smoke test."
+      ]
+    },
+    "hif-legacy": {
+      "owner": "yzhouwang",
+      "name": "HIF 旧版分流启发式 / Legacy HIF Subtype Heuristic",
+      "summary": "旧版 HIF 适配器沿用 B1v2 决策规则。 The legacy HIF adapter uses the B1v2 decision rule.",
+      "detail": [
+        "评测覆盖 21 道好印象题，每题 8 个牌序。历史适配器对持续效果和牌面映射的支持范围与现版有别。",
+        "Covers 21 Good Impression loadouts with eight deals each. Ongoing effects and card mapping were handled by the historical adapter."
+      ]
+    }
+  },
+  "runs": {
+    "template-hajime-ghl-b0-random-v1-yzhouwang-0a2c803674c0": {
+      "set": "hajime",
+      "profile": "ghl-b0-random"
+    },
+    "template-hajime-ghl-b1-logic-v1-yzhouwang-f54babd86a9e": {
+      "set": "hajime",
+      "profile": "ghl-b1-logic"
+    },
+    "template-hajime-ghl-b1v2-logic-v2-yzhouwang-43973012a4a7": {
+      "set": "hajime",
+      "profile": "ghl-b1v2-logic"
+    },
+    "template-hajime-ghl-b1v2gi-logic-v1-yzhouwang-69cbc918183d": {
+      "set": "hajime",
+      "profile": "ghl-b1v2gi-logic"
+    },
+    "template-hajime-ghl-b2-battle-projection-v1-yzhouwang-d8c919c5b14d": {
+      "set": "hajime",
+      "profile": "ghl-b2-battle-projection-gkms"
+    },
+    "template-hajime-ghl-b3-campaign-b1-v1-yzhouwang-27e83cbaf2f1": {
+      "set": "hajime",
+      "profile": "ghl-b3-campaign-b1",
+      "alias_of": "template-hajime-ghl-b1-logic-v1-yzhouwang-f54babd86a9e"
+    },
+    "template-hajime-ghl-b4-gkms-n3-v1-yzhouwang-2270d5dbbc06": {
+      "set": "hajime",
+      "profile": "ghl-b4-gkms"
+    },
+    "template-hajime-ghl-b4v2-gkms-n3-v1-yzhouwang-9a8d5fc8de1b": {
+      "set": "hajime",
+      "profile": "ghl-b4v2-expected-rank-gkms"
+    },
+    "template-hif-ghl-b1v2-adapted-smoke-yzhouwang-ad2cadc34e8c": {
+      "set": "hif",
+      "profile": "hif-legacy-smoke"
+    },
+    "template-hif-ghl-b1v2-adapted-v1-yzhouwang-24f77fb2c7e7": {
+      "set": "hif",
+      "profile": "hif-legacy"
+    },
+    "template-u-yzhouwang-723768-ghl-b0-random-v1-yzhouwang-a7e597caf9fd": {
+      "set": "u-yzhouwang-723768",
+      "profile": "ghl-b0-random"
+    },
+    "template-u-yzhouwang-723768-ghl-b1-logic-v1-yzhouwang-78405b2ff621": {
+      "set": "u-yzhouwang-723768",
+      "profile": "ghl-b1-logic"
+    },
+    "template-u-yzhouwang-723768-ghl-b1v2-logic-v2-yzhouwang-b8147c9a63a1": {
+      "set": "u-yzhouwang-723768",
+      "profile": "ghl-b1v2-logic"
+    },
+    "template-u-yzhouwang-723768-ghl-b1v2gi-logic-v1-yzhouwang-297b9826cf13": {
+      "set": "u-yzhouwang-723768",
+      "profile": "ghl-b1v2gi-logic"
+    },
+    "template-u-yzhouwang-723768-ghl-b2-battle-projection-v1-yzhouwang-3633aea60471": {
+      "set": "u-yzhouwang-723768",
+      "profile": "ghl-b2-battle-projection-gkms"
+    },
+    "template-u-yzhouwang-723768-ghl-b3-campaign-b1-v1-yzhouwang-daf23891006c": {
+      "set": "u-yzhouwang-723768",
+      "profile": "ghl-b3-campaign-b1",
+      "alias_of": "template-u-yzhouwang-723768-ghl-b1-logic-v1-yzhouwang-78405b2ff621"
+    },
+    "template-u-yzhouwang-723768-ghl-b4-gkms-n3-v1-yzhouwang-d262d3cc1d11": {
+      "set": "u-yzhouwang-723768",
+      "profile": "ghl-b4-gkms"
+    },
+    "template-u-yzhouwang-723768-ghl-b4v2-gkms-n3-v1-yzhouwang-88c16783d43f": {
+      "set": "u-yzhouwang-723768",
+      "profile": "ghl-b4v2-expected-rank-gkms"
+    }
+  }
+}

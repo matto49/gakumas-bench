@@ -141,6 +141,17 @@
     # 旧数据（v1）转换
     .venv/bin/python -m gkbench.migrate [--dry-run]
 
+## 历史运行的展示名与说明
+
+前端从 `api/site/run-presentations` 读取站方维护的展示清单。每条记录按完整运行编号、提交账号和题集匹配。排行榜仍从原始运行计算成绩，详情页也可以展开原始提交说明。
+
+站方确认 [示例清单](../examples/run-presentations.json) 后，可在首次配置时从仓库根目录执行以下命令。已有清单时，将新条目合并进现有的 `profiles` 和 `runs`。
+
+    mkdir -p "$GKBENCH_DATA/static/site"
+    cp -n examples/run-presentations.json "$GKBENCH_DATA/static/site/run-presentations.json"
+
+`profiles` 定义显示名、中英文说明、提交人和源码链接。`runs` 把完整运行编号关联到题集和说明。可选的 `alias_of` 指向清单中同作者、同题集的对应运行。示例包含 18 条 GHL 历史记录，其中两条 B3 考试成绩链接到相应的 B1 成绩。
+
 ## 线上部署
 
 线上部署（ycy）：`GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gkbench-server ./server`，放 `/opt/gkbench/bin/`；`web/dist` 用 `tools/deploy-web.sh [提交]` 部署到 `/opt/gkbench/web/dist`（干净 worktree 构建，保留旧版本的 hash 分片，免得部署前打开的页面切路由时 404）；Python 部分放 `/opt/gkbench/app`（自带 `.venv`）；systemd `gkbench.service`（`Environment=` 里带空格的值要加引号），nginx 站点 `/etc/nginx/sites-available/hiro`（`hiro.matto.top`，certbot 证书）把 `/gkbench/` 转到 127.0.0.1:19150，根路径跳 `/gkbench/`。旧地址 `api.matto.top/gkbench/` 的网页 308 跳到新域名，`/gkbench/api/` 暂时继续转发，给还没换默认地址的老客户端用。

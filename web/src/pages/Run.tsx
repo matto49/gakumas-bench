@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { runDisplay, type RunDisplayCatalog } from '../lib/runDisplay'
 import { type RunInfo } from '../lib/api'
 import { fetchApi } from '../lib/query'
 import { useApi } from '../lib/hooks'
@@ -47,6 +48,7 @@ export function RunPage() {
   const nav = useNavigate()
   const cat = useCatalog()
   const [q, setQ] = useSearchParams()
+  const catalog = useApi<RunDisplayCatalog>('api/site/run-presentations').data
   const info = useApi<RunInfo>(`api/runs/${encodeURIComponent(run)}`)
   const oracle = useOracle(info.data?.set, info.data?.kind, info.data?.template_seeds)
   const sort = q.get('sort') ?? 'problem'
@@ -70,6 +72,7 @@ export function RunPage() {
   if (info.error) return <ErrorState error={info.error} onRetry={info.reload} />
   if (!info.data) return <TableSkeleton rows={10} />
   const r = info.data
+  const display = runDisplay(catalog, r)
   const privileged = !!r.privileged
   const tagKeys = Array.from(new Set(r.episodes.flatMap((e) => Object.keys(e.tags ?? {})))).filter((k) => k !== 'source' && k !== 'produce')
   const tagValues = (k: string) => Array.from(new Set(r.episodes.map((e) => String(e.tags?.[k] ?? '')))).filter(Boolean).sort()
@@ -89,7 +92,7 @@ export function RunPage() {
     <div>
       <PageHeader
         crumb={<><Link to={`/sets/${r.set}${r.kind === 'template' ? (r.template_seeds ? '' : '?kind=legacy') : '?kind=fixed'}`} className="hover:text-brand-ink">算法排行 · {setTitle(r.set)}</Link> / 运行</>}
-        title={<span className="inline-flex flex-wrap items-center gap-2.5">{r.label}<ModeBadge mode={r.mode} privileged={privileged} /><span className="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] font-semibold text-ink-2">{KIND_INFO[r.kind === 'template' ? (r.template_seeds ? 'template' : 'legacy') : 'fixed'].title}</span></span>}
+        title={<span className="inline-flex flex-wrap items-center gap-2.5">{display?.name ?? r.label}<ModeBadge mode={r.mode} privileged={privileged} /><span className="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] font-semibold text-ink-2">{KIND_INFO[r.kind === 'template' ? (r.template_seeds ? 'template' : 'legacy') : 'fixed'].title}</span></span>}
         sub={<span className="font-mono text-[12px] text-ink-3">{r.run}</span>}
         right={!privileged && overall != null && (
           <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-2">
@@ -117,7 +120,9 @@ export function RunPage() {
         </div>
       </dl>
 
-      <AlgoAbout about={r.about} />
+      {display?.aliasOf && <Link className="mb-3 inline-block text-brand-ink underline" to={`/runs/${encodeURIComponent(display.aliasOf)}`}>查看同题集的对应策略 / Canonical run on this set</Link>}
+      <AlgoAbout about={display?.about ?? r.about} />
+      {display && r.about && <details className="mb-6"><summary>原始提交说明 / Original submission notes</summary><AlgoAbout about={r.about} /></details>}
 
       <section className="mb-6 rounded-xl border border-line bg-surface px-4 pt-3 pb-2">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
