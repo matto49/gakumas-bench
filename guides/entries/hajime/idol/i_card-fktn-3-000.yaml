@@ -18,7 +18,7 @@
   decision: card_upgrade
   content:
     prefer:
-      - {id: p_card-02-ido-3_015, upgrade: 1, role: idol, note: 固有卡よそ見はダメ♪：强化后好印象 +7 → +9}
+      - {id: p_card-02-ido-3_015, upgrade: 1, role: idol, note: 强化后好印象 +7 → +9}
     why: >-
       固有卡よそ見はダメ♪是开局攒好印象的主力，排行榜前 100 名里 100% 强化过。
       它能定制成「好印象强化 +50%（5 回合）」或「使用数 +1」，攻略和排行榜都没给出哪个更好，先只强化。

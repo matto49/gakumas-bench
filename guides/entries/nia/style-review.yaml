@@ -7,9 +7,9 @@
   decision: card_pick
   content:
     prefer:
-      - {id: p_card-02-act-2_049, role: loop, keep: 1, weight: 90, note: みんな大好き：使用数 +1，按好印象出分}
-      - {id: p_card-02-men-2_060, role: loop, keep: 1, weight: 85, note: オトメゴコロ：使用数 +1，加好印象}
-      - {id: p_card-02-act-2_046, role: loop, keep: 1, weight: 80, note: ラブリーウインク：出分}
+      - {id: p_card-02-act-2_049, role: loop, keep: 1, weight: 90, note: 使用数 +1，按好印象出分}
+      - {id: p_card-02-men-2_060, role: loop, keep: 1, weight: 85, note: 使用数 +1，加好印象}
+      - {id: p_card-02-act-2_046, role: loop, keep: 1, weight: 80, note: 出分}
     why: >-
       N.I.A MASTER 的决赛靠最后几回合反复打同 3 张卡出分：两张带「使用数 +1」的卡加一张出分卡。
       好印象的这 3 张是みんな大好き、オトメゴコロ、ラブリーウインク。循环件最好用回忆带进来，培育中见到也拿。
@@ -28,17 +28,17 @@
   decision: card_pick
   content:
     prefer:
-      - {id: p_card-02-men-2_056, role: impression, weight: 90, note: 止められない想い}
-      - {id: p_card-02-men-2_101, role: impression, weight: 85, note: 冒険心}
-      - {id: p_card-02-men-2_058, role: impression, weight: 85, note: ファンシーチャーム}
-      - {id: p_card-02-men-3_042, role: impression, weight: 80, note: 虹色ドリーマー}
-      - {id: p_card-02-men-3_004, role: impression, weight: 80, note: 星屑センセーション}
-      - {id: p_card-02-men-3_043, role: motivation, weight: 70, note: トキメキ}
-      - {id: p_card-02-men-3_041, role: motivation, weight: 70, note: ノートの端の決意}
-      - {id: p_card-02-men-2_054, role: motivation, weight: 65, note: 本番前夜}
-      - {id: p_card-02-act-3_052, role: impression_cash, weight: 75, note: キセキの魔法：收尾}
+      - {id: p_card-02-men-2_056, role: impression, weight: 90}
+      - {id: p_card-02-men-2_101, role: impression, weight: 85}
+      - {id: p_card-02-men-2_058, role: impression, weight: 85}
+      - {id: p_card-02-men-3_042, role: impression, weight: 80}
+      - {id: p_card-02-men-3_004, role: impression, weight: 80}
+      - {id: p_card-02-men-3_043, role: motivation, weight: 70}
+      - {id: p_card-02-men-3_041, role: motivation, weight: 70}
+      - {id: p_card-02-men-2_054, role: motivation, weight: 65}
+      - {id: p_card-02-act-3_052, role: impression_cash, weight: 75, note: 收尾}
     avoid:
-      - {id: p_card-02-act-0_009, note: 可愛い仕草：不带「レッスン中1回」，会混进循环}
+      - {id: p_card-02-act-0_009, note: 不带「レッスン中1回」，会混进循环}
     why: >-
       循环件以外的卡，优先拿卡面写着「レッスン中1回」的：用一次就除外，决赛最后几回合不会混进循环。
       这些卡负责前半场攒好印象和やる気（好印象的几张强卡要消耗やる気）。
@@ -57,7 +57,7 @@
   content:
     avoid:
       - class:basic
-      - {id: p_card-02-act-0_009, note: 可愛い仕草：初始牌组里的非循环件}
+      - {id: p_card-02-act-0_009, note: 初始牌组里的非循环件}
       - class:other_buff
     prefer:
       - {id: p_card-02-act-2_049, role: loop}
@@ -79,10 +79,10 @@
   decision: card_upgrade
   content:
     prefer:
-      - {id: p_card-02-act-2_049, custom: [p_card_custom-070-g_effect-lesson_depend_exam_review_add-800], levels: 1, note: みんな大好き定制按好印象出分 +80%}
-      - {id: p_card-02-act-2_046, custom: [p_card_custom-040_070-g_effect-lesson_depend_exam_review_add-350-g_effect-lesson_depend_exam_review_add-1150], levels: 2, full: true, note: ラブリーウインク定制按好印象出分，做满}
-      - {id: p_card-02-men-2_060, custom: [p_card_custom-070-g_effect-review_add-2], levels: 1, note: オトメゴコロ定制好印象 +2}
-      - {id: p_card-02-men-2_111, upgrade: 1, note: 成長痛一定要强化}
+      - {id: p_card-02-act-2_049, custom: [p_card_custom-070-g_effect-lesson_depend_exam_review_add-800], levels: 1, note: 定制按好印象出分 +80%}
+      - {id: p_card-02-act-2_046, custom: [p_card_custom-040_070-g_effect-lesson_depend_exam_review_add-350-g_effect-lesson_depend_exam_review_add-1150], levels: 2, full: true, note: 定制按好印象出分，做满}
+      - {id: p_card-02-men-2_060, custom: [p_card_custom-070-g_effect-review_add-2], levels: 1, note: 定制好印象 +2}
+      - {id: p_card-02-men-2_111, upgrade: 1, note: 一定要强化}
     why: >-
       决赛反复打的是 3 张循环件，强化和定制都先给它们：两张出分卡定制按好印象出分的方向，
       オトメゴコロ定制多给好印象。ラブリーウインク的出分定制分两级，第二级才拉开差距。
@@ -99,11 +99,11 @@
   decision: formation.memory
   content:
     prefer:
-      - {id: p_card-02-act-3_050, upgrade: 1, weight: 95, note: 輝くキミへ}
-      - {id: p_card-02-men-3_002, weight: 85, note: 私がスター}
-      - {id: p_card-02-act-2_049, weight: 80, note: みんな大好き：循环件，用回忆带进来最稳}
-      - {id: p_card-02-act-3_052, weight: 70, note: キセキの魔法}
-      - {id: p_card-00-men-3_005, weight: 70, note: 仕切り直し}
+      - {id: p_card-02-act-3_050, upgrade: 1, weight: 95}
+      - {id: p_card-02-men-3_002, weight: 85}
+      - {id: p_card-02-act-2_049, weight: 80, note: 循环件，用回忆带进来最稳}
+      - {id: p_card-02-act-3_052, weight: 70}
+      - {id: p_card-00-men-3_005, weight: 70}
     why: >-
       N.I.A 的循环件建议用回忆带进来，培育中再补「レッスン中1回」的卡。
       N.I.A MASTER 排行榜上 23 张好印象偶像卡平均下来，回忆里带輝くキミへ的占 79%、私がスター 68%、みんな大好き 41%。

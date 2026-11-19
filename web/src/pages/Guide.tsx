@@ -297,7 +297,8 @@ function Written({ e, open, sup }: { e: GuideEntry; open: Open; sup?: SupportCat
       {e.content.fallback && <p className="mt-1 text-[12.5px] text-ink-2">都没有时：{e.content.fallback}</p>}
       <p className="mt-2 text-[11.5px] text-ink-3">
         出处：{e.evidence.map((ev, i) => (
-          <span key={i}>{i > 0 && '、'}{ev.url ? <a href={ev.url} target="_blank" rel="noreferrer" className="text-brand-ink hover:underline">{ev.ref}</a> : ev.ref ?? ev.kind}</span>
+          <span key={i}>{i > 0 && '、'}{ev.kind === 'ranking' ? `排行榜 ${ev.n?.toLocaleString() ?? ''} 份（${ev.fetched ?? ''}）`
+            : ev.url ? <a href={ev.url} target="_blank" rel="noreferrer" className="text-brand-ink hover:underline">{ev.ref}</a> : ev.ref ?? ev.kind}</span>
         ))}{e.updated && ` · ${e.updated}`}
       </p>
     </article>

@@ -7,14 +7,14 @@
   decision: card_pick
   content:
     prefer:
-      - {id: p_card-02-men-2_056, role: impression, weight: 90, note: 止められない想い：好印象和やる気都给，还加使用数}
-      - {id: p_card-02-men-2_058, role: impression, weight: 85, note: ファンシーチャーム：之后每打一张メンタル卡好印象 +1}
-      - {id: p_card-02-men-2_101, role: impression, weight: 85, note: 冒険心：好印象 +6、加使用数、抽一张}
-      - {id: p_card-02-men-3_042, role: impression, weight: 80, note: 虹色ドリーマー：好印象 ≥3 时每回合结束再 +3}
-      - {id: p_card-02-men-3_004, role: impression, weight: 80, note: 星屑センセーション：好印象 ≥10 后好印象增加量 +50%}
-      - {id: p_card-02-men-2_060, role: impression, weight: 75, note: オトメゴコロ}
-      - {id: p_card-02-men-2_111, role: impression, weight: 75, note: 成長痛：好印象、やる気、元気一起给}
-      - {id: p_card-02-men-2_050, role: impression, weight: 50, note: 幸せな時間：P 等级低时的替代}
+      - {id: p_card-02-men-2_056, role: impression, weight: 90, note: 好印象和やる気都给，还加使用数}
+      - {id: p_card-02-men-2_058, role: impression, weight: 85, note: 之后每打一张メンタル卡好印象 +1}
+      - {id: p_card-02-men-2_101, role: impression, weight: 85, note: 好印象 +6、加使用数、抽一张}
+      - {id: p_card-02-men-3_042, role: impression, weight: 80, note: 好印象 ≥3 时每回合结束再 +3}
+      - {id: p_card-02-men-3_004, role: impression, weight: 80, note: 好印象 ≥10 后好印象增加量 +50%}
+      - {id: p_card-02-men-2_060, role: impression, weight: 75}
+      - {id: p_card-02-men-2_111, role: impression, weight: 75, note: 好印象、やる気、元気一起给}
+      - {id: p_card-02-men-2_050, role: impression, weight: 50, note: P 等级低时的替代}
     why: >-
       好印象流派靠回合结束时按好印象涨分，前半场先把好印象攒起来。优先拿一次给得多、
       或者之后每打一张卡还会继续加好印象的卡；带「使用数 +1」的更好，同一回合能多打一张。
@@ -32,11 +32,11 @@
   decision: card_pick
   content:
     prefer:
-      - {id: p_card-02-act-3_050, role: impression_cash, weight: 90, note: 輝くキミへ：之后每打一张卡按好印象的 50% 涨分；排行榜上多由回忆带入，回忆没带时培育中一定要拿}
-      - {id: p_card-02-act-3_052, role: impression_cash, weight: 85, note: キセキの魔法：收尾大分}
-      - {id: p_card-02-act-2_049, role: impression_cash, weight: 80, note: みんな大好き：带使用数 +1，P 等级高低都值得拿}
-      - {id: p_card-02-act-2_046, role: impression_cash, weight: 65, note: ラブリーウインク}
-      - {id: p_card-02-act-1_003, role: impression_cash, weight: 45, note: 手拍子：P 等级低时的替代}
+      - {id: p_card-02-act-3_050, role: impression_cash, weight: 90, note: 之后每打一张卡按好印象的 50% 涨分；排行榜上多由回忆带入，回忆没带时培育中一定要拿}
+      - {id: p_card-02-act-3_052, role: impression_cash, weight: 85, note: 收尾大分}
+      - {id: p_card-02-act-2_049, role: impression_cash, weight: 80, note: 带使用数 +1，P 等级高低都值得拿}
+      - {id: p_card-02-act-2_046, role: impression_cash, weight: 65}
+      - {id: p_card-02-act-1_003, role: impression_cash, weight: 45, note: P 等级低时的替代}
     why: >-
       好印象攒起来以后（考试中后段），要有按当前好印象出分的主动卡把分收进来。
       輝くキミへ装上之后每打一张卡都按好印象涨分，是最该拿的一张；キセキの魔法留到最后收尾。
@@ -55,11 +55,11 @@
   decision: card_pick
   content:
     prefer:
-      - {id: p_card-02-men-2_111, role: motivation, weight: 80, note: 成長痛}
-      - {id: p_card-02-men-3_043, role: motivation, weight: 75, note: トキメキ：好印象 +8、やる気 +5}
-      - {id: p_card-02-men-3_041, role: motivation, weight: 70, note: ノートの端の決意}
-      - {id: p_card-02-men-2_054, role: motivation, weight: 65, note: 本番前夜：开局就在手里}
-      - {id: p_card-02-men-2_004, role: motivation, weight: 60, note: ワクワクが止まらない}
+      - {id: p_card-02-men-2_111, role: motivation, weight: 80}
+      - {id: p_card-02-men-3_043, role: motivation, weight: 75, note: 好印象 +8、やる気 +5}
+      - {id: p_card-02-men-3_041, role: motivation, weight: 70}
+      - {id: p_card-02-men-2_054, role: motivation, weight: 65, note: 开局就在手里}
+      - {id: p_card-02-men-2_004, role: motivation, weight: 60}
     why: >-
       好印象这边有几张强卡（みんな大好き、オトメゴコロ、輝くキミへ、星屑センセーション）消耗的是やる気而不是体力。
       要顺手拿几张能补やる気的卡，免得关键回合やる気不够、牌打不出去。这里说的是「给やる気」的卡，
@@ -76,10 +76,10 @@
   decision: card_upgrade
   content:
     prefer:
-      - {id: p_card-02-men-2_111, upgrade: 1, note: 成長痛一定要强化}
-      - {id: p_card-02-act-3_050, custom: [p_card_custom-100-g_effect-p_card-02-act-3_050-enc_1], levels: 1, full: true, note: 輝くキミへ定制「持续效果」：按好印象涨分时再给好印象 +1}
-      - {id: p_card-02-men-2_060, custom: [p_card_custom-070-g_effect-review_add-2], levels: 1, note: オトメゴコロ定制好印象 +2}
-      - {id: p_card-02-act-2_046, custom: [p_card_custom-040_070-g_effect-lesson_depend_exam_review_add-350-g_effect-lesson_depend_exam_review_add-1150], levels: 2, note: ラブリーウインク定制按好印象出分}
+      - {id: p_card-02-men-2_111, upgrade: 1, note: 一定要强化}
+      - {id: p_card-02-act-3_050, custom: [p_card_custom-100-g_effect-p_card-02-act-3_050-enc_1], levels: 1, full: true, note: 定制「持续效果」：按好印象涨分时再给好印象 +1}
+      - {id: p_card-02-men-2_060, custom: [p_card_custom-070-g_effect-review_add-2], levels: 1, note: 定制好印象 +2}
+      - {id: p_card-02-act-2_046, custom: [p_card_custom-040_070-g_effect-lesson_depend_exam_review_add-350-g_effect-lesson_depend_exam_review_add-1150], levels: 2, note: 定制按好印象出分}
     why: >-
       强化和定制先给循环里反复用的卡：成長痛不强化不划算；輝くキミへ、オトメゴコロ定制成多给好印象。
       ラブリーウインク在 P 等级低、出分卡少时是主力，定制按好印象出分的方向。
@@ -96,11 +96,11 @@
   decision: formation.memory
   content:
     prefer:
-      - {id: p_card-02-act-3_050, upgrade: 1, weight: 95, note: 輝くキミへ（带定制）}
-      - {id: p_card-00-men-3_005, weight: 85, note: 仕切り直し：SSR 共通卡，培育中很难拿到}
-      - {id: p_card-00-men-3_003, weight: 80, note: アイドル魂：同上}
-      - {id: p_card-02-act-3_187, weight: 80, note: びしっとキメ顔（带定制）}
-      - {id: p_card-02-men-3_002, weight: 70, note: 私がスター}
+      - {id: p_card-02-act-3_050, upgrade: 1, weight: 95, note: 带定制}
+      - {id: p_card-00-men-3_005, weight: 85, note: SSR 共通卡，培育中很难拿到}
+      - {id: p_card-00-men-3_003, weight: 80, note: 同上}
+      - {id: p_card-02-act-3_187, weight: 80, note: 带定制}
+      - {id: p_card-02-men-3_002, weight: 70}
     why: >-
       回忆优先带培育中不容易拿到的 SSR 共通卡（仕切り直し、アイドル魂），再带定制好的核心卡输出卡。
       初 LEGEND 排行榜上 23 张好印象偶像卡平均下来，回忆里带輝くキミへ的占 84%、私がスター 56%。
@@ -116,13 +116,13 @@
   decision: card_remove
   content:
     avoid:
-      - {id: p_card-02-act-0_032, note: ファンサの基本：排行榜上删得最多}
-      - {id: p_card-02-men-0_035, note: 盛り上げの基本}
+      - {id: p_card-02-act-0_032, note: 排行榜上删得最多}
+      - {id: p_card-02-men-0_035}
       - class:basic
       - class:other_buff
     prefer:
-      - {id: p_card-02-men-2_111, note: 成長痛是やる気来源，不删}
-      - {id: p_card-02-men-2_004, note: ワクワクが止まらない同上}
+      - {id: p_card-02-men-2_111, note: やる気来源，不删}
+      - {id: p_card-02-men-2_004, note: 同上}
     why: >-
       相談里先删没用的卡，让强卡更常进手牌。初的排行榜里好印象偶像卡删得最多的是ファンサの基本，其余基本卡大多留着；
       靠元気出分的やる気流派卡对好印象没用，可以删。但给やる気的卡不要删，它们是好印象强卡的费用来源。
