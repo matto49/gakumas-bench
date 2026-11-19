@@ -1,0 +1,195 @@
+# N.I.A · 全力流派层（11-20 按好印象样板铺开；scripts 在 gakumas-bench-data/guide-sources/gen_styles_20261120.py）
+
+- id: nia.style-full_power.card_pick.stack
+  kind: written
+  scope:
+    mode: nia
+    style: full_power
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-03-act-1_042
+      role: loop
+      weight: 95
+      note: 攒全力值和全力回合出分两头都管，还能用好几次
+    - id: p_card-03-men-2_103
+      role: stance
+      weight: 85
+    - id: p_card-03-men-3_063
+      role: stance
+      weight: 85
+    - id: p_card-03-act-1_073
+      role: stance
+      weight: 75
+    - id: p_card-03-men-2_075
+      role: stance
+      weight: 65
+      note: P 等级低时的替代
+    - id: p_card-03-men-2_066
+      role: stance
+      weight: 65
+    why: 全力流派要先攒「全力值」：攒到 10 以上，下一回合开始就进入「全力」，涨分大幅提高、还能多打一张卡。攒全力值的回合和全力出分的回合分开打；攒的时候顺便进温存，进入全力时能打的卡更多。積み重ね既能攒全力值、又能在全力回合出分，还能用好几次，P 等级高低都值得拿。
+  evidence:
+  - kind: guide
+    ref: game8 アノマリーのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/654063
+    date: '2026-11-20'
+  - kind: ranking
+    mode: nia
+    n: 1700
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-full_power.card_pick.cash
+  kind: written
+  scope:
+    mode: nia
+    style: full_power
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-03-act-3_189
+      role: finisher
+      weight: 90
+    - id: p_card-03-act-2_071
+      role: finisher
+      weight: 85
+    - id: p_card-03-act-3_053
+      role: finisher
+      weight: 80
+    - id: p_card-03-act-2_082
+      role: finisher
+      weight: 65
+    - id: p_card-03-men-3_060
+      role: hold
+      weight: 75
+      note: 把卡存进「保留」，全力时直接进手牌
+    - id: p_card-03-men-2_064
+      role: hold
+      weight: 70
+    - id: p_card-03-men-2_079
+      role: hold
+      weight: 65
+    why: 全力回合用出分卡把分收进来（羽ばたけ！、トレーニングの成果等）。用完会进「保留」的卡、能把别的卡存进保留的卡（本領発揮、潜在能力）很有用：保留的卡在进入全力时直接进手牌，全力回合一定摸得到出分卡。
+  evidence:
+  - kind: guide
+    ref: game8 アノマリーのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/654063
+    date: '2026-11-20'
+  - kind: ranking
+    mode: nia
+    n: 1700
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-full_power.card_pick.loop
+  kind: written
+  scope:
+    mode: nia
+    style: full_power
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-03-act-3_053
+      role: loop
+      keep: 1
+    - id: p_card-03-act-3_189
+      role: loop
+      keep: 1
+    why: N.I.A MASTER 的决赛靠最后几回合反复打同几张卡：不带「レッスン中1回」的卡只留循环件，其余都拿用一次就除外的卡。全力的循环件 game8 给的是輝け！（定制成去掉次数限制）和羽ばたけ！。循环件最好用回忆带进来。
+    unless:
+      when:
+        deck_count:
+          ids:
+          - p_card-03-act-3_053
+          - p_card-03-act-3_189
+          gte: 2
+      text: 循环件已经齐了，同名卡不用再拿
+  evidence:
+  - kind: guide
+    ref: game8 NIAマスター攻略
+    url: https://game8.jp/gakuen-idolmaster/688368
+    date: '2026-11-17'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-full_power.card_remove.basics
+  kind: written
+  scope:
+    mode: nia
+    style: full_power
+  decision: card_remove
+  content:
+    avoid:
+    - class:basic
+    - id: p_card-03-act-0_021
+      note: 初始牌组里的非循环件
+    - class:other_buff
+    prefer:
+    - id: p_card-03-act-3_053
+      role: loop
+    - id: p_card-03-act-3_189
+      role: loop
+    why: 「○○の基本」用了不除外、效果又弱，会混进循环，决赛前全部删掉（排行榜上只剩 1%–3%）。基本卡用挑战 P 道具删，相談留给基本卡以外的非循环件；循环件不删。
+  evidence:
+  - kind: guide
+    ref: game8 NIAマスター攻略
+    url: https://game8.jp/gakuen-idolmaster/688368
+    date: '2026-11-17'
+  - kind: ranking
+    mode: nia
+    n: 1700
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-full_power.formation.memory.core
+  kind: written
+  scope:
+    mode: nia
+    style: full_power
+  decision: formation.memory
+  content:
+    prefer:
+    - id: p_card-03-act-1_042
+      weight: 90
+    - id: p_card-03-men-3_058
+      weight: 85
+    - id: p_card-03-act-3_053
+      weight: 80
+    - id: p_card-03-act-3_189
+      weight: 75
+    why: 回忆带循环件和核心卡，培育中就不用碰运气。排行榜上 17 张全力偶像卡平均下来，回忆里最常带的是 積み重ね 59%、アイドルになります 51%、輝け！ 43%。
+  evidence:
+  - kind: ranking
+    mode: nia
+    n: 1700
+    fetched: '2026-11-18'
+  - kind: guide
+    ref: game8 NIAマスター攻略
+    url: https://game8.jp/gakuen-idolmaster/688368
+    date: '2026-11-17'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-full_power.card_upgrade.core
+  kind: written
+  scope:
+    mode: nia
+    style: full_power
+  decision: card_upgrade
+  content:
+    prefer:
+    - id: p_card-03-act-1_042
+      upgrade: 1
+    - id: p_card-03-act-2_071
+      upgrade: 1
+    - id: p_card-03-men-2_103
+      upgrade: 1
+    - id: p_card-03-men-2_066
+      upgrade: 1
+    why: 强化先给反复要打、每回合都用得到的卡。这几张是排行榜上这个流派强化比例最高的。
+  evidence:
+  - kind: ranking
+    mode: nia
+    n: 1700
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench

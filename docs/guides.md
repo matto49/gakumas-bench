@@ -131,7 +131,7 @@ unless:
 
 ## 3. 作用标签 `role`
 
-**技能卡**：用数字小广 `hiro.state.knowledge.ROLES` 现成的词，加上好印象流派的 `impression` 攒好印象、`impression_cash` 按好印象出分（11-20 3940a9 审过）：`finisher` 终结、`delayed` 延迟兑现、`sustained` 持续兑现、`loop` 循环 / 抽牌、`compress` 压缩、`extend` 加回合、`cash` 不清零兑现、`motivation` やる気、`genki` 元気、`hp` 控血、`item` 道具触发、`idol` 偶像固有卡、`conflict` 冲突。别的流派要新词时（例如好印象的 `impression`），两边商量后加进这张表。11-20 铺四个流派时新提（3940a9 审过；数字小广不按 role 分支，只用 weight / keep / prefer / avoid）：`buff` 叠好調 / 集中这类涨分 buff、`double` 让下一张卡发动两次（国民的アイドル）、`stance` 进温存 / 强气、`grow` 成长（强化手里的主动卡）。
+**技能卡**：用数字小广 `hiro.state.knowledge.ROLES` 现成的词，加上好印象流派的 `impression` 攒好印象、`impression_cash` 按好印象出分（11-20 3940a9 审过）：`finisher` 终结、`delayed` 延迟兑现、`sustained` 持续兑现、`loop` 循环 / 抽牌、`compress` 压缩、`extend` 加回合、`cash` 不清零兑现、`motivation` やる気、`genki` 元気、`hp` 控血、`item` 道具触发、`idol` 偶像固有卡、`conflict` 冲突。别的流派要新词时（例如好印象的 `impression`），两边商量后加进这张表。11-20 铺四个流派时新提（3940a9 审过；数字小广不按 role 分支，只用 weight / keep / prefer / avoid）：`buff` 叠好調 / 集中这类涨分 buff、`double` 让下一张卡发动两次（国民的アイドル）、`stance` 进温存 / 强气、`grow` 成长（强化手里的主动卡）。全力流派另加 `hold`：把卡存进「保留」、进入全力时直接进手牌（11-20，待 3940a9 确认）。
 
 **支援卡**：`sp_rate` SP 发生率、`param_bonus` 属性加成 / 课程得点、`event_card` 支援事件给卡、`event_item` 给 P 道具、`p_point` P 点、`stamina` 体力回复、`card_trigger` 获得 / 强化 / 删卡时触发。
 
