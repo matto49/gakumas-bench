@@ -1,8 +1,9 @@
 package main
 
 // 出牌助手（网页 /assist）：不用登录。一局开在某个引擎子进程里（gkbench/assist.py），之后的请求都转给它。
-// 会话只在内存里，不落盘、不进排行。限制：全站最多 maxAssists 个，闲置 assistTTL 回收，同一 IP 每秒最多
-// assistPerSecond 个请求，开局最多等 assistOpenTimeout；子进程重启过（纪元变了）的会话作废，回 410 让网页重开。
+// 会话只在内存里，不落盘、不进排行。限制：全站最多 maxAssists 个，同一 IP 最多 maxAssistsPerIP 个（再开就关掉它
+// 最早用过的那局），闲置 assistTTL 回收，同一 IP 每秒最多 assistPerSecond 个请求，开局最多等 assistOpenTimeout；
+// 子进程重启过（纪元变了）的会话作废，回 410 让网页重开。
 
 import (
 	"encoding/json"
@@ -16,6 +17,7 @@ import (
 const (
 	assistTTL       = 30 * time.Minute
 	maxAssists      = 64
+	maxAssistsPerIP = 4
 	assistPerSecond = 5
 	assistMaxBody   = 256 << 10
 )
@@ -29,6 +31,7 @@ type assistCaller interface {
 
 type AssistSession struct {
 	ID      string
+	IP      string
 	W       assistCaller
 	Epoch   int64
 	Touched time.Time
@@ -51,6 +54,28 @@ func (a *App) gcAssists() {
 			go s.W.Call(map[string]any{"op": "assist_close", "sid": id})
 			delete(a.assists, id)
 		}
+	}
+}
+
+// evictOldestOf 同一 IP 已有 maxAssistsPerIP 局时，关掉最早用过的那几局，给新的一局腾位置（调用时持有 assistMu）
+func (a *App) evictOldestOf(ip string) {
+	for {
+		var old *AssistSession
+		n := 0
+		for _, s := range a.assists {
+			if s.IP != ip {
+				continue
+			}
+			n++
+			if old == nil || s.Touched.Before(old.Touched) {
+				old = s
+			}
+		}
+		if n < maxAssistsPerIP {
+			return
+		}
+		delete(a.assists, old.ID)
+		go old.W.Call(map[string]any{"op": "assist_close", "sid": old.ID})
 	}
 }
 
@@ -100,13 +125,15 @@ func (a *App) handleAssistOpen(w http.ResponseWriter, r *http.Request) {
 		a.assists = map[string]*AssistSession{}
 	}
 	a.gcAssists()
+	ip := clientIP(r)
+	a.evictOldestOf(ip)
 	full := len(a.assists) >= maxAssists
 	a.assistMu.Unlock()
 	if full {
 		fail(w, 503, "现在用出牌助手的人太多了，过几分钟再试")
 		return
 	}
-	s := &AssistSession{ID: newID(16), W: a.assistWorker(), Touched: time.Now()}
+	s := &AssistSession{ID: newID(16), IP: ip, W: a.assistWorker(), Touched: time.Now()}
 	req := map[string]any{"op": "assist_open", "sid": s.ID, "practice": body.Practice}
 	if body.Code != "" {
 		req["code"] = body.Code
@@ -135,6 +162,13 @@ func (a *App) handleAssistOpen(w http.ResponseWriter, r *http.Request) {
 		}
 		s.Epoch = res.epoch
 		a.assistMu.Lock()
+		a.evictOldestOf(ip) // 同一 IP 并发开局时这里再收一次
+		if len(a.assists) >= maxAssists {
+			a.assistMu.Unlock()
+			go s.W.Call(map[string]any{"op": "assist_close", "sid": s.ID})
+			fail(w, 503, "现在用出牌助手的人太多了，过几分钟再试")
+			return
+		}
 		a.assists[s.ID] = s
 		a.assistMu.Unlock()
 		writeJSONResp(w, 200, map[string]any{"session": s.ID, "view": res.rep["view"]})

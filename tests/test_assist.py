@@ -200,3 +200,39 @@ def test_import_ga1_starts_fresh():
     s = AssistSession.from_code(pack_ga1("x", loadout()), policy=fake_policy)
     v = s.view()
     assert v["turn"] == 1 and v["awaiting_hand"] is True and v.get("imported") is None
+
+
+def test_import_gr1_leaves_no_seed_in_native_state():
+    """原生核心的状态头（round_seed）和卡的内部编号（scenario-<种子>-n）里也不能留真种子"""
+    from gkbench.assist import AssistSession
+    seed = 1234567891
+    _, plays = _played(seed, 5)
+    s = AssistSession.from_code(_gr1(loadout(), seed, plays), policy=fake_policy)
+    from GakumasCLI.native.native_session import native_dump
+    needle = seed.to_bytes(8, "little", signed=True)
+    assert needle not in bytes(s.session._export())
+    assert needle not in native_dump(s.session)
+    guids = [c.get("guid") for name in ("hand", "deck", "grave", "hold", "lost") for c in getattr(s.session.deck, name)]
+    assert guids and not any(str(seed) in str(g) for g in guids)
+    v = s.view()                                     # 换完还能接着打
+    s.step(v["obs"]["legal"][0])
+
+
+@pytest.mark.parametrize("patch", [
+    {"npc_rng_advances": 9 * 10 ** 18},              # 原生核心里按这个数空转随机数：不设上限一个请求就卡死子进程
+    {"npc_rng_advances": -1},
+    {"star_bonus_permil": 10 ** 12},
+    {"schema": "gkms.tower_loadout.v1"},
+    {"produce_id": "produce-003"},
+    {"turn_parameter_types": [1] * 500},
+])
+def test_rejects_unbounded_or_foreign_fields(patch):
+    from gkbench.assist import AssistError, check_loadout
+    with pytest.raises(AssistError):
+        check_loadout(dict(loadout(), **patch))
+
+
+def test_unknown_fields_dropped():
+    from gkbench.assist import check_loadout
+    lo = check_loadout(dict(loadout(), whatever={"x": 1}, _private=1))
+    assert "whatever" not in lo and "_private" not in lo and lo["idol_card_id"] == loadout()["idol_card_id"]

@@ -27,7 +27,7 @@ export function Picker({ open, title, items, onPick, onClose, multi, note }: {
         </div>
         <div className="relative">
           <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-3" aria-hidden />
-          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="搜名字、效果或编号" aria-label="搜索" className="h-10 rounded-full pl-8" />
+          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="搜名字、效果或编号" aria-label="搜索" className="h-[44px] rounded-full pl-8" />
         </div>
         {added.length > 0 && <p className="text-[12.5px] text-brand-ink">已加 {added.length} 个</p>}
         <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
@@ -35,7 +35,7 @@ export function Picker({ open, title, items, onPick, onClose, multi, note }: {
             {shown.map((x) => (
               <button key={x.id} type="button" title={x.text || x.name}
                 onClick={() => { onPick(x.id); setAdded((a) => [...a, x.id]); if (!multi) { onClose(); setQ(''); setAdded([]) } }}
-                className={cx('flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface p-1.5 text-left transition-colors duration-150 hover:border-brand hover:bg-brand-tint',
+                className={cx('flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface p-1.5 text-left transition-colors duration-150 hover:border-brand hover:bg-brand-tint',
                   added.includes(x.id) && 'border-brand')}>
                 {x.img ? <img src={x.img} alt="" width={36} height={36} loading="lazy" className="size-9 shrink-0 rounded-md bg-surface-3 object-cover" />
                   : <span className="size-9 shrink-0 rounded-md bg-surface-3" />}

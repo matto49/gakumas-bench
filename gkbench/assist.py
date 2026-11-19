@@ -24,29 +24,66 @@ class AssistError(ValueError):
     pass
 
 
-# 访客交来的编成：各项的上限（游戏里的上限之上留一点余量）
+# 访客交来的编成只认这些字段（编辑器写的 + GKMS H.I.F 开局会读的），别的丢掉。原生核心会按某些数空转
+# （npc_rng_advances 是一个纯循环），所以每个数都要有上下限：一个没上限的数就能把共用的引擎子进程卡死。
+HIF_PRODUCES = ("produce-007", "produce-008")
 LIMITS = {"deck_cards": ("卡组", 60), "drink_ids": ("饮料", 6), "produce_item_ids": ("P 道具", 30),
           "lesson_start_enchant_ids": ("回忆技能", 30), "main_item_enchant_ids": ("定制道具", 30),
-          "support_cards": ("支援卡", 6), "research_card_ids": ("研究卡", 30)}
+          "support_cards": ("支援卡", 6), "research_card_ids": ("研究卡", 30), "memory_ability_ids": ("回忆", 30),
+          "initial_card_ids": ("开局卡", 60), "turn_parameter_types": ("回合属性", 30)}
+STRINGS = ("schema", "produce_id", "round", "step_id", "idol_card_id", "difficulty_id", "initial_card_id")
+NUMBERS_IN = {"audition_number": (0, 10), "step_number": (0, 100), "step_select_number": (0, 10), "step_type": (0, 100),
+              "max_stamina": (0, 999), "starting_stamina": (0, 999), "npc_rng_advances": (0, 2000), "plan_type": (0, 10),
+              "star": (0, 100000), "star_bonus_permil": (0, 10 ** 6), "vote_bonus_permil": (0, 10 ** 6)}
+TRIPLES = {"parameters": (0, 99999), "score_bonus_permils": (0, 10 ** 6), "audition_parameter_values": (0, 10 ** 6)}
+FLAGS = ("include_produce_default", "resolve_initial_cards")
+
+
+def _num(v, lo, hi):
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and lo <= v <= hi
 
 
 def check_loadout(lo) -> dict:
-    """访客编成的基本校验：类型、各项张数、数值范围。通过后原样返回（具体合不合法由引擎开局判断）。"""
+    """访客编成的校验：只留认识的字段，类型、张数、每个数的范围都查。通过后返回清理过的编成（合不合游戏规则由引擎开局判断）。"""
     if not isinstance(lo, dict):
         raise AssistError("编成不对")
+    if lo.get("schema") != "gkms.hif_loadout.v1" or lo.get("produce_id") not in HIF_PRODUCES:
+        raise AssistError("出牌助手现在只支持 H.I.F 的选拔和本战")
+    out = {}
     for key, (label, cap) in LIMITS.items():
         v = lo.get(key)
-        if v is not None and (not isinstance(v, list) or len(v) > cap):
+        if v is None:
+            continue
+        if not isinstance(v, list) or len(v) > cap or not all(isinstance(x, (str, int)) and not isinstance(x, bool)
+                                                              and len(str(x)) <= 1000 for x in v):
             raise AssistError(f"{label}最多 {cap} 个")
-    params = lo.get("parameters")
-    if params is not None and (not isinstance(params, list) or len(params) != 3
-                               or not all(isinstance(x, (int, float)) and 0 <= x <= 99999 for x in params)):
-        raise AssistError("Vo / Da / Vi 要是 0–99999 的三个数")
-    for key in ("max_stamina", "starting_stamina"):
+        if key == "turn_parameter_types" and not all(_num(x, 0, 3) for x in v):
+            raise AssistError("回合属性不对")
+        out[key] = v
+    for key in STRINGS:
         v = lo.get(key)
-        if v is not None and (not isinstance(v, (int, float)) or not 0 <= v <= 999):
-            raise AssistError("体力要在 0–999 之间")
-    return lo
+        if v is not None:
+            if not isinstance(v, str) or len(v) > 200:
+                raise AssistError(f"{key} 不对")
+            out[key] = v
+    for key, (a, b) in NUMBERS_IN.items():
+        v = lo.get(key)
+        if v is not None:
+            if not _num(v, a, b):
+                raise AssistError(f"{key} 要在 {a}–{b} 之间")
+            out[key] = v
+    for key, (a, b) in TRIPLES.items():
+        v = lo.get(key)
+        if v is not None:
+            if isinstance(v, dict):                       # 也有写成 {"1": Vo, "2": Da, "3": Vi} 的
+                v = [v.get(k, v.get(int(k), 0)) for k in ("1", "2", "3")] if len(v) <= 3 else None
+            if not isinstance(v, list) or len(v) != 3 or not all(_num(x, a, b) for x in v):
+                raise AssistError("Vo / Da / Vi 要是 0–99999 的三个数" if key == "parameters" else f"{key} 不对")
+            out[key] = v
+    for key in FLAGS:
+        if isinstance(lo.get(key), bool):
+            out[key] = lo[key]
+    return out
 
 
 def _card(c) -> list:
@@ -58,7 +95,7 @@ class AssistSession:
         engine.setup()
         from uinet.env import Battle
         from .save import expand_loadout
-        check_loadout(loadout)
+        loadout = check_loadout(loadout)
         try:
             lo = expand_loadout(loadout)
         except Exception as e:
@@ -117,8 +154,24 @@ class AssistSession:
             reshuffle(sess)
         sess.deck.rng.state = rng.getrandbits(32) or 1
         _scrub_seed(sess, rng)
+        if getattr(sess, "native", False):
+            self._rebuild_native()
+            sess = self.session
         self.battle.loadout = dict(self.battle.loadout, seed=(getattr(sess, "_loadout", None) or {}).get("seed")
                                    or rng.randrange(1, 2 ** 31 - 1))
+
+    def _rebuild_native(self):
+        """原生核心的状态头里还存着 round_seed（卡的内部编号 scenario-<种子>-n 由它现算）。导出状态、把状态头换成
+        _loadout 里的假种子，再按假种子重建这一局导入（和 worlds.export_world 同一做法）。"""
+        from GakumasCLI.native.native_session import native_dump, native_load
+        sess = self.session
+        fake = int(sess._loadout["seed"])
+        head = bytes(sess._export())[:16]
+        blob = native_dump(sess)
+        if blob.count(head) != 1:
+            raise AssistError("对局码导入失败（GKMS 状态格式对不上）")
+        blob = blob.replace(head, head[:8] + fake.to_bytes(8, "little", signed=True))
+        self.battle.session = native_load(blob, engine.master())
 
     # -- 读
     @property

@@ -51,7 +51,7 @@ export function Play({ view, busy, onHand, onStep, onUndo, onNumbers, onExit }: 
       {/* 状态栏 */}
       <section className="rounded-2xl border border-line bg-surface p-3 sm:p-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <button type="button" onClick={onExit} className="inline-flex min-h-10 cursor-pointer items-center gap-1 rounded-lg pr-2 text-[13px] font-semibold text-ink-2 hover:text-ink">
+          <button type="button" onClick={onExit} className="inline-flex min-h-[44px] cursor-pointer items-center gap-1 rounded-lg pr-2 text-[13px] font-semibold text-ink-2 hover:text-ink">
             <ChevronLeft size={16} />回编成
           </button>
           <span className="rounded-full bg-surface-2 px-2.5 py-1 text-[12px] font-semibold text-ink-2">{view.practice ? '练习模拟' : '实战同步'}</span>
@@ -60,8 +60,8 @@ export function Play({ view, busy, onHand, onStep, onUndo, onNumbers, onExit }: 
           <Stat label="体力" value={`${view.numbers.stamina} / ${view.numbers.max_stamina}`} />
           <Stat label="元气" value={String(view.numbers.block)} />
           <div className="ml-auto flex gap-1.5">
-            <Button variant="outline" className="h-10" onClick={() => setEditNum(true)} disabled={busy || view.finished}><Pencil size={14} />改数值</Button>
-            <Button variant="outline" className="h-10" onClick={onUndo} disabled={busy || !view.can_undo}><RotateCcw size={14} />撤销</Button>
+            <Button variant="outline" className="h-[44px]" onClick={() => setEditNum(true)} disabled={busy || view.finished}><Pencil size={14} />改数值</Button>
+            <Button variant="outline" className="h-[44px]" onClick={onUndo} disabled={busy || !view.can_undo}><RotateCcw size={14} />撤销</Button>
           </div>
         </div>
         <div className="mt-2 overflow-x-auto pb-0.5"><TurnStrip types={o.exam.types} current={view.turn} size="xs" /></div>
@@ -81,15 +81,15 @@ export function Play({ view, busy, onHand, onStep, onUndo, onNumbers, onExit }: 
           <p className="text-[13px] text-ink-3">这一场打完了</p>
           <p className="disp mt-1 text-[32px] text-ink">{view.score.toLocaleString()}</p>
           <div className="mt-4 flex justify-center gap-2">
-            <Button variant="outline" className="h-11" onClick={onUndo} disabled={busy || !view.can_undo}><RotateCcw size={15} />退一步</Button>
-            <Button className="h-11" onClick={onExit}>回编成</Button>
+            <Button variant="outline" className="h-[44px]" onClick={onUndo} disabled={busy || !view.can_undo}><RotateCcw size={15} />退一步</Button>
+            <Button className="h-[44px]" onClick={onExit}>回编成</Button>
           </div>
         </section>
       ) : view.awaiting_hand ? (
         <HandCheck view={view} busy={busy} onHand={onHand} />
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <section className="rounded-2xl border border-line bg-surface p-3 sm:p-4">
+          <section className="order-last rounded-2xl border border-line bg-surface p-3 sm:p-4 lg:order-first">
             <SectionTitle>手牌</SectionTitle>
             <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-2">
               {o.hand.map((c, i) => {
@@ -132,13 +132,13 @@ export function Play({ view, busy, onHand, onStep, onUndo, onNumbers, onExit }: 
             <Piles view={view} />
           </section>
 
-          {/* 建议：手机上贴在底部 */}
-          <aside className="sticky bottom-0 z-10 -mx-5 border-t border-line bg-surface/95 px-5 py-3 backdrop-blur lg:static lg:mx-0 lg:self-start lg:rounded-2xl lg:border lg:bg-surface lg:p-4">
+          {/* 建议：手机上排在手牌前面，滚动时贴在顶栏下面；电脑上在右栏 */}
+          <aside className="sticky top-13 z-10 -mx-5 border-b border-line bg-surface/95 px-5 py-2.5 backdrop-blur lg:static lg:mx-0 lg:self-start lg:rounded-2xl lg:border lg:bg-surface lg:p-4">
             <h3 className="text-[13px] font-semibold text-ink-3">建议</h3>
             {best ? (
               <>
                 <button type="button" disabled={!canAct} onClick={() => onStep(best)}
-                  className="mt-1 flex min-h-12 w-full cursor-pointer items-center justify-between gap-2 rounded-xl bg-brand px-3 text-left font-bold text-white disabled:opacity-60">
+                  className="mt-1 flex min-h-[48px] w-full cursor-pointer items-center justify-between gap-2 rounded-xl bg-brand px-3 text-left font-bold text-white disabled:opacity-60">
                   <span className="min-w-0 truncate">{actLabel(best)}</span>
                   <span className="num shrink-0">{pct(prob.get(key(best)) ?? 0)}</span>
                 </button>
@@ -179,12 +179,12 @@ function Stat({ label, value, big }: { label: string; value: string; big?: boole
 function ActionTile({ children, p, best, disabled, onClick, wide }: { children: React.ReactNode; p?: number; best: boolean; disabled: boolean; onClick: () => void; wide?: boolean }) {
   return (
     <button type="button" disabled={disabled} onClick={onClick}
-      className={cx('relative flex min-h-11 cursor-pointer items-center rounded-xl border p-1.5 transition-colors duration-150 disabled:cursor-not-allowed',
+      className={cx('relative flex min-h-[44px] cursor-pointer items-center rounded-xl border p-1.5 transition-colors duration-150 disabled:cursor-not-allowed',
         wide ? 'flex-row gap-3 px-3' : 'flex-col gap-1',
         best ? 'border-brand bg-brand-tint' : 'border-line bg-surface hover:border-line-strong')}>
       {children}
       {p !== undefined && (
-        <span className={cx('w-full', wide && 'w-auto')}>
+        <span className={wide ? 'shrink-0' : 'w-full'}>
           {!wide && <span className="block h-1 overflow-hidden rounded-full bg-surface-3"><span className="block h-full rounded-full bg-brand" style={{ width: `${Math.max(2, p * 100)}%` }} /></span>}
           <span className={cx('num block text-center text-[11.5px] font-semibold', best ? 'text-brand-ink' : 'text-ink-3')}>{pct(p)}</span>
         </span>
@@ -196,8 +196,8 @@ function ActionTile({ children, p, best, disabled, onClick, wide }: { children: 
 function Forecast({ q }: { q: Record<string, number> }) {
   const v = (k: string) => (q[k] !== undefined ? Math.round(q[k]).toLocaleString() : '—')
   return (
-    <div className="mt-3 rounded-lg bg-surface-2 px-3 py-2">
-      <div className="text-[11.5px] text-ink-3">照建议打完，预计最终得分</div>
+    <div className="mt-2 flex items-baseline justify-between gap-2 rounded-lg bg-surface-2 px-3 py-1.5 lg:mt-3 lg:block lg:py-2">
+      <div className="text-[11.5px] text-ink-3"><span className="hidden lg:inline">照建议打完，</span>预计最终得分</div>
       <div className="mt-0.5 flex items-baseline gap-2">
         <span className="num text-[18px] font-bold text-ink">{v('50%')}</span>
         <span className="num text-[12px] text-ink-3">{v('10%')} ～ {v('90%')}</span>
@@ -268,9 +268,9 @@ function HandCheck({ view, busy, onHand }: { view: AssistView; busy: boolean; on
           {picked.length === 0 && <span className="self-center px-1 text-[12.5px] text-ink-3">从下面点</span>}
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          <Button className="h-11 flex-1 sm:flex-none" disabled={busy || picked.length === 0} onClick={() => onHand(picked)}><Check size={15} />就是这几张</Button>
+          <Button className="h-[44px] flex-1 sm:flex-none" disabled={busy || picked.length === 0} onClick={() => onHand(picked)}><Check size={15} />就是这几张</Button>
           {guess.length > 0 && (
-            <Button variant="outline" className="h-11 flex-1 sm:flex-none" disabled={busy} onClick={() => onHand(guess)}>照引擎猜的这 {guess.length} 张</Button>
+            <Button variant="outline" className="h-[44px] flex-1 sm:flex-none" disabled={busy} onClick={() => onHand(guess)}>照引擎猜的这 {guess.length} 张</Button>
           )}
         </div>
       </div>
@@ -306,7 +306,7 @@ function NumbersDialog({ view, onSave, onClose }: { view: AssistView; onSave: (n
   const field = (label: string, v: number, set: (n: number) => void) => (
     <label className="block">
       <span className="mb-0.5 block text-[12px] text-ink-3">{label}</span>
-      <Input type="number" inputMode="numeric" value={v} onChange={(e) => set(Number(e.target.value) || 0)} className="h-11" />
+      <Input type="number" inputMode="numeric" value={v} onChange={(e) => set(Number(e.target.value) || 0)} className="h-[44px]" />
     </label>
   )
   return (
@@ -319,7 +319,7 @@ function NumbersDialog({ view, onSave, onClose }: { view: AssistView; onSave: (n
           {field('体力', stamina, setStamina)}
           {field('元气', block, setBlock)}
         </div>
-        <Button className="h-11" onClick={() => onSave({ score, stamina, block })}>改好了</Button>
+        <Button className="h-[44px]" onClick={() => onSave({ score, stamina, block })}>改好了</Button>
       </DialogContent>
     </Dialog>
   )

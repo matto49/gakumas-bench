@@ -100,7 +100,7 @@ export function Editor({ draft, setDraft, onStart, onResume, busy }: {
           <div className="space-y-4">
             <Field label="偶像卡">
               <button type="button" onClick={() => setPicker('idol')}
-                className="flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2 text-left hover:border-brand">
+                className="flex min-h-[48px] w-full cursor-pointer items-center gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2 text-left hover:border-brand">
                 {draft.idol ? <IdolThumb id={draft.idol} size={40} title={false} /> : <span className="size-10 rounded-lg bg-surface-3" />}
                 <span className="min-w-0">
                   <span className="block truncate font-semibold text-ink">{idol?.name ?? '选偶像卡'}</span>
@@ -113,7 +113,7 @@ export function Editor({ draft, setDraft, onStart, onResume, busy }: {
               <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
                 {ROUNDS.map((r) => (
                   <button key={r.key} type="button" aria-pressed={draft.round === r.key} onClick={() => set({ round: r.key })}
-                    className={cx('min-h-11 cursor-pointer rounded-lg border px-2 text-[13px] font-semibold transition-colors duration-150',
+                    className={cx('min-h-[44px] cursor-pointer rounded-lg border px-2 text-[13px] font-semibold transition-colors duration-150',
                       draft.round === r.key ? 'border-brand bg-brand-tint text-brand-ink' : 'border-line bg-surface text-ink-2 hover:border-line-strong')}>
                     {r.label}
                   </button>
@@ -194,7 +194,7 @@ export function Editor({ draft, setDraft, onStart, onResume, busy }: {
                       )}
                     </span>
                     <button type="button" aria-label="改强化" onClick={() => set({ deck: draft.deck.map((x, j) => (j === i ? { ...x, up: (x.up + 1) % (maxUp(x.id) + 1) } : x)) })}
-                      className="min-h-9 min-w-9 cursor-pointer rounded-md border border-line px-1.5 text-[12px] font-bold text-ink-2 hover:border-brand">
+                      className="min-h-[40px] min-w-9 cursor-pointer rounded-md border border-line px-1.5 text-[12px] font-bold text-ink-2 hover:border-brand">
                       {c.up ? '+'.repeat(c.up) : '+0'}
                     </button>
                     <RemoveBtn onClick={() => set({ deck: draft.deck.filter((_, j) => j !== i) })} />
@@ -208,17 +208,17 @@ export function Editor({ draft, setDraft, onStart, onResume, busy }: {
 
       <section className="rounded-2xl border border-line bg-surface p-3 sm:p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Input value={draft.name} onChange={(e) => set({ name: e.target.value })} placeholder="编成名字（保存用）" className="h-11 min-w-0 flex-1 basis-48" />
-          <Button variant="outline" className="h-11 flex-1 sm:flex-none" onClick={save}><Save size={15} />保存到本机</Button>
-          <Button variant="outline" className="h-11 flex-1 sm:flex-none" onClick={copyCode}><Copy size={15} />复制编成码</Button>
+          <Input value={draft.name} onChange={(e) => set({ name: e.target.value })} placeholder="编成名字（保存用）" className="h-[44px] min-w-0 flex-1 basis-48" />
+          <Button variant="outline" className="h-[44px] flex-1 sm:flex-none" onClick={save}><Save size={15} />保存到本机</Button>
+          <Button variant="outline" className="h-[44px] flex-1 sm:flex-none" onClick={copyCode}><Copy size={15} />复制编成码</Button>
         </div>
         <p className="mt-2 text-[12px] text-ink-3">实战同步：每回合把游戏里抽到的牌点进来再给建议。练习模拟：引擎自己抽牌，照建议打一场。</p>
       </section>
 
       {/* 开始按钮：手机上贴在屏幕底部 */}
       <div className="sticky bottom-0 z-10 -mx-5 flex gap-2 border-t border-line bg-surface/95 px-5 py-2.5 backdrop-blur sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:p-0">
-        <Button className="h-11 flex-1 sm:w-40 sm:flex-none" disabled={busy || !draft.idol || !draft.deck.length} onClick={() => onStart(false)}><Zap size={15} />实战同步</Button>
-        <Button variant="outline" className="h-11 flex-1 sm:w-40 sm:flex-none" disabled={busy || !draft.idol || !draft.deck.length} onClick={() => onStart(true)}><Play size={15} />练习模拟</Button>
+        <Button className="h-[44px] flex-1 sm:w-40 sm:flex-none" disabled={busy || !draft.idol || !draft.deck.length} onClick={() => onStart(false)}><Zap size={15} />实战同步</Button>
+        <Button variant="outline" className="h-[44px] flex-1 sm:w-40 sm:flex-none" disabled={busy || !draft.idol || !draft.deck.length} onClick={() => onStart(true)}><Play size={15} />练习模拟</Button>
       </div>
 
       {picker && (
@@ -262,19 +262,19 @@ function Bring({ onDraft, onResume }: { onDraft: (d: Draft) => void; onResume: (
       <div className="mt-3 mb-3 flex gap-1 rounded-full bg-surface-2 p-0.5 text-[13px] font-semibold">
         {tabs.map(([k, label]) => (
           <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)}
-            className={cx('min-h-9 flex-1 cursor-pointer rounded-full px-3', tab === k ? 'bg-surface text-ink shadow-[inset_0_0_0_1px_var(--color-line)]' : 'text-ink-3 hover:text-ink')}>{label}</button>
+            className={cx('min-h-[40px] flex-1 cursor-pointer rounded-full px-3', tab === k ? 'bg-surface text-ink shadow-[inset_0_0_0_1px_var(--color-line)]' : 'text-ink-3 hover:text-ink')}>{label}</button>
         ))}
       </div>
       {tab === 'problem' && (
         <div>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="搜偶像、题名或编号" className="mb-2 h-10" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="搜偶像、题名或编号" className="mb-2 h-[44px]" />
           <div className="max-h-72 space-y-1 overflow-y-auto">
             {probs.loading && <p className="py-4 text-center text-ink-3">读取题库…</p>}
             {shown.map((p) => {
               const lo = p.archive.loadout as Record<string, unknown>
               return (
                 <button key={p.id} type="button" onClick={() => { onDraft(draftFromLoadout(lo, p.name)); toast.success('带入了题库编成', { description: p.name }) }}
-                  className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-surface-2">
+                  className="flex min-h-[44px] w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-surface-2">
                   <IdolThumb id={String(lo.idol_card_id)} size={32} title={false} />
                   <span className="min-w-0 flex-1 truncate text-[13px] text-ink">{p.name}</span>
                   <span className="shrink-0 text-[11.5px] text-ink-3">{ROUNDS.find((r) => r.produce_id === lo.produce_id && r.round === lo.round)?.label}</span>
@@ -290,7 +290,7 @@ function Bring({ onDraft, onResume }: { onDraft: (d: Draft) => void; onResume: (
           {saves.map((s) => (
             <div key={s.name} className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-surface-2">
               <button type="button" onClick={async () => { const c = await parseCode(s.code); onDraft(draftFromLoadout(c.loadout, s.name)) }}
-                className="min-h-10 min-w-0 flex-1 cursor-pointer truncate text-left text-[13px] text-ink">{s.name}</button>
+                className="min-h-[44px] min-w-0 flex-1 cursor-pointer truncate text-left text-[13px] text-ink">{s.name}</button>
               <span className="text-[11.5px] text-ink-3">{s.at.slice(5, 10)}</span>
               <RemoveBtn onClick={() => { dropSave(s.name); setSaves(listSaves()) }} />
             </div>
@@ -303,9 +303,9 @@ function Bring({ onDraft, onResume }: { onDraft: (d: Draft) => void; onResume: (
             placeholder="贴编成码（GA1…），或 GKMS「导出 GKMSUINet」给的对局码（GR1…）/ 链接"
             className="w-full rounded-lg border border-line bg-surface px-3 py-2 font-mono text-[12px] text-ink outline-none focus:border-brand" />
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="h-10" disabled={!code.trim()} onClick={() => readCode(false)}><Download size={15} />读出编成</Button>
+            <Button variant="outline" className="h-[44px]" disabled={!code.trim()} onClick={() => readCode(false)}><Download size={15} />读出编成</Button>
             {code.trim().startsWith('GR') || code.includes('#c=GR') ? (
-              <Button className="h-10" onClick={() => readCode(true)}><Play size={15} />从对局码的位置继续</Button>
+              <Button className="h-[44px]" onClick={() => readCode(true)}><Play size={15} />从对局码的位置继续</Button>
             ) : null}
           </div>
           <p className="text-[12px] text-ink-3">对局码会带着 GKMS 那边已经打过的几步，「从对局码的位置继续」会接着那一步往下给建议。</p>
@@ -341,7 +341,7 @@ function CustomizeDialog({ card, onChange, onClose }: { card: DeckCard; onChange
                 <div className="flex flex-wrap gap-1.5">
                   {[0, ...d.levels.map((_, i) => i + 1)].map((k) => (
                     <button key={k} type="button" aria-pressed={n === k} disabled={k > n && total - n + k > c.custom!.max} onClick={() => setDir(d.id, k)}
-                      className={cx('min-h-10 cursor-pointer rounded-lg border px-2.5 text-[12.5px] disabled:cursor-not-allowed disabled:opacity-40',
+                      className={cx('min-h-[44px] cursor-pointer rounded-lg border px-2.5 text-[12.5px] disabled:cursor-not-allowed disabled:opacity-40',
                         n === k ? 'border-brand bg-brand-tint text-brand-ink' : 'border-line text-ink-2 hover:border-line-strong')}>
                       {k === 0 ? '不定制' : d.levels[k - 1].text}
                     </button>
@@ -369,7 +369,7 @@ function NumInput({ label, value, onChange, step = 1 }: { label: string; value: 
   return (
     <label className="block">
       <span className="mb-0.5 block text-[11.5px] text-ink-3">{label}</span>
-      <Input type="number" inputMode="decimal" step={step} value={Number.isFinite(value) ? value : 0} onChange={(e) => onChange(Number(e.target.value) || 0)} className="h-10" />
+      <Input type="number" inputMode="decimal" step={step} value={Number.isFinite(value) ? value : 0} onChange={(e) => onChange(Number(e.target.value) || 0)} className="h-[44px]" />
     </label>
   )
 }
@@ -383,7 +383,7 @@ function Chips({ label, ids, name, img, onAdd, onRemove, max }: {
         {ids.map((id, i) => {
           const a = img?.(id)
           return (
-            <span key={`${id}-${i}`} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-surface py-1 pr-1 pl-1.5 text-[12.5px] text-ink">
+            <span key={`${id}-${i}`} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-line bg-surface py-1 pr-1 pl-1.5 text-[12.5px] text-ink">
               {a && <img src={spriteUrl(a)} alt="" width={22} height={22} className="size-[22px]" />}
               <span className="max-w-44 truncate">{name(id)}</span>
               <RemoveBtn onClick={() => onRemove(i)} small />
@@ -398,7 +398,7 @@ function Chips({ label, ids, name, img, onAdd, onRemove, max }: {
 
 function AddBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick} className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-lg border border-dashed border-line-strong px-2.5 text-[12.5px] font-semibold text-ink-2 hover:border-brand hover:text-brand-ink">
+    <button type="button" onClick={onClick} className="inline-flex min-h-[40px] cursor-pointer items-center gap-1 rounded-lg border border-dashed border-line-strong px-2.5 text-[12.5px] font-semibold text-ink-2 hover:border-brand hover:text-brand-ink">
       <Plus size={14} />{children}
     </button>
   )

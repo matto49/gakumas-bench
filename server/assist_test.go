@@ -205,3 +205,48 @@ func TestAssistBodyTooLarge(t *testing.T) {
 		t.Fatalf("超大请求要拒：%d", w.Code)
 	}
 }
+
+func TestAssistPerIPCapEvictsOldest(t *testing.T) {
+	app, h, fw := assistApp(t)
+	open := func() string {
+		w := doAssist(h, "POST", "/api/assist/sessions", `{"loadout":{}}`, "198.51.100.7")
+		if w.Code != 200 {
+			t.Fatalf("开局：%d %s", w.Code, w.Body.String())
+		}
+		var j struct{ Session string }
+		_ = json.Unmarshal(w.Body.Bytes(), &j)
+		return j.Session
+	}
+	first := open()
+	for i := 1; i < maxAssistsPerIP+1; i++ {
+		time.Sleep(time.Millisecond) // 区分先后
+		assistLimit.mu.Lock()        // 这里只测会话数，不测每秒限流
+		assistLimit.hits = nil
+		assistLimit.mu.Unlock()
+		open()
+	}
+	if w := doAssist(h, "POST", "/api/assist/sessions/"+first+"/undo", `{}`, "198.51.100.7"); w.Code != 404 {
+		t.Fatalf("同一 IP 超过 %d 局要关掉它最早的那局：%d", maxAssistsPerIP, w.Code)
+	}
+	n := 0
+	app.assistMu.Lock()
+	for _, s := range app.assists {
+		if s.IP == "198.51.100.7" {
+			n++
+		}
+	}
+	app.assistMu.Unlock()
+	if n != maxAssistsPerIP {
+		t.Fatalf("同一 IP 留 %d 局，实际 %d", maxAssistsPerIP, n)
+	}
+	time.Sleep(50 * time.Millisecond)
+	closed := false
+	fw.mu.Lock()
+	for _, c := range fw.calls {
+		closed = closed || (c["op"] == "assist_close" && c["sid"] == first)
+	}
+	fw.mu.Unlock()
+	if !closed {
+		t.Fatal("被挤掉的那局要通知子进程丢掉")
+	}
+}
