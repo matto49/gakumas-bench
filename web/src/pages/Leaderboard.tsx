@@ -1,3 +1,4 @@
+import { runDisplay, type RunDisplayCatalog } from '../lib/runDisplay'
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowDown, ArrowRight, ArrowUp, ChevronRight, ChevronsUpDown, Pencil } from 'lucide-react'
@@ -65,6 +66,7 @@ export function Leaderboard() {
   const { set } = useParams()
   const [q, setQ] = useSearchParams()
   const cat = useCatalog()
+  const catalog = useApi<RunDisplayCatalog>('api/site/run-presentations').data
   const sets = useApi<SetInfo[]>('api/sets')
   const [openFam, setOpenFam] = useState<Set<string>>(() => new Set())
   const me = useApi<{ user: string }>('api/me')
@@ -91,19 +93,19 @@ export function Leaderboard() {
   // 换了集合或成绩口径、新的还没取回来时，手里还是上一份成绩：不能摆在新标题下面，先当没有
   const stale = !!lb.data && !(lb.loadedPath ?? '').includes(`set=${encodeURIComponent(set ?? '')}&kind=${kind}&`) || !(lb.loadedPath ?? '').endsWith(`&scope=${scope}`)
   const rows = useMemo(() => {
-    const rs = stale ? [] : [...(lb.data ?? [])]
+    const rs = stale ? [] : (lb.data ?? []).map((r) => ({ ...r, display: runDisplay(catalog, { ...r, set }) }))
     const sign = dir === 'asc' ? 1 : -1
     const key = sort === 'oracle' && !rs.some((r) => r.vs_oracle && !r.privileged) ? 'mean' : sort
     rs.sort((a, b) => {
       if (a.privileged !== b.privileged) return a.privileged ? 1 : -1
       if (partial(a) !== partial(b)) return partial(a) ? 1 : -1 // 没跑全核心题的排在跑全的后面，不排名次
-      const va = sortValue(a, key)
-      const vb = sortValue(b, key)
+      const va = key === 'label' ? a.display?.name ?? a.label : sortValue(a, key)
+      const vb = key === 'label' ? b.display?.name ?? b.label : sortValue(b, key)
       if (typeof va === 'string' || typeof vb === 'string') return String(va).localeCompare(String(vb)) * sign
       return (va - vb) * sign
     })
     return rs
-  }, [lb.data, stale, sort, dir])
+  }, [lb.data, stale, sort, dir, catalog, set])
 
   if (!set) {
     if (sets.data?.length) return <Navigate to={`/sets/${sortSets(sets.data)[0].set}`} replace />
@@ -115,10 +117,11 @@ export function Leaderboard() {
   const info = sets.data?.find((s) => s.set === set)
   const hasOracle = rows.some((r) => r.privileged && r.vs_oracle)
   const groups = GROUPS_BY_SET[set] ?? ['idol']
-  const labels = Array.from(new Set(rows.filter((r) => !r.privileged).map((r) => r.label)))
+  const labels = new Map(rows.filter((r) => !r.privileged).map((r) => [r.label, r.display?.name ?? r.label]))
   let rank = 0
   // 算法家族：同家族（同一个算法的各版本 / 不同人跑的）合成一行，显示当前排序下最好的那个版本，左边按钮展开看全部子项
-  const famRows = new Map<string, Row[]>()
+  type DisplayRow = (typeof rows)[number]
+  const famRows = new Map<string, DisplayRow[]>()
   for (const r of rows) {
     if (r.family && !r.privileged) famRows.set(r.family, [...(famRows.get(r.family) ?? []), r])
   }
@@ -135,7 +138,7 @@ export function Leaderboard() {
       window.alert(e instanceof Error ? e.message : String(e))
     }
   }
-  type Item = { r: Row; kind: 'row' | 'family' | 'child'; fam?: string; count?: number }
+  type Item = { r: DisplayRow; kind: 'row' | 'family' | 'child'; fam?: string; count?: number }
   const items: Item[] = []
   const seenFam = new Set<string>()
   for (const r of rows) {
@@ -208,7 +211,7 @@ export function Leaderboard() {
         <span className="inline-flex items-center gap-2 text-ink-2">
           基准
           <Select label="基准" value={base} onChange={(v) => update({ base: v })} width="14rem"
-            options={[{ value: '', label: '不比' }, ...labels.map((l) => ({ value: l, label: l }))]} />
+            options={[{ value: '', label: '不比' }, ...Array.from(labels, ([value, label]) => ({ value, label }))]} />
           <Help tip="选一个算法当基准，表里多两列：同题同牌序对它的分数比，和赢它的局数比例。" />
         </span>
         <span className="inline-flex items-center gap-2 text-ink-2">
@@ -307,7 +310,7 @@ export function Leaderboard() {
                             <span className="truncate text-[14px] font-bold text-ink" title={`家族编号 ${fam}`}>{famName(fam!)}</span>
                           ) : (
                             <Link to={`/runs/${r.run}`} className={cx('truncate hover:text-brand-ink', kind === 'child' ? 'text-[13px] font-semibold text-ink-2' : 'text-[14px] font-bold text-ink')}>
-                              {kind === 'child' ? verOf(r, fam!) : r.label}
+                              {r.display?.name ?? (kind === 'child' ? verOf(r, fam!) : r.label)}
                             </Link>
                           )}
                           {kind === 'family' && me.data?.user && (
@@ -337,7 +340,8 @@ export function Leaderboard() {
                               <Badge tabIndex={0} variant="outline" className="whitespace-nowrap">固定机器</Badge>
                             </Tip>
                           )}
-                          {kind !== 'family' && r.about && <Help tip={<>{r.about.summary}<span className="mt-1 block text-ink-3">点算法名看完整说明和实现链接。</span></>} />}
+                          {kind !== 'family' && r.display?.aliasOf && <Link className="text-xs text-brand-ink underline" to={`/runs/${encodeURIComponent(r.display.aliasOf)}`}>对应策略 / Canonical run</Link>}
+                          {kind !== 'family' && (r.display || r.about) && <Help tip={<>{r.display?.about.summary ?? r.about?.summary}<span className="mt-1 block text-ink-3">点算法名看完整说明和实现链接。</span></>} />}
                         </span>
                         <div className="truncate text-[11.5px] text-ink-3">
                           {kind === 'family'
@@ -413,7 +417,7 @@ export function Leaderboard() {
   )
 }
 
-function GroupMatrix({ rows, group, hasOracle, base, idol }: { rows: Row[]; group: string; hasOracle: boolean; base: string; idol: (id: string) => string }) {
+function GroupMatrix({ rows, group, hasOracle, base, idol }: { rows: (Row & { display?: ReturnType<typeof runDisplay> })[]; group: string; hasOracle: boolean; base: string; idol: (id: string) => string }) {
   const keys = Array.from(new Set(rows.flatMap((r) => Object.keys(r.groups ?? {})))).sort()
   const metric = hasOracle ? 'vs_oracle' : base ? 'vs_base' : 'mean'
   const vals = rows.filter((r) => !r.privileged).flatMap((r) => keys.map((k) => {
@@ -444,7 +448,7 @@ function GroupMatrix({ rows, group, hasOracle, base, idol }: { rows: Row[]; grou
           <tbody>
             {rows.filter((r) => !r.privileged).map((r) => (
               <tr key={r.run} className="border-t border-line">
-                <th scope="row" className="sticky left-0 bg-surface px-3 py-2 text-left font-medium whitespace-nowrap text-ink">{r.label}</th>
+                <th scope="row" className="sticky left-0 bg-surface px-3 py-2 text-left font-medium whitespace-nowrap text-ink">{r.display?.name ?? r.label}</th>
                 {keys.map((k) => {
                   const g = r.groups?.[k]
                   const ratio = metric === 'mean' ? null : (g?.[metric as 'vs_oracle'] ?? null)

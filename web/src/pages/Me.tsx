@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, CircleAlert, Copy, KeyRound, Loader2, LogOut, Trash2 } from 'lucide-react'
+import { runDisplay, type RunDisplayCatalog } from '../lib/runDisplay'
 import { api, ApiError, BASE, type Job } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { when } from '../lib/format'
@@ -11,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { useRowLink, btn, Code, CodeBlock, cx, Empty, ErrorState, ModeBadge, PageHeader, SectionTitle, TableSkeleton } from '../components/ui'
 
-type MyRun = { run: string; label: string; set: string; kind?: string; mode?: string; uploaded?: string; finished?: string; started?: string; episodes?: number; verified?: { accepted: number; rejected?: number }; privileged?: boolean }
+type MyRun = { run: string; by?: string; label: string; set: string; kind?: string; mode?: string; uploaded?: string; finished?: string; started?: string; episodes?: number; verified?: { accepted: number; rejected?: number }; privileged?: boolean }
 
 type MeInfo = { user: string; has_password?: boolean; github?: string; name?: string; avatar?: string; engine: { rules_version?: number } }
 
@@ -155,6 +156,7 @@ function Dashboard({ me }: { me: MeInfo }) {
   const rowLink = useRowLink()
   const user = me.user
   const setTitle = useSetTitle()
+  const catalog = useApi<RunDisplayCatalog>('api/site/run-presentations').data
   const runs = useApi<MyRun[]>('api/me/runs')
   const [jobs, setJobs] = useState<Job[]>([])
   const refreshJobs = () => api<Job[]>('api/me/jobs').then(setJobs).catch(() => {})
@@ -229,7 +231,7 @@ function Dashboard({ me }: { me: MeInfo }) {
                     {[...runs.data].reverse().map((r) => (
                       <tr key={r.run} {...rowLink(`/runs/${r.run}`)} className="cursor-pointer border-b border-line last:border-0 hover:bg-brand-tint">
                         <td className="px-3 py-2">
-                          <Link to={`/runs/${r.run}`} className="font-semibold text-ink hover:text-brand-ink">{r.label}</Link>
+                          <Link to={`/runs/${r.run}`} className="font-semibold text-ink hover:text-brand-ink">{runDisplay(catalog, r)?.name ?? r.label}</Link>
                           <div className="font-mono text-[11px] text-ink-3">{r.run}</div>
                         </td>
                         <td className="px-3 py-2 text-ink-2">{setTitle(r.set)}</td>
