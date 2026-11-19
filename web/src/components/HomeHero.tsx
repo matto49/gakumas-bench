@@ -7,7 +7,8 @@ import { HERO_FALLBACK, heroCard, type SiteHome } from '../lib/site'
 import { pick } from '../lib/supports'
 import { useDetailPopup } from './DetailPopups'
 
-const artUrl = (id: string, m = false) => `${BASE}sprites/art-${id}${m ? '-m' : ''}.webp`
+// ?v=2：11-19 头图改回 16:9 重新导出（sprites/ 浏览器缓存 7 天，换版本号才重新下载）
+const artUrl = (id: string, m = false) => `${BASE}sprites/art-${id}${m ? '-m' : ''}.webp?v=2`
 
 /** 进站动画在等这一声：头图卡面加载完（或失败）就可以擦开了 */
 const ready = () => {

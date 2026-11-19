@@ -21,12 +21,14 @@ export type Gallery = {
 }
 
 const G = `${BASE}sprites/gallery/`
-export const standUrl = (c: string) => `${G}chr/${c}-full.webp`
-export const bustupUrl = (c: string) => `${G}chr/${c}-bustup.webp`
-export const iconUrl = (c: string) => `${G}chr/${c}-icon.webp`
-export const cardArtUrl = (asset: string, v: number, thumb = false) => `${G}card/${asset}_${v}${thumb ? '-t' : ''}.webp`
-export const supportArtUrl = (id: string, thumb = false) => `${G}support/${id}${thumb ? '-t' : ''}.webp`
-export const costumeUrl = (id: string) => `${G}cos/${id}.webp`
-export const headUrl = (id: string) => `${G}head/${id}.webp`
+/** 图重新导出后改这个：sprites/ 浏览器缓存 7 天，换了版本号才会重新下载（11-19 卡面改回 9:16 / 16:9） */
+const V = '?v=2'
+export const standUrl = (c: string) => `${G}chr/${c}-full.webp${V}`
+export const bustupUrl = (c: string) => `${G}chr/${c}-bustup.webp${V}`
+export const iconUrl = (c: string) => `${G}chr/${c}-icon.webp${V}`
+export const cardArtUrl = (asset: string, v: number, thumb = false) => `${G}card/${asset}_${v}${thumb ? '-t' : ''}.webp${V}`
+export const supportArtUrl = (id: string, thumb = false) => `${G}support/${id}${thumb ? '-t' : ''}.webp${V}`
+export const costumeUrl = (id: string) => `${G}cos/${id}.webp${V}`
+export const headUrl = (id: string) => `${G}head/${id}.webp${V}`
 
 export const ART_LABEL: Record<number, string> = { 0: '特训前', 1: '特训后', 2: '第三张' }
