@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowRight, BookOpen, ChevronRight, Copy, ExternalLink, FolderPlus, Layers, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
+import { ArrowRight, BookOpen, Wand2, ChevronRight, Copy, ExternalLink, FolderPlus, Layers, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
 import { CardScene, modeOfExam } from '../components/CustomStats'
 import { DeckView } from '../components/DeckView'
 import { toast } from 'sonner'
@@ -298,14 +298,14 @@ export function ExamSet() {
       {rows.length > 0 && grouped.map(([g, list]) => (
         <section key={g} className="mb-5">
           {group && <SectionTitle className="mb-2">{sceneValueLabel(group, g, idol)} <span className="text-[13px] font-normal text-ink-3">{list.length} 题</span></SectionTitle>}
-          <ProblemTable rows={list} canEdit={canEdit} onDelete={remove} coreSeeds={info?.core_seeds} />
+          <ProblemTable set={set} rows={list} canEdit={canEdit} onDelete={remove} coreSeeds={info?.core_seeds} />
         </section>
       ))}
     </div>
   )
 }
 
-function ProblemTable({ rows, canEdit, onDelete, coreSeeds }: { rows: Problem[]; canEdit: boolean; onDelete: (p: Problem) => void; coreSeeds?: number }) {
+function ProblemTable({ set, rows, canEdit, onDelete, coreSeeds }: { set: string; rows: Problem[]; canEdit: boolean; onDelete: (p: Problem) => void; coreSeeds?: number }) {
   const cat = useCatalog()
   const [q, setQ] = useSearchParams()
   const openId = q.get('deck')
@@ -379,6 +379,9 @@ function ProblemTable({ rows, canEdit, onDelete, coreSeeds }: { rows: Problem[];
                 </td>
                 <td className="px-3 py-2 font-mono text-[11.5px] whitespace-nowrap text-ink-3">{p.family}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  {(p.archive.loadout as { schema?: string } | undefined)?.schema === 'gkms.hif_loadout.v1' && (
+                    <Tip tip="在出牌助手里打开这份编成"><Link to={`/assist?set=${encodeURIComponent(set)}&p=${encodeURIComponent(p.id)}`} aria-label={`在出牌助手里打开 ${p.name}`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-ink"><Wand2 size={14} /></Link></Tip>
+                  )}
                   <Tip tip="看完整牌组（点这一行也可以）"><button onClick={() => setOpen(p.id)} aria-label={`看 ${p.name} 的牌组`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-ink"><Layers size={14} /></button></Tip>
                   {canEdit && <button onClick={() => onDelete(p)} aria-label={`删除 ${p.name}`} className="inline-grid size-7 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-critical"><Trash2 size={14} /></button>}
                 </td>

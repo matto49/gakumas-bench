@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ApiError } from '../lib/api'
+import { api, ApiError, type Problem } from '../lib/api'
 import {
   assistHand, assistNumbers, assistStep, assistUndo, closeAssist, emptyDraft, openAssist,
-  type AssistView, type Draft, loadoutFromDraft,
+  type AssistView, type Draft, draftFromLoadout, loadoutFromDraft,
 } from '../lib/assist'
 import { PageHeader } from '../components/ui'
 import { Editor } from '../components/assist/Editor'
@@ -39,6 +40,21 @@ export function Assist() {
   const [busy, setBusy] = useState(false)
   const setDraft = (d: Draft) => { setDraftState(d); keep(localStorage, DRAFT, d) }
   useEffect(() => keep(sessionStorage, SESSION, live), [live])
+
+  // 从試験集合点进来（?set=&p=）：把那道题的编成带进编辑器
+  const [q, setQ] = useSearchParams()
+  const from = q.get('set') && q.get('p') ? [q.get('set')!, q.get('p')!] as const : null
+  useEffect(() => {
+    if (!from) return
+    const [set, id] = from
+    api<Problem[]>(`api/sets/${encodeURIComponent(set)}/problems`).then((ps) => {
+      const p = ps.find((x) => x.id === id)
+      if (!p) throw new Error('题库里没找到这道题')
+      setDraft(draftFromLoadout(p.archive.loadout as Record<string, unknown>, p.name))
+      setLive((l) => { if (l) closeAssist(l.id); return null })
+      toast.success('带入了题库编成', { description: p.name })
+    }).catch((e: Error) => toast.error(e.message)).finally(() => setQ({}, { replace: true }))
+  }, [from?.[0], from?.[1]])
 
   const run = async (f: () => Promise<void>) => {
     setBusy(true)
