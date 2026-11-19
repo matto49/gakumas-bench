@@ -1,0 +1,26 @@
+# 初 PRO 难度层：不分流派的行动建议。
+
+- id: hajime.difficulty-pro.action.lesson-first
+  kind: written
+  scope: {mode: hajime, difficulty: pro}
+  decision: action
+  content:
+    prefer:
+      - {id: sp_lesson, note: 有 SP 课先上 SP 课}
+      - {id: lesson_vo}
+      - {id: lesson_da}
+      - {id: lesson_vi}
+      - {id: class}
+      - {id: oikomi, note: 追い込み选考试加成高的属性}
+    avoid:
+      - {id: rest, note: 体力尽量靠完美课程、支援卡和回忆的回复补}
+      - {id: outing}
+    why: >-
+      初 PRO 优先选能涨三维的行动：课程和授業。体力尽量不靠休息和外出补，而是靠完美完成课程、
+      支援卡和回忆的体力回复、元気挡伤害来省，这样能多上几次课。追い込み课选考试加成高的那个属性。
+      相談里花 P 点删掉没用的卡、强化强卡。
+    fallback: 体力不够上下一节课时才休息或外出。
+  evidence:
+    - {kind: guide, ref: game8 難易度プロの攻略, url: "https://game8.jp/gakuen-idolmaster/610357", date: 2026-11-17}
+  updated: 2026-11-20
+  by: bench

@@ -1,0 +1,21 @@
+# N.I.A MASTER 难度层：不分流派的行动建议。
+
+- id: nia.difficulty-master.action.outing-first
+  kind: written
+  scope: {mode: nia, difficulty: master}
+  decision: action
+  content:
+    prefer:
+      - {id: business, note: 営業优先选黄（自治体イベント会場）或紫（商業施設），都能强化牌组}
+      - {id: outing, note: 其余回合尽量外出}
+    avoid:
+      - {id: rest}
+    why: >-
+      N.I.A MASTER 里，课程和営業以外的回合尽量选外出：既回体力，又能触发「外出时」生效的 P 道具和支援卡。
+      営業优先黄或紫；体力不够、下一回合上不了课时改选绿（リゾート施設），营业后体力最好留到 8 以上，够上一次 SP 课。
+      外出的选项拿不准时选消耗 P 点最少的「下」（强化）。
+    fallback: 体力实在不够时休息。
+  evidence:
+    - {kind: guide, ref: game8 NIAマスター攻略, url: "https://game8.jp/gakuen-idolmaster/688368", date: 2026-11-17}
+  updated: 2026-11-20
+  by: bench
