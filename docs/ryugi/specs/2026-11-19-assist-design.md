@@ -36,13 +36,18 @@ GKMSUINetWeb 的源码不在 GKMSProject 仓库里，GKMS 也没有开源许可�
 - 截图识别局面。
 - 培育阶段的决策（买饮料、选卡等）。
 - 账号、云端保存：编成只存浏览器本地。
-- 读 GKMSUINetWeb 的「对局码 / 导出码」（GR1）：格式虽然在 GKMS 的 `uinet_export.py` 写清楚了，但第一版先不接，见「留给实现者」里的可选项。
 
 ## 绝不做
 
 - 不读种子：实战同步完全按玩家点进来的手牌和画面数值，不推测、不使用游戏的随机数。
 - 不搬 GKMSUINetWeb 或 GKMS 的代码（没有许可证）；GKMS 引擎只通过我们现有的引擎子进程调用（和托管对局一样）。
 - 不让一个访客压垮服务器：会话数、请求频率都有上限。
+
+## 11-20 用户改定（接手会话 a6262813）
+
+1. **兼容 GKMS「导出 GKMSUINet」的 GR1 码**：玩家从 GKMS 客户端导出后直接粘贴就能导入（第一版就做，不再是可选项）。
+2. **考试引擎用 GKMS rev383**（`a9ba6865`，11-16，考试规则 67，主数据含 11-16 新卡）：GKMS 从 Ver3.18.0 / rev384 起保留所有权利，rev383 是最后一个 AGPL-3.0 版本。服务器的 GKMS 一起升到 rev383（裁判也跟着到规则 67）。
+3. **UINet 用 GKMSUINet 公开仓库（MIT）的 Ver2.1-Kummertranen**，不用 Ver1.1。
 
 ## 约束
 
@@ -112,7 +117,7 @@ GKMSUINetWeb 的源码不在 GKMSProject 仓库里，GKMS 也没有开源许可�
 - H.I.F 得分加成：玩家不填时按 Vo / Da / Vi 和审查算（GKMS 构建会不会自己算，要核对；不会的话按主数据公式算，和题库题目的 `score_bonus_permils` 对上）。
 - 支援卡的强化概率、回忆技能的取值方式（题库题目里是 `s_card-…:61` 和 enchant id，编辑器怎么呈现由实现者定，能还原成同样的 loadout 即可）。
 - 「其他卡」（考试中生成的卡）在点手牌时怎么加。
-- 可选（时间够再做）：从配置强度榜一键填入「这张偶像卡排行榜上最常见的卡组」；读 GKMS 工作台导出的 GR1 码。
+- 可选（时间够再做）：从配置强度榜一键填入「这张偶像卡排行榜上最常见的卡组」。（GR1 码 11-20 改为必做，见上。）
 
 ## 审稿后补的决定（都是我的决定，用户可改）
 
@@ -123,7 +128,7 @@ GKMSUINetWeb 的源码不在 GKMSProject 仓库里，GKMS 也没有开源许可�
 3. **五个审查按钮 → loadout**：选拔 1 / 2 / 3 = `produce_id: produce-007`，`round: mid1 / mid2 / final`；本战上半场 / 下半场 = `produce-008`，`mid1 / final`（和 GKMS `uinet_export.ROUNDS` 一致）。`audition_number`、`step_id`、`step_number`、`step_type`、`step_select_number` 等跟审查联动的字段，从题库里同一 (produce_id, round) 的任意一题照抄，编辑器不让玩家改。
 4. **引擎子进程重启**：会话直接作废；网页提示「对局断了，编成还在本机，点重开」，一键用同一编成重开。和评测共用现有的 3 个子进程，不单独开。
 5. **编成是访客输入，要校验**：开局报错只把简短原因回给访客；卡组最多 60 张、P 道具 / 饮料 / 回忆技能 / 支援卡各有上限（按游戏上限）；`assist_open` 超过 10 秒算失败。
-6. **服务器上的 UINet**：装 GKMSUINet 公开仓库（MIT）的 `gkms_uinet` 包和它自带的模型（当前公开版 Ver1.1），主数据指向服务器 GKMS 的主数据（`engine.MASTER_DIR`）。yuzeis 以后给更强的模型（Ver2.1 / UIHorizon）再换。
+6. **服务器上的 UINet**：装 GKMSUINet 公开仓库（MIT）的 `gkms_uinet` 包和它自带的模型（11-20 改定：Ver2.1-Kummertranen），主数据指向服务器 GKMS 的主数据（`engine.MASTER_DIR`）。
 7. **频率限制**：新写一个按秒计的限流（现有的是每小时），IP 取 nginx 传来的 `X-Real-IP`。
 
 ## 测试与验收
