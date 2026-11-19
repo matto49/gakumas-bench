@@ -48,7 +48,7 @@ export function HomeHero({ home }: { home: SiteHome | null }) {
       <div className="relative mx-auto flex min-h-[600px] max-w-[1160px] flex-col justify-end px-5 pt-24 pb-32 sm:min-h-[560px] sm:justify-start sm:pt-[124px] sm:pb-40">
         <p className="disp text-[14px] tracking-[0.16em] text-white/70 not-italic sm:text-[16px]">HATSUBOSHI GUIDE · 学マス</p>
         <h1 className="mt-2 text-[48px] leading-[1.04] font-black tracking-tight [text-shadow:0_2px_24px_rgba(0,0,0,.35)] sm:text-[84px]">初星攻略站</h1>
-        <p className="mt-4 max-w-[26em] text-[15px] leading-[1.75] text-white/85 sm:text-[17px]">学园偶像大师（学マス）玩家做的中文攻略站，资料从游戏数据里直接导出。</p>
+        <p className="mt-4 max-w-[26em] text-[15px] leading-[1.75] text-balance text-white/85 sm:text-[17px]">由学园偶像大师（学マス）玩家共建的中文攻略站，包含角色卡等游戏资源、游戏引擎复刻、角色强度榜、考试算法排行。</p>
         <div className="mt-7 flex flex-wrap gap-3">
           <Link to="/tiers" className="inline-flex items-center gap-1.5 rounded-full bg-white px-6 py-3 text-[15px] font-bold text-ink transition-transform duration-150 hover:-translate-y-px">
             看角色强度榜 <ArrowRight size={16} aria-hidden />
