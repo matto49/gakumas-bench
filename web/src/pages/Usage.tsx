@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useApi } from '../lib/hooks'
 import { cardName, idolShort, spriteUrl, useCatalog, useLang, useTerms } from '../lib/catalog'
 import { aggregate, avg, charOf, type Agg, type CardUse, type ItemUse, type MemCardUse, type SupportUse, type UsageData, type UsageRow } from '../lib/usage'
@@ -133,6 +133,7 @@ export function Usage() {
         <>
           <p className="mb-3 text-[12.5px] text-ink-3">
             {scopeText}。数据：{d.source.author}，{d.source.note}。
+            {card && <Link to={`/guide/${card}${mode === 'hajime' ? '' : `?mode=${mode}`}`} className="ml-1 text-brand-ink hover:underline">看这张卡的攻略 →</Link>}
             {!card && <Help tip="每张偶像卡权重相同：某张卡在 A 偶像卡里 98%、B 偶像卡里没带，平均就是 49%。「常用的偶像卡」是比例 ≥ 50% 的偶像卡有几张。" />}
           </p>
           {tab === 'supports' && <SupportTable rows={supports} d={d} single={!!card} lang={lang} onOpen={(id) => detail.open('support', id)} />}

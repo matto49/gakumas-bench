@@ -10,6 +10,7 @@ const nav = [
   { to: '/', label: '首页', end: true, wide: true }, // 小屏上藏起来，点 logo 回首页
   { to: '/tiers', label: '角色强度榜' },
   { to: '/usage', label: '配置强度榜' },
+  { to: '/guide', label: '偶像卡攻略' },
   { to: '/exams', label: '試験集合' },
   { to: '/sets', label: '算法排行' },
   { to: '/gallery', label: '图鉴' },

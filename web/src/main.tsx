@@ -22,6 +22,8 @@ const router = createBrowserRouter(
         { path: '/', element: <Home /> },
         { path: '/about', lazy: page(() => import('./pages/About'), 'About') },
         { path: '/usage', lazy: page(() => import('./pages/Usage'), 'Usage') },
+        { path: '/guide', lazy: page(() => import('./pages/Guide'), 'GuideIndex') },
+        { path: '/guide/:idol', lazy: page(() => import('./pages/Guide'), 'GuidePage') },
         { path: '/tiers', lazy: page(() => import('./pages/Tiers'), 'TiersIndex') },
         { path: '/tiers/:board', lazy: page(() => import('./pages/Tiers'), 'Tiers') },
         { path: '/tiers/:board/:card', lazy: page(() => import('./pages/TierCard'), 'TierCardPage') },
