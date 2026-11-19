@@ -24,6 +24,31 @@ class AssistError(ValueError):
     pass
 
 
+# 访客交来的编成：各项的上限（游戏里的上限之上留一点余量）
+LIMITS = {"deck_cards": ("卡组", 60), "drink_ids": ("饮料", 6), "produce_item_ids": ("P 道具", 30),
+          "lesson_start_enchant_ids": ("回忆技能", 30), "main_item_enchant_ids": ("定制道具", 30),
+          "support_cards": ("支援卡", 6), "research_card_ids": ("研究卡", 30)}
+
+
+def check_loadout(lo) -> dict:
+    """访客编成的基本校验：类型、各项张数、数值范围。通过后原样返回（具体合不合法由引擎开局判断）。"""
+    if not isinstance(lo, dict):
+        raise AssistError("编成不对")
+    for key, (label, cap) in LIMITS.items():
+        v = lo.get(key)
+        if v is not None and (not isinstance(v, list) or len(v) > cap):
+            raise AssistError(f"{label}最多 {cap} 个")
+    params = lo.get("parameters")
+    if params is not None and (not isinstance(params, list) or len(params) != 3
+                               or not all(isinstance(x, (int, float)) and 0 <= x <= 99999 for x in params)):
+        raise AssistError("Vo / Da / Vi 要是 0–99999 的三个数")
+    for key in ("max_stamina", "starting_stamina"):
+        v = lo.get(key)
+        if v is not None and (not isinstance(v, (int, float)) or not 0 <= v <= 999):
+            raise AssistError("体力要在 0–999 之间")
+    return lo
+
+
 def _card(c) -> list:
     return [c.get("produce_card_id"), int(c.get("current_upgrade_count", 0) or 0)]
 
@@ -33,9 +58,17 @@ class AssistSession:
         engine.setup()
         from uinet.env import Battle
         from .save import expand_loadout
-        lo = {k: v for k, v in expand_loadout(loadout).items() if not k.startswith("_") and k not in ("source", "seed")}
+        check_loadout(loadout)
+        try:
+            lo = expand_loadout(loadout)
+        except Exception as e:
+            raise AssistError(f"编成不对：{e}") from None
+        lo = {k: v for k, v in lo.items() if not k.startswith("_") and k not in ("source", "seed")}
         lo["seed"] = int(seed) if seed else secrets.randbelow(2 ** 31 - 2) + 1
-        self.battle = Battle(lo)
+        try:
+            self.battle = Battle(lo)
+        except Exception as e:
+            raise AssistError(f"这份编成开不了局：{str(e)[:120]}") from None
         self.practice = bool(practice)
         self.policy = policy
         self.awaiting = not self.practice and not self.battle.finished
