@@ -26,6 +26,10 @@ type App struct {
 	hostedMu sync.Mutex
 	hosted   map[string]*Hosted
 
+	assistMu   sync.Mutex
+	assists    map[string]*AssistSession // 出牌助手的会话（assist.go）
+	assistPick func() assistCaller       // 测试里换成假的引擎子进程；nil 时用 pool
+
 	engineInfo any
 	github     githubConf
 }

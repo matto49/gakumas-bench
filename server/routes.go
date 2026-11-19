@@ -159,6 +159,15 @@ func (app *App) routes(static, web string) http.Handler {
 	api.POST("/cli/login/token", plain(app.handleCLILoginToken))
 	api.POST("/logout", plain(app.handleLogout))
 
+	// 出牌助手：不用登录，按 IP 限流（assist.go）
+	as := api.Group("/assist/sessions")
+	as.POST("", plain(assistLimitMW(app.handleAssistOpen)))
+	as.POST("/:id/hand", plain(assistLimitMW(app.assistCall("assist_hand", withBody))))
+	as.POST("/:id/numbers", plain(assistLimitMW(app.assistCall("assist_numbers", withBody))))
+	as.POST("/:id/step", plain(assistLimitMW(app.assistCall("assist_step", withBody))))
+	as.POST("/:id/undo", plain(assistLimitMW(app.assistCall("assist_undo", nil))))
+	as.DELETE("/:id", plain(assistLimitMW(app.handleAssistClose)))
+
 	// 要令牌
 	auth.GET("/me", h(app.handleMe))
 	auth.GET("/me/tokens", h(app.handleMyTokens))
