@@ -119,13 +119,14 @@ function StandWall({ chars, counts, lang, onPick }: { chars: GalleryChar[]; coun
             className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-surface-2 text-left ring-1 ring-line transition-shadow duration-150 hover:ring-line-strong hover:shadow-[0_12px_30px_-18px_rgba(20,16,30,.45)]">
             <div className="relative h-[300px] overflow-hidden bg-gradient-to-b from-surface-2 to-surface-3">
               {(x.stand || x.bustup) && (
+                // 全身立绘按高度放进格子；只有半身像的（根绪亚纱里这类非偶像角色）按格子高度放大、左右裁掉，填满整格
                 <img src={x.stand ? standUrl(x.id) : bustupUrl(x.id)} alt="" loading="lazy"
-                  className={cx('absolute inset-x-0 mx-auto transition-transform duration-300 group-hover:scale-[1.03]', x.stand ? 'bottom-0 h-[290px] w-auto max-w-none' : 'bottom-0 w-full')} />
+                  className={cx('absolute bottom-0 left-1/2 w-auto max-w-none -translate-x-1/2 transition-transform duration-300 group-hover:scale-[1.03]', x.stand ? 'h-[290px]' : 'h-full')} />
               )}
             </div>
             <div className="bg-surface px-3 py-2.5">
               <p className="font-bold text-ink">{pick(x.name, lang)}</p>
-              <p className="num text-[12px] text-ink-3">{n ? `卡面 ${n.cards} 套 · 衣装 ${n.costumes} 套` : '只有半身像'}</p>
+              <p className="num text-[12px] text-ink-3">{[n?.cards && `卡面 ${n.cards} 套`, n?.costumes && `衣装 ${n.costumes} 套`].filter(Boolean).join(' · ') || '只有半身像'}</p>
             </div>
           </button>
         )
@@ -153,6 +154,8 @@ function CharView({ g, ch, tab, art, lang, onTab, onArt, onView }: {
     sub: x.skin && skinOf.get(x.skin) ? `来自卡面 ${cardTitle(skinOf.get(x.skin)!)}` : undefined,
   }))
   const n = { cards: cards.length, supports: sups.length, costumes: costumes.length, heads: heads.length }
+  // 没有内容的标签不停留：比如没有偶像卡的根绪亚纱里，默认打开第一个有内容的标签
+  if (!n[tab]) tab = TABS.find((t) => n[t.key])?.key ?? tab
 
   return (
     <div>
@@ -160,12 +163,12 @@ function CharView({ g, ch, tab, art, lang, onTab, onArt, onView }: {
         <button type="button" disabled={!ch.stand} onClick={() => onView([{ key: 'stand', title: pick(ch.name, lang), sub: '立绘', src: () => standUrl(ch.id), plain: true }], 0, 0)}
           className="relative h-[320px] cursor-zoom-in overflow-hidden rounded-xl bg-gradient-to-b from-white to-surface-3 disabled:cursor-default">
           {ch.stand ? <img src={standUrl(ch.id)} alt={`${pick(ch.name, lang)} 立绘`} className="absolute bottom-0 left-1/2 h-[310px] w-auto max-w-none -translate-x-1/2" />
-            : ch.bustup && <img src={bustupUrl(ch.id)} alt="" className="absolute bottom-0 w-full" />}
+            : ch.bustup && <img src={bustupUrl(ch.id)} alt="" className="absolute bottom-0 left-1/2 h-full w-auto max-w-none -translate-x-1/2" />}
         </button>
         <div className="flex min-w-0 flex-col">
           <h2 className="text-[26px] font-black tracking-tight text-ink">{pick(ch.name, lang)}</h2>
           {lang === 'zh' && ch.name.zh && <p className="text-ink-3">{ch.name.ja}</p>}
-          <p className="num mt-3 text-ink-2">卡面 {n.cards} 套 · 支援卡 {n.supports} 张 · 衣装 {n.costumes} 套 · 发型 {n.heads} 个</p>
+          <p className="num mt-3 text-ink-2">{[n.cards && `卡面 ${n.cards} 套`, n.supports && `支援卡 ${n.supports} 张`, n.costumes && `衣装 ${n.costumes} 套`, n.heads && `发型 ${n.heads} 个`].filter(Boolean).join(' · ')}</p>
           {ch.bustup && (
             <button type="button" onClick={() => onView([{ key: 'bustup', title: pick(ch.name, lang), sub: '半身像', src: () => bustupUrl(ch.id), plain: true }], 0, 0)}
               className="mt-auto hidden w-fit cursor-zoom-in items-end gap-3 pt-4 sm:flex">
@@ -179,10 +182,10 @@ function CharView({ g, ch, tab, art, lang, onTab, onArt, onView }: {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Tabs value={tab} onValueChange={(v) => onTab(v as Tab)}>
           <TabsList>
-            {TABS.map((t) => <TabsTrigger key={t.key} value={t.key}>{t.label}<span className="num ml-1 text-ink-3">{n[t.key]}</span></TabsTrigger>)}
+            {TABS.map((t) => <TabsTrigger key={t.key} value={t.key} disabled={!n[t.key]}>{t.label}<span className="num ml-1 text-ink-3">{n[t.key]}</span></TabsTrigger>)}
           </TabsList>
         </Tabs>
-        {tab === 'cards' && (
+        {tab === 'cards' && n.cards > 0 && (
           <div role="group" aria-label="卡面" className="flex rounded-full bg-surface-2 p-0.5 text-[13px] font-semibold">
             {[0, 1].map((v) => (
               <button key={v} type="button" aria-pressed={art === v} onClick={() => onArt(v)}
