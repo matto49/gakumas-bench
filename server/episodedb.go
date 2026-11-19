@@ -13,6 +13,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -28,9 +29,10 @@ type episodeDB struct {
 	db   *sql.DB
 	err  error
 
-	wmu   sync.Mutex             // 导入（写库）一次一个
-	mu    sync.Mutex             // 保护 known
-	known map[string]sourceStamp // 运行 -> 库里那份是按哪个文件、什么时候的版本导入的
+	wmu   sync.Mutex               // 导入（写库）一次一个
+	mu    sync.Mutex               // 保护 known
+	known map[string]sourceStamp   // 运行 -> 库里那份是按哪个文件、什么时候的版本导入的
+	lbc   map[string]*lbCacheEntry // 运行 -> 排行要用的列（内存缓存，见 lbEpisodes）
 }
 
 type sourceStamp struct {
@@ -154,6 +156,7 @@ func (s *Store) syncRun(run string) error {
 			e.wmu.Unlock()
 			e.mu.Lock()
 			delete(e.known, run)
+			delete(e.lbc, run)
 			e.mu.Unlock()
 		}
 		return os.ErrNotExist
@@ -236,18 +239,65 @@ func (s *Store) ProblemEpisodes(run, id string) ([]EpisodeSummary, error) {
 		FROM episodes WHERE run = ? AND id = ? ORDER BY ord`, run, id)
 }
 
-// lbEpisodes：排行要用的列（分数、局号、打完没有、出错、超时、耗时、每步毫秒）；withTags 时带标签（按轮次 / 考试分组）
-func (s *Store) lbEpisodes(run string, withTags bool) ([]EpisodeSummary, error) {
+// lbEpisodes：排行要用的列（分数、局号、打完没有、出错、超时、耗时、每步毫秒）。group 非空时每局的 Tags 只带这一个标签。
+// 这几列在内存里按运行缓存（几十 MB；出牌路线、题名这些大字段不进内存），库里那份变了缓存跟着换。
+// 返回的切片和缓存共用，调用方只读不改（排行就是这样用的）
+func (s *Store) lbEpisodes(run, group string) ([]EpisodeSummary, error) {
 	if err := s.syncRun(run); err != nil {
 		return nil, err
 	}
-	tags := "NULL"
-	if withTags {
-		tags = "tags"
+	e := &s.ep
+	e.mu.Lock()
+	src := e.known[run]
+	ent := e.lbc[run]
+	e.mu.Unlock()
+	if ent == nil || ent.src != src {
+		eps, err := s.queryLB(run)
+		if err != nil {
+			return nil, err
+		}
+		ent = &lbCacheEntry{src: src, eps: eps, groups: map[string][]any{}}
+		e.mu.Lock()
+		if e.lbc == nil {
+			e.lbc = map[string]*lbCacheEntry{}
+		}
+		e.lbc[run] = ent
+		e.mu.Unlock()
 	}
+	if group == "" {
+		return ent.eps, nil
+	}
+	e.mu.Lock()
+	vals, ok := ent.groups[group]
+	e.mu.Unlock()
+	if !ok {
+		var err error
+		if vals, err = s.queryTag(run, group, len(ent.eps)); err != nil {
+			return nil, err
+		}
+		e.mu.Lock()
+		ent.groups[group] = vals
+		e.mu.Unlock()
+	}
+	out := make([]EpisodeSummary, len(ent.eps))
+	copy(out, ent.eps)
+	for i := range out {
+		if i < len(vals) && vals[i] != nil {
+			out[i].Tags = map[string]any{group: vals[i]}
+		}
+	}
+	return out, nil
+}
+
+type lbCacheEntry struct {
+	src    sourceStamp
+	eps    []EpisodeSummary
+	groups map[string][]any // 分组名 -> 每局这个标签的值（没有就是 nil）
+}
+
+func (s *Store) queryLB(run string) ([]EpisodeSummary, error) {
 	db, _ := s.edb()
-	rows, err := db.Query(`SELECT id, seed_index, score, finished, decisions, secs, over_steps, err, step_ms, `+tags+`
-		FROM episodes WHERE run = ? ORDER BY ord`, run)
+	rows, err := db.Query(`SELECT id, seed_index, score, finished, decisions, secs, over_steps, err, step_ms FROM episodes WHERE run = ? ORDER BY ord`, run)
 	if err != nil {
 		return nil, err
 	}
@@ -256,18 +306,63 @@ func (s *Store) lbEpisodes(run string, withTags bool) ([]EpisodeSummary, error) 
 	for rows.Next() {
 		var x EpisodeSummary
 		var errS sql.NullString
-		var steps, tg []byte
-		if err := rows.Scan(&x.ID, &x.SeedIndex, &x.Score, &x.Finished, &x.Decisions, &x.Secs, &x.Over, &errS, &steps, &tg); err != nil {
+		var steps []byte
+		if err := rows.Scan(&x.ID, &x.SeedIndex, &x.Score, &x.Finished, &x.Decisions, &x.Secs, &x.Over, &errS, &steps); err != nil {
 			return nil, err
 		}
 		x.Err = errS.String
 		x.StepMs = unpackFloats(steps)
-		if tg != nil {
-			_ = fastjson.Unmarshal(tg, &x.Tags)
-		}
 		out = append(out, x)
 	}
 	return out, rows.Err()
+}
+
+// queryTag：每局 tags 里某一个标签的值（按局的顺序）。整段 tags 用 JSON 库解析，值的类型和直接读文件一样
+func (s *Store) queryTag(run, group string, n int) ([]any, error) {
+	db, _ := s.edb()
+	rows, err := db.Query(`SELECT tags FROM episodes WHERE run = ? ORDER BY ord`, run)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]any, 0, n)
+	for rows.Next() {
+		var tg []byte
+		if err := rows.Scan(&tg); err != nil {
+			return nil, err
+		}
+		var v any
+		if tg != nil {
+			var m map[string]any
+			if fastjson.Unmarshal(tg, &m) == nil {
+				v = m[group]
+			}
+		}
+		out = append(out, v)
+	}
+	return out, rows.Err()
+}
+
+// lbEpisodesMany：多个运行并行取 lbEpisodes（SQLite 的 WAL 模式下读可以并发）。读不了的运行给空
+func (s *Store) lbEpisodesMany(names []string, group string) [][]EpisodeSummary {
+	out := make([][]EpisodeSummary, len(names))
+	jobs := make(chan int)
+	var wg sync.WaitGroup
+	for range max(1, min(runtime.NumCPU(), len(names))) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range jobs {
+				out[i], _ = s.lbEpisodes(names[i], group)
+			}
+		}()
+	}
+	for i := range names {
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+	return out
 }
 
 func (s *Store) queryEpisodes(q string, args ...any) ([]EpisodeSummary, error) {

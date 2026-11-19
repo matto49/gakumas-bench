@@ -70,7 +70,7 @@ func TestLeaderboardEpisodesOnlyNeededFields(t *testing.T) {
 	s := &Store{Data: t.TempDir()}
 	defer s.Close()
 	writeJSONL(t, s, "r1", twoEps)
-	eps, err := s.lbEpisodes("r1", false)
+	eps, err := s.lbEpisodes("r1", "")
 	if err != nil || len(eps) != 2 {
 		t.Fatal(eps, err)
 	}
@@ -84,7 +84,7 @@ func TestLeaderboardEpisodesOnlyNeededFields(t *testing.T) {
 	if eps[1].Err != "boom" || eps[1].SeedIndex != 3 {
 		t.Fatalf("第二局：%+v", eps[1])
 	}
-	tagged, _ := s.lbEpisodes("r1", true)
+	tagged, _ := s.lbEpisodes("r1", "round")
 	if tagged[0].Tags["round"] != "mid" {
 		t.Fatalf("要分组时带标签：%+v", tagged[0].Tags)
 	}
@@ -121,5 +121,29 @@ func TestEpisodeDBFollowsFileChanges(t *testing.T) {
 	}
 	if _, err := s.Index("r1"); err == nil {
 		t.Fatal("运行删了还读得到")
+	}
+}
+
+// 排行用的列在内存里缓存：文件没变时第二次直接用缓存（同一个切片），文件变了马上换新的；分组标签按分组各取一次
+func TestLBEpisodesCacheFollowsChanges(t *testing.T) {
+	s := &Store{Data: t.TempDir()}
+	defer s.Close()
+	p := writeJSONL(t, s, "r1", twoEps)
+	a, _ := s.lbEpisodes("r1", "")
+	b, _ := s.lbEpisodes("r1", "")
+	if len(a) != 2 || &a[0] != &b[0] {
+		t.Fatalf("文件没变要直接用缓存")
+	}
+	g, _ := s.lbEpisodes("r1", "round")
+	if g[0].Tags["round"] != "mid" || g[1].Tags != nil && g[1].Tags["round"] != nil {
+		t.Fatalf("分组标签：%+v / %+v", g[0].Tags, g[1].Tags)
+	}
+	f, _ := os.OpenFile(p, os.O_APPEND|os.O_WRONLY, 0o644)
+	_, _ = f.WriteString(`{"id":"P3","seed_index":0,"score":5,"tags":{"round":"final"}}` + "\n")
+	_ = f.Close()
+	bump(t, p, time.Second)
+	c, _ := s.lbEpisodes("r1", "round")
+	if len(c) != 3 || c[2].Tags["round"] != "final" {
+		t.Fatalf("文件变了要换新的：%d %+v", len(c), c)
 	}
 }

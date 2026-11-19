@@ -188,6 +188,8 @@ func (s *Store) leaderboardUncached(set, base, group, kind, scope string) ([]Row
 		core, coreN = s.SetConfigs()[set].coreSet()
 	}
 	var runs []run
+	var infos []map[string]any
+	var runNames []string
 	for _, info := range s.Runs(set) {
 		if (info["kind"] == "template") != tmpl {
 			continue
@@ -196,8 +198,14 @@ func (s *Store) leaderboardUncached(set, base, group, kind, scope string) ([]Row
 			continue
 		}
 		name, _ := info["run"].(string)
-		idx, err := s.lbEpisodes(name, group != "") // 只取排行用得到的列；分组时才带标签
-		if err != nil || len(idx) == 0 {
+		infos, runNames = append(infos, info), append(runNames, name)
+	}
+	// 各运行的局从 SQLite 并行取（只取排行用得到的列；分组时才带标签）
+	epsOf := s.lbEpisodesMany(runNames, group)
+	for i, info := range infos {
+		name := runNames[i]
+		idx := epsOf[i]
+		if len(idx) == 0 {
 			continue
 		}
 		var m map[key]EpisodeSummary
