@@ -150,10 +150,11 @@ func TestWarmFillsLeaderboardCache(t *testing.T) {
 	s.Warm()
 	key := "hif\x00\x00\x00template\x00"
 	s.rc.mu.Lock()
+	_, okAll := s.rc.lb[key+"all"]
 	e, ok := s.rc.lb[key]
 	nIdx := len(s.rc.index)
 	s.rc.mu.Unlock()
-	if !ok || len(e.rows) != 2 || nIdx != 2 {
+	if !ok || !okAll || len(e.rows) != 2 || nIdx != 2 {
 		t.Fatalf("预热后默认排行和两份摘要都要在缓存里：lb=%v rows=%d index=%d", ok, len(e.rows), nIdx)
 	}
 	rows, err := s.Leaderboard("hif", "", "", "template", "")

@@ -219,8 +219,11 @@ func (s *Store) Warm() {
 	t0 := time.Now()
 	s.prefetchIndexes("")
 	sets := s.Sets()
+	// 排行页的「范围」两档都预热：核心题单（默认）和全部题（题多、现算要一两秒）
 	for _, set := range sets {
-		_, _ = s.Leaderboard(set, "", "", "template", "")
+		for _, scope := range []string{"", "all"} {
+			_, _ = s.Leaderboard(set, "", "", "template", scope)
+		}
 	}
-	log.Printf("缓存预热：%d 个集合的默认排行，用时 %v", len(sets), time.Since(t0).Round(time.Millisecond))
+	log.Printf("缓存预热：%d 个集合的排行（核心题单、全部两档），用时 %v", len(sets), time.Since(t0).Round(time.Millisecond))
 }
