@@ -1,0 +1,143 @@
+"""出牌助手的会话（gkbench/assist.py）：实战同步按玩家点的手牌推进，练习模拟引擎自己抽；能撤销、改数值，建议来自 UINet。"""
+import collections
+import glob
+import json
+from pathlib import Path
+
+import pytest
+
+from gkbench import engine
+
+PROBLEMS = sorted(glob.glob(str(Path.home() / "github/gakumas-bench-data/problems/hif/*.gksave.json")))
+pytestmark = pytest.mark.skipif(not PROBLEMS or not (engine.GKMS_ROOT / "GakumasCLI").is_dir(), reason="缺 GKMS 或 H.I.F 题")
+
+
+def loadout(i=0):
+    return json.load(open(PROBLEMS[i]))["loadout"]
+
+
+def fake_policy(obs):
+    n = len(obs["legal"])
+    return {"probs": [1.0 / n] * n, "score_quantiles": {"10%": 1, "50%": 2, "90%": 3}}
+
+
+def ids(cards):
+    return collections.Counter(tuple(c) for c in cards)
+
+
+@pytest.fixture
+def sync():
+    from gkbench.assist import AssistSession
+    return AssistSession(loadout(), practice=False, seed=11, policy=fake_policy)
+
+
+def test_sync_waits_for_hand_at_start(sync):
+    v = sync.view()
+    assert v["awaiting_hand"] is True and v["advice"] is None and v["practice"] is False
+    assert v["turn"] == 1 and v["finished"] is False
+
+
+def test_set_hand_from_deck(sync):
+    v = sync.view()
+    pool = v["piles"]["hand"] + v["piles"]["deck"]
+    want = pool[-3:]                                  # 随便挑三张实际抽到的
+    v = sync.set_hand(want)
+    assert ids(v["piles"]["hand"]) == ids(want)
+    # 没抽到的回牌堆，不进弃牌（支援卡给的强化只在手牌里有效，所以只比卡 id）
+    assert collections.Counter(c[0] for c in v["piles"]["hand"] + v["piles"]["deck"]) == collections.Counter(c[0] for c in pool)
+    assert v["piles"]["grave"] == []
+    assert v["awaiting_hand"] is False
+    assert len(v["advice"]["probs"]) == len(v["obs"]["legal"])
+    assert 0 <= v["advice"]["best"] < len(v["obs"]["legal"])
+
+
+def test_support_upgrade_left_in_hand():
+    """手里被支援卡强化过的牌，玩家没点它就回牌堆，回去以后不带那层强化"""
+    from gkbench.assist import AssistSession
+    for i in range(min(8, len(PROBLEMS))):
+        for seed in range(1, 25):
+            s = AssistSession(loadout(i), practice=False, seed=seed, policy=fake_policy)
+            v = s.view()
+            hand, deck = v["piles"]["hand"], v["piles"]["deck"]
+            plain = [c for c in deck if c[1] == 0]
+            if any(c[1] > 0 for c in hand) and len(plain) >= len(hand):
+                before_ups = sum(c[1] for c in deck)
+                v = s.set_hand(plain[:len(hand)])
+                assert sum(c[1] for c in v["piles"]["deck"]) == before_ups
+                return
+    pytest.fail("前 8 题 × 24 个种子里没找到开局手牌带强化的局")
+
+
+def test_deck_listing_hides_order(sync):
+    d = sync.view()["piles"]["deck"]
+    assert d == sorted(d)
+
+
+def test_unknown_card_rejected(sync):
+    from gkbench.assist import AssistError
+    with pytest.raises(AssistError):
+        sync.set_hand([["p_card-no-such-card", 0]])
+
+
+def test_step_refused_while_awaiting(sync):
+    from gkbench.assist import AssistError
+    with pytest.raises(AssistError):
+        sync.step(sync.view()["obs"]["legal"][0])
+
+
+def test_step_and_undo(sync):
+    v0 = sync.set_hand(sync.view()["piles"]["hand"])
+    act = v0["obs"]["legal"][0]
+    v1 = sync.step(act)
+    assert v1["can_undo"] is True
+    v2 = sync.undo()
+    assert v2["obs"] == v0["obs"] and v2["piles"] == v0["piles"] and v2["awaiting_hand"] is False
+
+
+def test_end_turn_waits_for_next_hand(sync):
+    sync.set_hand(sync.view()["piles"]["hand"])
+    v = sync.step(("end",))
+    assert v["turn"] == 2 and v["awaiting_hand"] is True and v["advice"] is None
+
+
+def test_set_numbers(sync):
+    sync.set_hand(sync.view()["piles"]["hand"])
+    v = sync.set_numbers(score=4321, stamina=5, block=12)
+    assert (v["score"], v["numbers"]["stamina"], v["numbers"]["block"]) == (4321, 5, 12)
+
+
+def test_practice_never_waits():
+    from gkbench.assist import AssistSession
+    s = AssistSession(loadout(), practice=True, policy=fake_policy)
+    v = s.view()
+    while not v["finished"]:
+        assert v["awaiting_hand"] is False and v["advice"] is not None
+        v = s.step(v["obs"]["legal"][v["advice"]["best"]])
+    assert v["score"] > 0 and v["advice"] is None
+
+
+def test_matches_referee_on_same_route():
+    """实战同步时把引擎自己抽的手牌原样点回去，结果应和裁判同种子同路线一致"""
+    from gkbench.assist import AssistSession
+    from gkbench.referee import Referee
+    ref = Referee(loadout(), 11)
+    s = AssistSession(loadout(), practice=False, seed=11, policy=fake_policy)
+    for _ in range(12):
+        v = s.view()
+        if v["finished"]:
+            break
+        if v["awaiting_hand"]:
+            v = s.set_hand(v["piles"]["hand"])
+        act = tuple(v["obs"]["legal"][0])
+        s.step(act)
+        ref.step(act)
+    assert s.view()["score"] == ref.score
+
+
+def test_real_uinet_advice():
+    from gkbench.algos.uinet import UinetAlgo
+    from gkbench.assist import AssistSession
+    pol = UinetAlgo(threads=1).policy
+    s = AssistSession(loadout(), practice=True, policy=pol.decide)
+    v = s.view()
+    assert abs(sum(v["advice"]["probs"]) - 1) < 1e-3 and "50%" in v["advice"]["score_quantiles"]
