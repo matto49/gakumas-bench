@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- 初星攻略站：顶栏 logo 的三道斜杠，Vo 粉、Da 蓝、Vi 黄 -->
+  <g transform="translate(4.5 0) skewX(-14)">
+    <rect x="3" y="8.5" width="7" height="21" rx="2.2" fill="#E5508A"/>
+    <rect x="12.5" y="3" width="7" height="26.5" rx="2.2" fill="#3D7FD9"/>
+    <rect x="22" y="11" width="7" height="18.5" rx="2.2" fill="#F2B51E"/>
+  </g>
+</svg>

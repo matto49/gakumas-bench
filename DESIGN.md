@@ -61,6 +61,8 @@ shadcn 的语义变量（`background` `foreground` `primary` `muted` `accent` `b
 
 偶像缩略图和评级徽章从游戏缓存导出（`digital-hiro-research/gkmas-assets/tools/export_bench_icons.py`），转成 96px webp 放在 `$GKBENCH_DATA/static/sprites/`。卡牌、饮料小图由 `server/cmd/catalog` 生成。
 
+网站图标：`web/public/favicon.svg`，顶栏 logo 的三道斜杠（Vo `#E5508A`、Da `#3D7FD9`、Vi `#F2B51E`），透明底，深浅标签页都看得清；另有 `favicon-32.png`、`favicon.ico`（老浏览器）和 `apple-touch-icon.png`（180，白色圆角底，iPhone 加到主屏幕用）。改了 svg 要一起重画这三张。
+
 ## 文案
 
 网页上不说「种子」，说「牌序」：一道题的一局，洗牌和随机结果定下来就是一种牌序。排行是每题随机 32 种牌序，所有算法打同一组。
