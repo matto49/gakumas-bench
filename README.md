@@ -89,8 +89,8 @@
 
 | 目录 | 技术 | 内容 |
 |---|---|---|
-| `server/` | Go + Gin | 服务器：接口、令牌、上传核对、托管对局、保密种子评测（`tseeds.go` 生成种子）、存档下载与上传、排行榜；`cmd/catalog` 生成卡牌目录。路由在 `routes.go`（Gin），接口函数仍是 `(w, r, 用户)` 写法；运行目录和排行结果按文件修改时间缓存（`runcache.go`） |
-| `web/` | Vite + React + TypeScript + Tailwind + TanStack Query | 网页：介绍、排行、运行详情、单局复盘、两算法对比、我的。取数据一律 `useApi(地址)`（`lib/hooks.ts`，底下是 TanStack Query：同一地址全站共用缓存，30 秒内不重取）；改了数据用 `invalidateApi(前缀)`（`lib/query.ts`）让相关缓存作废 |
+| `server/` | Go + Gin | 服务器：接口、令牌、上传核对、托管对局、保密种子评测（`tseeds.go` 生成种子）、存档下载与上传、排行榜；`cmd/catalog` 生成卡牌目录。路由在 `routes.go`（Gin），接口函数仍是 `(w, r, 用户)` 写法；运行目录和排行结果按文件修改时间缓存（`runcache.go`），启动后后台预热各集合默认排行；每局摘要并行读、用 goccy/go-json 解析 |
+| `web/` | Vite + React + TypeScript + Tailwind + TanStack Query | 网页：介绍、排行、运行详情、单局复盘、两算法对比、我的。取数据一律 `useApi(地址)`（`lib/hooks.ts`，底下是 TanStack Query：同一地址全站共用缓存，30 秒内不重取）；改了数据用 `invalidateApi(前缀)`（`lib/query.ts`）让相关缓存作废。除首页外各页面单独打包、打开时才下载（`main.tsx` 的 lazy 路由） |
 | `gkbench/` | Python | 和 GKMS 引擎打交道的部分（GKMS、UINet 本身是 Python 库）：审查存档（`save.py`）、题库、裁判、世界采样、算法、本地跑分、客户端、引擎子进程 |
 | `docs/format.md` | | 数据格式 |
 | `PRODUCT.md` | | 产品定位（impeccable 用） |
