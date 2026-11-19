@@ -33,6 +33,8 @@ type Store struct {
 
 	cacheMu sync.Mutex
 	cache   map[string]setCache // 题集 -> 题模板（按文件修改时间失效）
+
+	rc runCache // 运行目录的 run.json 和每局摘要（runcache.go）
 }
 
 type setCache struct {
@@ -207,9 +209,11 @@ func (s *Store) Runs(set string) []map[string]any {
 	files, _ := filepath.Glob(filepath.Join(s.Data, "runs", "*", "run.json"))
 	sort.Strings(files)
 	var out []map[string]any
+	present := make(map[string]bool, len(files))
 	for _, f := range files {
-		var info map[string]any
-		if readJSON(f, &info) != nil || info["schema"] != "gkbench.run.v2" {
+		present[f] = true
+		info := s.runInfoCached(f)
+		if info == nil {
 			continue
 		}
 		if set != "" && info["set"] != set {
@@ -217,7 +221,8 @@ func (s *Store) Runs(set string) []map[string]any {
 		}
 		out = append(out, info)
 	}
-	return out
+	s.forgetMissing(present)
+	return cloneInfos(out)
 }
 
 // ---------------------------------------------------------------- 一局记录
@@ -364,7 +369,8 @@ func Summarize(e map[string]any) EpisodeSummary {
 	return s
 }
 
-func (s *Store) Index(run string) ([]EpisodeSummary, error) {
+// indexUncached：直接读文件（Index 在 runcache.go，带缓存）
+func (s *Store) indexUncached(run string) ([]EpisodeSummary, error) {
 	dir := s.RunDir(run)
 	var idx struct {
 		Episodes []EpisodeSummary `json:"episodes"`

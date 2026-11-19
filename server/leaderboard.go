@@ -177,7 +177,8 @@ func perProblem(idx []EpisodeSummary) map[key]EpisodeSummary {
 //	legacy    2026-11-09 以前的题模板评测（每次临时抽种子）：各算法种子不同，只能按题平均后比较
 //
 // scope：缺省按集合的核心题单算（只看核心题、题模板每题前 core_seeds 个牌序；没设核心题单时等于全部）；"all" 看全部题和牌序。
-func (s *Store) Leaderboard(set, base, group, kind, scope string) ([]Row, error) {
+// leaderboardUncached：现算（Leaderboard 在 runcache.go，按数据指纹缓存结果）
+func (s *Store) leaderboardUncached(set, base, group, kind, scope string) ([]Row, error) {
 	type run = lbRun
 	legacy := kind == "legacy"
 	tmpl := kind == "template" || kind == "random" || legacy
