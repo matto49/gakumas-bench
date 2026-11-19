@@ -74,30 +74,6 @@ func (a *App) userOf(r *http.Request) (string, string) {
 	return a.store.lookupToken(tok), tok
 }
 
-// auth 包一层：没有有效令牌返回 401；带 ?token= 时写进 cookie，浏览器之后不用再带
-func (a *App) auth(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		u, tok := a.userOf(r)
-		if u == "" {
-			fail(w, http.StatusUnauthorized, "需要有效令牌")
-			return
-		}
-		if r.URL.Query().Get("token") != "" {
-			http.SetCookie(w, &http.Cookie{Name: "gkb_token", Value: tok, HttpOnly: true, Secure: r.TLS != nil ||
-				r.Header.Get("X-Forwarded-Proto") == "https", SameSite: http.SameSiteLaxMode, MaxAge: 180 * 86400, Path: "/"})
-		}
-		fn(w, r, u)
-	}
-}
-
-// open 公开接口：不要求令牌；有令牌时照样认出是谁
-func (a *App) open(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		u, _ := a.userOf(r)
-		fn(w, r, u)
-	}
-}
-
 // ---------------------------------------------------------------- 题库
 
 func (a *App) handleMe(w http.ResponseWriter, r *http.Request, u string) {

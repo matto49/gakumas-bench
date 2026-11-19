@@ -26,7 +26,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -137,150 +136,11 @@ func main() {
 	app.engineInfo = rep["engine"]
 	log.Printf("引擎 %v", app.engineInfo)
 
-	mux := http.NewServeMux()
-	A := app.auth
-	O := app.open
-	// 公开只读
-	mux.HandleFunc("GET /api/sets", O(app.handleSets))
-	mux.HandleFunc("GET /api/sets/{set}/problems", O(app.handleProblems))
-	mux.HandleFunc("GET /api/sets/{set}/seeds", O(app.handleSeeds)) // 题集开了 public_seeds 才公开
-	mux.HandleFunc("GET /api/leaderboard", O(app.handleLeaderboard))
-	mux.HandleFunc("GET /api/runs", O(app.handleRuns))
-	mux.HandleFunc("GET /api/runs/{run}", O(app.handleRun))
-	mux.HandleFunc("GET /api/runs/{run}/episodes/{id}/{seed}", O(app.handleEpisode))
-	mux.HandleFunc("GET /api/saves/{id}", O(app.handleSave))
-	mux.HandleFunc("GET /api/sets/{set}/saves", O(app.handleSetSaves))
-	static := filepath.Join(data, "static")
-	mux.HandleFunc("GET /api/catalog", func(w http.ResponseWriter, r *http.Request) {
-		// 每次都问一下有没有更新（没变时回 304，不重新下载），换了目录马上生效
-		w.Header().Set("Cache-Control", "public, no-cache")
-		// ?lang=zh：中文目录（cmd/catalog -zh 生成，卡名和效果文字用学マス汉化插件的翻译）；没有就回日文的
-		name := "catalog.json"
-		if r.URL.Query().Get("lang") == "zh" {
-			if _, err := os.Stat(filepath.Join(static, "catalog.zh.json")); err == nil {
-				name = "catalog.zh.json"
-			}
-		}
-		http.ServeFile(w, r, filepath.Join(static, name))
-	})
-	// 支援卡目录：python -m gkbench.supports 从完整主数据生成 $DATA/static/supports.json（日文、中文都在里面）
-	mux.HandleFunc("GET /api/supports", func(w http.ResponseWriter, r *http.Request) {
-		p := filepath.Join(static, "supports.json")
-		if _, err := os.Stat(p); err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Cache-Control", "public, no-cache")
-		http.ServeFile(w, r, p)
-	})
-	mux.HandleFunc("GET /api/supports/meta", func(w http.ResponseWriter, r *http.Request) {
-		p := filepath.Join(static, "supports.meta.json")
-		if _, err := os.Stat(p); err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Cache-Control", "public, no-cache")
-		http.ServeFile(w, r, p)
-	})
-	// 强度榜和首页小文件的名字：小写字母、数字、连字符
-	tierName := regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,63}$`)
-	// 配置频率：python -m gkbench.usage 生成 $DATA/static/usage/<模式>.json（排行榜前 100 名里各卡出现的比例）
-	mux.HandleFunc("GET /api/usage/{mode}", func(w http.ResponseWriter, r *http.Request) {
-		mode := r.PathValue("mode")
-		if !tierName.MatchString(mode) {
-			http.NotFound(w, r)
-			return
-		}
-		p := filepath.Join(static, "usage", mode+".json")
-		if _, err := os.Stat(p); err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Cache-Control", "public, no-cache")
-		http.ServeFile(w, r, p)
-	})
-	// 首页用的小文件：$DATA/static/site/<名>.json。home 由 gkbench.homedata 生成（生日、新卡）；now（卡池、活动）和 updates（站内更新）手写
-	mux.HandleFunc("GET /api/site/{name}", func(w http.ResponseWriter, r *http.Request) {
-		name := r.PathValue("name")
-		if !tierName.MatchString(name) {
-			http.NotFound(w, r)
-			return
-		}
-		p := filepath.Join(static, "site", name+".json")
-		if _, err := os.Stat(p); err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Cache-Control", "public, no-cache")
-		http.ServeFile(w, r, p)
-	})
-	// 强度榜：python -m gkbench.tierboard 导入到 $DATA/static/tiers/（index.json 是目录，<id>.json 是一张榜）
-	mux.HandleFunc("GET /api/tiers/{id}", func(w http.ResponseWriter, r *http.Request) {
-		id := r.PathValue("id")
-		if !tierName.MatchString(id) {
-			http.NotFound(w, r)
-			return
-		}
-		p := filepath.Join(static, "tiers", id+".json")
-		if _, err := os.Stat(p); err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Cache-Control", "public, no-cache")
-		http.ServeFile(w, r, p)
-	})
-	mux.HandleFunc("GET /api/auth", O(app.handleAuthInfo))
-	mux.HandleFunc("GET /api/auth/github", app.handleGithubStart)
-	mux.HandleFunc("GET /api/auth/github/callback", app.handleGithubCallback)
-	mux.HandleFunc("POST /api/auth/register", app.handleRegister)
-	mux.HandleFunc("POST /api/auth/login", app.handlePasswordLogin)
-	mux.HandleFunc("POST /api/cli/login", app.handleCLILoginStart)
-	mux.HandleFunc("GET /api/cli/login/{code}", O(app.handleCLILoginInfo))
-	mux.HandleFunc("POST /api/cli/login/{code}/approve", A(app.handleCLILoginApprove))
-	mux.HandleFunc("POST /api/cli/login/token", app.handleCLILoginToken)
-	// 命令行工具：安装脚本和各平台的可执行文件放在 $DATA/static/cli/（server/cmd/gkbench/build.sh 生成）
-	cli := filepath.Join(static, "cli")
-	mux.HandleFunc("GET /install.sh", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/x-shellscript; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-cache")
-		http.ServeFile(w, r, filepath.Join(cli, "install.sh"))
-	})
-	mux.HandleFunc("GET /install.ps1", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-cache")
-		http.ServeFile(w, r, filepath.Join(cli, "install.ps1"))
-	})
-	mux.Handle("GET /cli/", http.StripPrefix("/cli/", noCache(http.FileServer(http.Dir(cli)))))
-	mux.Handle("GET /sprites/", http.StripPrefix("/sprites/", cacheFor(http.FileServer(http.Dir(filepath.Join(static, "sprites"))), 7*86400)))
-	// 要令牌
-	mux.HandleFunc("GET /api/me", A(app.handleMe))
-	mux.HandleFunc("POST /api/logout", app.handleLogout)
-	mux.HandleFunc("GET /api/me/tokens", A(app.handleMyTokens))
-	mux.HandleFunc("POST /api/me/password", A(app.handleSetPassword))
-	mux.HandleFunc("POST /api/me/tokens", A(app.handleNewToken))
-	mux.HandleFunc("DELETE /api/me/tokens/{id}", A(app.handleRevokeToken))
-	mux.HandleFunc("GET /api/me/runs", A(app.handleMyRuns))
-	mux.HandleFunc("GET /api/me/jobs", A(app.handleMyJobs))
-	mux.HandleFunc("POST /api/runs", A(app.handleUpload))
-	mux.HandleFunc("POST /api/saves", A(app.handleSaveUpload))
-	mux.HandleFunc("POST /api/sets", A(app.handleCreateSet))
-	mux.HandleFunc("PATCH /api/sets/{set}", A(app.handlePatchSet))
-	mux.HandleFunc("PATCH /api/families/{family}", A(app.handlePatchFamily))
-	mux.HandleFunc("POST /api/sets/{set}/problems", A(app.handleUploadProblems))
-	mux.HandleFunc("DELETE /api/sets/{set}/problems/{id}", A(app.handleDeleteProblem))
-	mux.HandleFunc("GET /api/jobs/{job}", A(app.handleJob))
-	mux.HandleFunc("POST /api/episodes", A(app.handleHostedStart))
-	mux.HandleFunc("POST /api/episodes/{id}/step", A(app.handleHostedStep))
-	mux.HandleFunc("POST /api/episodes/{id}/worlds", A(app.handleHostedWorlds))
-	mux.HandleFunc("DELETE /api/episodes/{id}", A(app.handleHostedAbort))
-	mux.HandleFunc("POST /api/evals", A(app.handleEvalStart))
-	mux.HandleFunc("GET /api/evals/{id}", A(app.handleEvalStatus))
-	mux.HandleFunc("POST /api/evals/{id}/episodes", A(app.handleEvalEpisode))
-	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { fail(w, 404, "没有这个接口") })
-	mux.Handle("/", spa(env("GKBENCH_WEB", "../web/dist")))
+	// 路由在 routes.go（Gin）
+	handler := app.routes(filepath.Join(data, "static"), env("GKBENCH_WEB", "../web/dist"))
 
 	addr := env("GKBENCH_ADDR", "127.0.0.1:19150")
-	srv := &http.Server{Addr: addr, Handler: withSetAliases(mux), ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Addr: addr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	go func() {
 		log.Printf("监听 %s，数据 %s，引擎子进程 %d 个", addr, data, n)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

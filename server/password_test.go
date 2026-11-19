@@ -12,11 +12,7 @@ import (
 func pwApp(t *testing.T) (*App, func(method, path, body string, cookies []*http.Cookie, ip string) *httptest.ResponseRecorder) {
 	registerLimit, loginLimit = limiter{}, limiter{}
 	app := &App{store: &Store{Data: t.TempDir()}}
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/auth/register", app.handleRegister)
-	mux.HandleFunc("POST /api/auth/login", app.handlePasswordLogin)
-	mux.HandleFunc("POST /api/me/password", app.auth(app.handleSetPassword))
-	mux.HandleFunc("GET /api/me", app.auth(app.handleMe))
+	mux := app.routes(t.TempDir(), t.TempDir()) // 整套路由（Gin），和线上一样
 	return app, func(method, path, body string, cookies []*http.Cookie, ip string) *httptest.ResponseRecorder {
 		r := httptest.NewRequest(method, path, strings.NewReader(body))
 		r.Header.Set("X-Real-IP", ip)

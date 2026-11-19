@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -152,8 +151,7 @@ func TestEvalScope(t *testing.T) {
 
 func TestEvalStartUsesCore(t *testing.T) {
 	app, do := collApp(t)
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/evals", app.auth(app.handleEvalStart))
+	mux := app.routes(t.TempDir(), t.TempDir()) // 整套路由（Gin），和线上一样
 	dir := filepath.Join(app.store.Data, "problems", "official-set")
 	for _, id := range []string{"AS-1", "AS-2", "AS-3"} {
 		b, _ := json.Marshal(map[string]any{"id": id, "meta": map[string]any{"family": "F-" + id}})

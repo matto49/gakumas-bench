@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"mime/multipart"
-	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -15,11 +14,7 @@ func collApp(t *testing.T) (*App, func(method, path, body, user string) *httptes
 	t.Setenv("GKBENCH_ADMINS", "boss")
 	app := &App{store: &Store{Data: t.TempDir()}, jobs: map[string]*Job{}}
 	_ = os.MkdirAll(filepath.Join(app.store.Data, "problems", "official-set"), 0o755)
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/sets", app.auth(app.handleCreateSet))
-	mux.HandleFunc("PATCH /api/sets/{set}", app.auth(app.handlePatchSet))
-	mux.HandleFunc("GET /api/sets", app.open(app.handleSets))
-	mux.HandleFunc("DELETE /api/sets/{set}/problems/{id}", app.auth(app.handleDeleteProblem))
+	mux := app.routes(t.TempDir(), t.TempDir()) // 整套路由（Gin），和线上一样
 	toks := map[string]string{}
 	return app, func(method, path, body, user string) *httptest.ResponseRecorder {
 		r := httptest.NewRequest(method, path, strings.NewReader(body))
@@ -122,7 +117,7 @@ func TestUploadPermissions(t *testing.T) {
 		r.Header.Set("Content-Type", mw.FormDataContentType())
 		r.Header.Set("Authorization", "Bearer "+tokA)
 		w := httptest.NewRecorder()
-		app.auth(app.handleUpload)(w, r)
+		app.routes(t.TempDir(), t.TempDir()).ServeHTTP(w, r)
 		return w.Code
 	}
 	if c := try(`{"schema":"gkbench.run.v2","run":"x","set":"official-set","kind":"template","template_seeds":"fixed32.v1"}`); c != 403 {

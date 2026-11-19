@@ -99,13 +99,7 @@ func TestGithubFlow(t *testing.T) {
 	ghAuthorizeURL, ghTokenURL, ghUserURL = gh.URL+"/authorize", gh.URL+"/token", gh.URL+"/user"
 
 	app := &App{store: &Store{Data: t.TempDir()}, github: githubConf{ID: "cid", Secret: "sec", Public: "https://x.test/gkbench"}}
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/auth/github", app.handleGithubStart)
-	mux.HandleFunc("GET /api/auth/github/callback", app.handleGithubCallback)
-	mux.HandleFunc("GET /api/me", app.auth(app.handleMe))
-	mux.HandleFunc("POST /api/me/tokens", app.auth(app.handleNewToken))
-	mux.HandleFunc("GET /api/me/tokens", app.auth(app.handleMyTokens))
-	mux.HandleFunc("POST /api/logout", app.handleLogout)
+	mux := app.routes(t.TempDir(), t.TempDir()) // 整套路由（Gin），和线上一样
 
 	do := func(method, path string, cookies []*http.Cookie, body string) *httptest.ResponseRecorder {
 		r := httptest.NewRequest(method, path, strings.NewReader(body))
