@@ -301,3 +301,10 @@ def test_genki_cash_card_class_is_accepted():
     e = written(id="hajime.style-review.card_remove.x", decision="card_remove")
     e["content"] = {"avoid": ["class:genki_cash", "class:other_buff"], "why": "x"}
     assert check_one(e) == []
+
+
+def test_any_idol_path_is_mode_free_idol_layer():
+    e = written(id="any.idol.i_card-shro-3-007.card_pick.x", scope={"idol_card": "i_card-shro-3-007"})
+    assert check_one(e, path="any/idol/i_card-shro-3-007.yaml") == []
+    bad = written(id="any.idol.i_card-shro-3-007.card_pick.x", scope={"mode": "hif", "idol_card": "i_card-shro-3-007"})
+    assert any("mode" in x for x in check_one(bad, path="any/idol/i_card-shro-3-007.yaml"))

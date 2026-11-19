@@ -261,6 +261,8 @@ def scope_of_path(path: str) -> dict | None:
         return {}
     if len(parts) == 2 and parts[0] == "any" and parts[1].startswith("style-"):
         return {"style": parts[1][6:]}
+    if len(parts) == 3 and parts[0] == "any" and parts[1] == "idol":
+        return {"idol_card": parts[2]}
     if parts[0] not in MODES:
         return None
     if len(parts) == 2:

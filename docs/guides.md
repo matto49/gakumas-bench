@@ -181,6 +181,7 @@ guides/
     <mode>/style-<style>.yaml
     <mode>/idol/<idol_card>.yaml      # 偶像卡层
     any/style-<style>.yaml            # 不分模式的流派条目
+    any/idol/<idol_card>.yaml         # 不分模式的偶像卡条目（例如 Campus 広 的手写知识）
 gkbench/guides.py                     # 生成统计条目、校验人写条目、合并成发布包
 ```
 
