@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { api, type RunInfo } from '../lib/api'
+import { type RunInfo } from '../lib/api'
+import { fetchApi } from '../lib/query'
 import { useApi } from '../lib/hooks'
 import { useCatalog, idolName, idolShort } from '../lib/catalog'
 import { int, secs, shortCommit, when } from '../lib/format'
@@ -19,11 +20,11 @@ export function useOracle(set: string | undefined, kind: string | undefined, tse
   useEffect(() => {
     if (!set) return
     let live = true
-    api<RunListItem[]>(`api/runs?set=${encodeURIComponent(set)}`)
+    fetchApi<RunListItem[]>(`api/runs?set=${encodeURIComponent(set)}`)
       .then(async (runs) => {
         const m = new Map<string, number>()
         for (const r of runs.filter((r) => r.privileged && (r.kind ?? 'fixed') === (kind ?? 'fixed') && r.template_seeds === tseeds)) {
-          const info = await api<RunInfo>(`api/runs/${r.run}`)
+          const info = await fetchApi<RunInfo>(`api/runs/${r.run}`)
           for (const e of info.episodes) {
             const k = `${e.id}#${e.seed_index}`
             m.set(k, Math.max(m.get(k) ?? 0, e.score))

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowDown, ArrowRight, ArrowUp, ChevronRight, ChevronsUpDown, Pencil } from 'lucide-react'
 import { useApi } from '../lib/hooks'
+import { invalidateApi } from '../lib/query'
 import { api, type Row, type SetInfo } from '../lib/api'
 import { useCatalog, idolShort } from '../lib/catalog'
 import { compact, int, ms, secs } from '../lib/format'
@@ -129,7 +130,7 @@ export function Leaderboard() {
     if (name === null) return
     try {
       await api(`api/families/${encodeURIComponent(f)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
-      lb.reload()
+      void invalidateApi('api/leaderboard') // 各种范围、分组的排行都带家族名，缓存全部作废
     } catch (e) {
       window.alert(e instanceof Error ? e.message : String(e))
     }

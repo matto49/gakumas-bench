@@ -1,23 +1,22 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { api, type SetInfo } from './api'
 import { SET_INFO } from './game'
+import { apiKey, invalidateApi } from './query'
 
-/** 試験集合：全站共用一份 /api/sets（名称、说明、场景统计），上传或建集合后 reload */
+/** 試験集合：全站共用一份 /api/sets（名称、说明、场景统计），上传或建集合后 reload。
+ * 数据在 TanStack Query 的缓存里（键 ['api', 'api/sets']），页面里 useApi('api/sets') 拿到的是同一份 */
 type Ctx = { sets: SetInfo[] | null; reload: () => void }
 const SetsCtx = createContext<Ctx>({ sets: null, reload: () => {} })
 
+const reloadSets = () => void invalidateApi('api/sets')
+
 export function SetsProvider({ children }: { children: ReactNode }) {
-  const [sets, setSets] = useState<SetInfo[] | null>(null)
-  const reload = useCallback(() => {
-    api<SetInfo[]>('api/sets').then(setSets).catch(() => setSets((s) => s ?? []))
-  }, [])
-  useEffect(() => {
-    reload()
-    const f = () => reload()
-    window.addEventListener('gkb-auth', f) // 登录后能不能编辑会变
-    return () => window.removeEventListener('gkb-auth', f)
-  }, [reload])
-  return <SetsCtx.Provider value={{ sets, reload }}>{children}</SetsCtx.Provider>
+  const q = useQuery({ queryKey: apiKey('api/sets'), queryFn: () => api<SetInfo[]>('api/sets') })
+  // 登录后能不能编辑会变：lib/query.ts 收到 gkb-auth 时整个缓存作废，这里跟着重取
+  // 取失败时当作空列表，页面照常画（和原来一样）
+  const sets = q.data ?? (q.isError ? [] : null)
+  return <SetsCtx.Provider value={{ sets, reload: reloadSets }}>{children}</SetsCtx.Provider>
 }
 
 export function useSets() {

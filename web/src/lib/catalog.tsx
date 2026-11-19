@@ -1,5 +1,7 @@
-import { createContext, Fragment, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, Fragment, useContext, useState, type ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { api, BASE, type Catalog } from './api'
+import { apiKey } from './query'
 import { CATEGORY_JA, CATEGORY_ZH, IDOL_STYLE, IDOL_STYLE_ZH, PLAN, PLAN_ZH, setGameLang } from './game'
 
 /** 游戏里的名字和效果文字用日文还是中文（中文取学マス汉化插件的翻译，见 server/cmd/catalog/zh.go） */
@@ -18,18 +20,15 @@ function savedLang(): Lang {
   }
 }
 
+const EMPTY_CATALOG: Catalog = { cards: {}, drinks: {}, items: {}, enchants: {}, idols: {} }
+
 export function CatalogProvider({ children }: { children: ReactNode }) {
-  const [cat, setCat] = useState<Catalog | null>(null)
   const [lang, setLangState] = useState<Lang>(savedLang)
-  useEffect(() => {
-    let live = true
-    api<Catalog>(lang === 'zh' ? 'api/catalog?lang=zh' : 'api/catalog')
-      .then((c) => live && setCat(c))
-      .catch(() => live && setCat({ cards: {}, drinks: {}, items: {}, enchants: {}, idols: {} }))
-    return () => {
-      live = false
-    }
-  }, [lang])
+  // 中日两份目录各自缓存：切过去再切回来不用重新下载（目录约 1 MB，不常变，缓存 10 分钟算新鲜）
+  const path = lang === 'zh' ? 'api/catalog?lang=zh' : 'api/catalog'
+  const q = useQuery({ queryKey: apiKey(path), queryFn: () => api<Catalog>(path), staleTime: 10 * 60_000 })
+  // 取失败时给空目录，页面照常画（和原来一样）
+  const cat: Catalog | null = q.data ?? (q.isError ? EMPTY_CATALOG : null)
   const setLang = (l: Lang) => {
     try {
       localStorage.setItem(LANG_KEY, l)
