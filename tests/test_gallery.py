@@ -50,7 +50,7 @@ def world(tmp_path):
     zh(t, "CostumeHead", [{"id": "costume_head_shro-hair-0001", "name": "日常发型", "description": "初始持有"}])
     supports = {"cards": {"s_card-3-0001": {"name": {"ja": "サポ", "zh": "支援"}, "rarity": "SSR", "characters": ["shro", "hski"]},
                           "s_card-1-0002": {"name": {"ja": "なし"}, "rarity": "R", "characters": []}}}
-    touch(img, "chr/shro-full.webp", "chr/shro-bustup.webp", "chr/hski-bustup.webp",
+    touch(img, "chr/shro-full.webp", "chr/shro-bustup.webp", "chr/shro-icon.webp", "chr/hski-bustup.webp",
           "card/cidol-shro-3-016_0.webp", "card/cidol-shro-3-016_1.webp", "card/cidol-shro-3-016_2.webp", "card/cidol-shro-1-000_1.webp",
           "card/cidol-shro-3-020_0.webp", "card/cidol-shro-3-020_1.webp",
           "support/s_card-3-0001.webp", "support/s_card-1-0002.webp",
@@ -64,7 +64,8 @@ def test_characters_and_cards(world):
     chars = {c["id"]: c for c in g["characters"]}
     # 没有任何图的角色（nasr）不列；有图的带立绘有无
     assert set(chars) == {"shro", "hski"}
-    assert chars["shro"] == {"id": "shro", "name": {"ja": "篠澤広", "zh": "篠泽广"}, "stand": True, "bustup": True}
+    assert chars["shro"] == {"id": "shro", "name": {"ja": "篠澤広", "zh": "篠泽广"}, "stand": True, "bustup": True, "icon": True}
+    assert chars["hski"]["icon"] is False
     assert chars["hski"]["stand"] is False and chars["hski"]["bustup"] is True
     # 一套卡面一条（偶像卡本身的卡面 + 「光景」换装卡面），按卡面表的 order 排
     cards = {c["id"]: c for c in g["cards"]}

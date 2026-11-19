@@ -3,7 +3,8 @@
 import { BASE } from './api'
 import type { Bi } from './site'
 
-export type GalleryChar = { id: string; name: Bi; stand: boolean; bustup: boolean }
+/** icon：游戏自带的圆形头像（脸居中、带角色色的圈） */
+export type GalleryChar = { id: string; name: Bi; stand: boolean; bustup: boolean; icon?: boolean }
 /** 一套卡面：偶像卡本身的，或挂在某张偶像卡下的「光景」换装卡面（skin 是换装名）。arts：0 特训前、1 特训后、2 第三张 */
 export type GalleryCard = { id: string; card: string; char: string; asset: string; rarity: string; name: Bi; skin?: Bi; arts: number[] }
 export type GallerySupport = { id: string; rarity: string; name: Bi; chars: string[] }
@@ -22,6 +23,7 @@ export type Gallery = {
 const G = `${BASE}sprites/gallery/`
 export const standUrl = (c: string) => `${G}chr/${c}-full.webp`
 export const bustupUrl = (c: string) => `${G}chr/${c}-bustup.webp`
+export const iconUrl = (c: string) => `${G}chr/${c}-icon.webp`
 export const cardArtUrl = (asset: string, v: number, thumb = false) => `${G}card/${asset}_${v}${thumb ? '-t' : ''}.webp`
 export const supportArtUrl = (id: string, thumb = false) => `${G}support/${id}${thumb ? '-t' : ''}.webp`
 export const costumeUrl = (id: string) => `${G}cos/${id}.webp`

@@ -53,7 +53,8 @@ def build(master: Path, translation: Path | None, images: Path, supports: dict) 
     for c in _yaml(master, "Character"):
         z = zc.get(c["id"], {})
         chars[c["id"]] = {"id": c["id"], "name": _bi(f'{c.get("lastName", "")}{c.get("firstName", "")}', (z.get("lastName", "") + z.get("firstName", "")) or None),
-                          "stand": have(f'chr/{c["id"]}-full.webp'), "bustup": have(f'chr/{c["id"]}-bustup.webp')}
+                          "stand": have(f'chr/{c["id"]}-full.webp'), "bustup": have(f'chr/{c["id"]}-bustup.webp'),
+                          "icon": have(f'chr/{c["id"]}-icon.webp')}
 
     # 卡面：一套一条。偶像卡本身的卡面和「光景」换装卡面（'24祭 等，挂在某张偶像卡下）都在 IdolCardSkin 表里
     zcard, zskin = _zh(translation, "IdolCard"), _zh(translation, "IdolCardSkin")

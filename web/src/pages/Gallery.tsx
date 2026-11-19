@@ -5,7 +5,7 @@ import { useApi } from '../lib/hooks'
 import { useLang } from '../lib/catalog'
 import { pick } from '../lib/supports'
 import {
-  ART_LABEL, bustupUrl, cardArtUrl, costumeUrl, headUrl, standUrl, supportArtUrl,
+  ART_LABEL, bustupUrl, cardArtUrl, iconUrl, costumeUrl, headUrl, standUrl, supportArtUrl,
   type Gallery as GalleryData, type GalleryCard, type GalleryChar, type GalleryOutfit,
 } from '../lib/gallery'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -95,10 +95,11 @@ function CharPicker({ chars, cur, lang, onPick }: { chars: GalleryChar[]; cur: s
       <button type="button" role="tab" aria-selected={!cur} onClick={() => onPick('')} className={cx(chip(!cur), 'pl-3')}>全部</button>
       {chars.map((x) => (
         <button key={x.id} type="button" role="tab" aria-selected={cur === x.id} onClick={() => onPick(x.id)} className={chip(cur === x.id)}>
-          {/* 半身像只取头部：放大两倍、从顶上对齐 */}
-          <span className="size-7 shrink-0 overflow-hidden rounded-full bg-white ring-1 ring-line">
-            {x.bustup && <img src={bustupUrl(x.id)} alt="" loading="lazy" className="size-full origin-[50%_8%] scale-[2.3] object-cover object-top" />}
-          </span>
+          {/* 游戏自带的圆形头像；没有的话用半身像放大取头部 */}
+          {x.icon ? <img src={iconUrl(x.id)} alt="" loading="lazy" className="size-8 shrink-0 rounded-full" />
+            : <span className="size-8 shrink-0 overflow-hidden rounded-full bg-white ring-1 ring-line">
+                {x.bustup && <img src={bustupUrl(x.id)} alt="" loading="lazy" className="size-full origin-[50%_22%] scale-[2.2] object-cover object-top" />}
+              </span>}
           {pick(x.name, lang)}
         </button>
       ))}
