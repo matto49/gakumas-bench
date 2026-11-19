@@ -97,6 +97,16 @@
         "评测覆盖 21 道好印象题，每题 8 个牌序。历史适配器对持续效果和牌面映射的支持范围与现版有别。",
         "Covers 21 Good Impression loadouts with eight deals each. Ongoing effects and card mapping were handled by the historical adapter."
       ]
+    },
+    "ghl-sense-buff-value": {
+      "owner": "yzhouwang",
+      "name": "Sense 增益估值 / Sense Buff Value",
+      "summary": "综合本次得分与好调、绝好调、集中在剩余回合的收益来选牌。 Choose plays by immediate score and the remaining value of Good Condition, Perfect Condition and Concentration.",
+      "detail": [
+        "采用 GHL 的 Sense B1v2 出牌规则，使用公开手牌、牌堆组成、回合属性和合法动作。 Runs the GHL Sense B1v2 battle rules on the visible hand, pile composition, turn types and legal moves.",
+        "保留原策略对基础卡牌效果的估值；定制和考中成长由裁判结算。 The policy values base card effects. The referee applies customizations and in-exam growth."
+      ],
+      "source_url": "https://github.com/yzhouwang/gkbench-baselines"
     }
   },
   "runs": {
@@ -173,6 +183,18 @@
     "template-u-yzhouwang-723768-ghl-b4v2-gkms-n3-v1-yzhouwang-88c16783d43f": {
       "set": "u-yzhouwang-723768",
       "profile": "ghl-b4v2-expected-rank-gkms"
+    },
+    "template-hif-ghl-sense-buff-value-yzhouwang-47dfb495c3a6": {
+      "profile": "ghl-sense-buff-value",
+      "set": "hif"
+    },
+    "template-nia-ghl-sense-buff-value-yzhouwang-b0c82049c802": {
+      "profile": "ghl-sense-buff-value",
+      "set": "nia"
+    },
+    "template-idolroad-ghl-sense-buff-value-yzhouwang-3503a38c0c9b": {
+      "profile": "ghl-sense-buff-value",
+      "set": "idolroad"
     }
   }
 }

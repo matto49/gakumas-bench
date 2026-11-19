@@ -150,7 +150,7 @@
     mkdir -p "$GKBENCH_DATA/static/site"
     cp -n examples/run-presentations.json "$GKBENCH_DATA/static/site/run-presentations.json"
 
-`profiles` 定义显示名、中英文说明、提交人和源码链接。`runs` 把完整运行编号关联到题集和说明。可选的 `alias_of` 指向清单中同作者、同题集的对应运行。示例包含 18 条 GHL 历史记录，其中两条 B3 考试成绩链接到相应的 B1 成绩。
+`profiles` 定义显示名、中英文说明、提交人和源码链接。`runs` 把完整运行编号关联到题集和说明。可选的 `alias_of` 指向清单中同作者、同题集的对应运行。示例包含 18 条 GHL 历史记录和 3 条 Sense 正式评测。两条 B3 历史成绩分别链接到同一题集的 B1。
 
 ## 线上部署
 
