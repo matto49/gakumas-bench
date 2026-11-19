@@ -10,19 +10,9 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { Layout } from './components/Layout'
 import { Home } from './pages/Home'
-import { Tiers, TiersIndex } from './pages/Tiers'
-import { About } from './pages/About'
-import { Usage } from './pages/Usage'
-import { TierCardPage } from './pages/TierCard'
-import { Leaderboard } from './pages/Leaderboard'
-import { RunPage } from './pages/Run'
-import { Replay } from './pages/Replay'
-import { Compare } from './pages/Compare'
-import { Cards } from './pages/Cards'
-import { ExamSet, Exams } from './pages/Exams'
-import { Me } from './pages/Me'
-import { CliLogin } from './pages/CliLogin'
-import { NotFound } from './pages/NotFound'
+
+/** 除首页外，每个页面单独打包，打开时才下载（React Router 的 lazy 路由）。首页和顶栏在主包里，进站最快 */
+const page = <M, K extends keyof M>(load: () => Promise<M>, name: K) => async () => ({ Component: (await load())[name] as React.ComponentType })
 
 const router = createBrowserRouter(
   [
@@ -30,23 +20,23 @@ const router = createBrowserRouter(
       element: <Layout />,
       children: [
         { path: '/', element: <Home /> },
-        { path: '/about', element: <About /> },
-        { path: '/usage', element: <Usage /> },
-        { path: '/tiers', element: <TiersIndex /> },
-        { path: '/tiers/:board', element: <Tiers /> },
-        { path: '/tiers/:board/:card', element: <TierCardPage /> },
-        { path: '/sets', element: <Leaderboard /> },
-        { path: '/sets/:set', element: <Leaderboard /> },
-        { path: '/runs/:run', element: <RunPage /> },
-        { path: '/runs/:run/:problem/:seed', element: <Replay /> },
-        { path: '/compare', element: <Compare /> },
-        { path: '/cards', element: <Cards /> },
-        { path: '/exams', element: <Exams /> },
-        { path: '/exams/:set', element: <ExamSet /> },
-        { path: '/me', element: <Me /> },
-        { path: '/cli-login', element: <CliLogin /> },
+        { path: '/about', lazy: page(() => import('./pages/About'), 'About') },
+        { path: '/usage', lazy: page(() => import('./pages/Usage'), 'Usage') },
+        { path: '/tiers', lazy: page(() => import('./pages/Tiers'), 'TiersIndex') },
+        { path: '/tiers/:board', lazy: page(() => import('./pages/Tiers'), 'Tiers') },
+        { path: '/tiers/:board/:card', lazy: page(() => import('./pages/TierCard'), 'TierCardPage') },
+        { path: '/sets', lazy: page(() => import('./pages/Leaderboard'), 'Leaderboard') },
+        { path: '/sets/:set', lazy: page(() => import('./pages/Leaderboard'), 'Leaderboard') },
+        { path: '/runs/:run', lazy: page(() => import('./pages/Run'), 'RunPage') },
+        { path: '/runs/:run/:problem/:seed', lazy: page(() => import('./pages/Replay'), 'Replay') },
+        { path: '/compare', lazy: page(() => import('./pages/Compare'), 'Compare') },
+        { path: '/cards', lazy: page(() => import('./pages/Cards'), 'Cards') },
+        { path: '/exams', lazy: page(() => import('./pages/Exams'), 'Exams') },
+        { path: '/exams/:set', lazy: page(() => import('./pages/Exams'), 'ExamSet') },
+        { path: '/me', lazy: page(() => import('./pages/Me'), 'Me') },
+        { path: '/cli-login', lazy: page(() => import('./pages/CliLogin'), 'CliLogin') },
         { path: '/leaderboard', element: <Navigate to="/sets" replace /> },
-        { path: '*', element: <NotFound /> },
+        { path: '*', lazy: page(() => import('./pages/NotFound'), 'NotFound') },
       ],
     },
   ],
