@@ -40,6 +40,52 @@ class AssistSession:
         self.policy = policy
         self.awaiting = not self.practice and not self.battle.finished
         self.history: list = []
+        self.imported = None                              # GR1 导入：{"plays": 重放成功几步, "total": 码里几步}
+
+    @classmethod
+    def from_code(cls, code: str, practice: bool = False, policy=None) -> "AssistSession":
+        """GA1 编成码：按编成开新局。GR1 对局码（GKMS「导出 GKMSUINet」）：用码里的种子把局面重放到玩家现在的位置，
+        再把隐藏信息（山札顺序、随机数、三处种子）全换掉——之后的建议和练习不再依赖真种子。
+        重放到某一步走不下去（客户端版本不同等）就停在上一步，view 的 imported 写明走了几步。"""
+        from .assist_code import parse_code
+        c = parse_code(code)
+        if c["kind"] == "GA" or c["seed"] is None:
+            return cls(c["loadout"], practice=practice, policy=policy)
+        s = cls(c["loadout"], practice=practice, seed=c["seed"], policy=policy)
+        done = 0
+        for a in c["plays"]:
+            try:
+                act = ("select", [int(i) for i in a[1]]) if a[0] == "select" else tuple(a)
+                if act[0] != "select" and act not in [tuple(x) for x in s.battle.legal()]:
+                    break
+                s.battle.step(act)
+            except Exception:
+                break
+            done += 1
+            if s.battle.finished:
+                break
+        s._scrub()
+        s.awaiting = False                                # 重放出来的手牌就是玩家画面上的那一手
+        s.imported = {"plays": done, "total": len(c["plays"])}
+        return s
+
+    def _scrub(self):
+        import random
+        from .worlds import _scrub_seed
+        rng = random.Random(secrets.randbits(64))
+        sess = self.session
+
+        def reshuffle(view):
+            rng.shuffle(view.deck.deck)
+
+        if getattr(sess, "native", False):
+            sess.edit(reshuffle)
+        else:
+            reshuffle(sess)
+        sess.deck.rng.state = rng.getrandbits(32) or 1
+        _scrub_seed(sess, rng)
+        self.battle.loadout = dict(self.battle.loadout, seed=(getattr(sess, "_loadout", None) or {}).get("seed")
+                                   or rng.randrange(1, 2 ** 31 - 1))
 
     # -- 读
     @property
@@ -69,7 +115,7 @@ class AssistSession:
                 "finished": bool(b.finished), "score": int(st.score), "turn": int(s.turn),
                 "limit_turn": (b.meta or {}).get("limit_turn"),
                 "numbers": {k: getattr(st, k, None) for k in NUMBERS},
-                "can_undo": bool(self.history), "advice": advice}
+                "can_undo": bool(self.history), "advice": advice, "imported": self.imported}
 
     # -- 改
     def _push(self):

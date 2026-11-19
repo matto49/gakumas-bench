@@ -141,3 +141,62 @@ def test_real_uinet_advice():
     s = AssistSession(loadout(), practice=True, policy=pol.decide)
     v = s.view()
     assert abs(sum(v["advice"]["probs"]) - 1) < 1e-3 and "50%" in v["advice"]["score_quantiles"]
+
+
+def _gr1(lo, seed, plays, name="本戦 下半場"):
+    import base64, zlib
+    raw = json.dumps({"n": name, "d": dict(lo, seed=seed), "x": plays}, ensure_ascii=False, separators=(",", ":")).encode()
+    c = zlib.compressobj(9, zlib.DEFLATED, -15)
+    return "GR1" + base64.urlsafe_b64encode(c.compress(raw) + c.flush()).decode().rstrip("=")
+
+
+def _played(seed, n):
+    from gkbench.referee import Referee
+    ref = Referee(loadout(), seed)
+    plays = []
+    for _ in range(n):
+        a = ref.legal()[-1] if len(plays) % 3 == 2 else ref.legal()[0]      # 夹几次结束回合，走过回合交界
+        ref.step(a)
+        plays.append(list(a))
+    return ref, plays
+
+
+def test_import_gr1_reaches_same_public_state():
+    from gkbench.assist import AssistSession
+    ref, plays = _played(4242, 9)
+    s = AssistSession.from_code(_gr1(loadout(), 4242, plays), policy=fake_policy)
+    v = s.view()
+    sess = ref.battle.session
+    assert [c[0] for c in v["piles"]["hand"]] == [c["produce_card_id"] for c in sess.deck.hand]
+    assert v["score"] == ref.score and v["turn"] == sess.turn
+    assert v["numbers"]["stamina"] == sess.state.stamina
+    assert v["awaiting_hand"] is False and v["imported"] == {"plays": 9, "total": 9}
+
+
+def test_import_gr1_scrubs_hidden_info():
+    from gkbench.assist import AssistSession
+    ref, plays = _played(4242, 6)
+    s = AssistSession.from_code(_gr1(loadout(), 4242, plays), policy=fake_policy)
+    sess = s.session
+    assert int(sess.deck.rng.state) != int(ref.battle.session.deck.rng.state)
+    for seed in (getattr(sess, "_seed", None), (getattr(sess, "_loadout", None) or {}).get("seed"),
+                 getattr(sess.config, "seed", None), s.battle.loadout.get("seed")):
+        assert seed != 4242
+    real = [c["produce_card_id"] for c in ref.battle.session.deck.deck]
+    if len(real) > 3:
+        assert [c["produce_card_id"] for c in sess.deck.deck] != real or len(set(real)) == 1
+
+
+def test_import_stops_at_unplayable_step():
+    from gkbench.assist import AssistSession
+    ref, plays = _played(4242, 4)
+    s = AssistSession.from_code(_gr1(loadout(), 4242, plays + [["play", 99]]), policy=fake_policy)
+    assert s.view()["imported"] == {"plays": 4, "total": 5}
+
+
+def test_import_ga1_starts_fresh():
+    from gkbench.assist import AssistSession
+    from gkbench.assist_code import pack_ga1
+    s = AssistSession.from_code(pack_ga1("x", loadout()), policy=fake_policy)
+    v = s.view()
+    assert v["turn"] == 1 and v["awaiting_hand"] is True and v.get("imported") is None
