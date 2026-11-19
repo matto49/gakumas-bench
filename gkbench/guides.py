@@ -426,6 +426,25 @@ def write_pack(out_dir: Path, mode: str, stats: list[dict], written: list[tuple[
     return man
 
 
+# ---- 偶像之路：按层汇总（排行榜只有每层前 5 名牌组和 10 条编成，出不了选卡 / 删卡条目） ----
+
+def tower_summary(season_dir: Path) -> dict:
+    """tower-ranking-decoded/<赛季>/<塔>.json → {season, towers: {塔: {character, total, layers: [{layer, idols, conversions,
+    memories, n_histories}]}}}。memories：这一层编成（histories）里用到各偶像卡回忆的比例；不带逐条编成。"""
+    season_dir = Path(season_dir)
+    towers = {}
+    for f in sorted(season_dir.glob("tower_*.json")):
+        t = json.loads(f.read_text(encoding="utf-8"))
+        layers = []
+        for L in t.get("layers") or []:
+            hist = L.get("histories") or []
+            mem = Counter(i for h in hist for i in {m.get("idol_card_id") for m in h.get("memories") or []} if i)
+            layers.append({"layer": L["layer"], "idols": L.get("idols") or [], "conversions": (L.get("conversions") or [])[:10],
+                           "memories": _ranked_plain(mem, len(hist)) if hist else [], "n_histories": len(hist)})
+        tid = t.get("tower") or f.stem
+        towers[tid] = {"character": tid.rsplit("-", 1)[-1], "total": t.get("total_ranking"), "layers": layers}
+    return {"season": season_dir.name, "towers": towers}
+
 # ---- 命令行 ----
 
 def idol_meta(master_dir: Path) -> dict[str, dict]:
@@ -471,10 +490,10 @@ def main(argv: list[str] | None = None) -> None:
     ck.add_argument("entries", type=Path, nargs="?", default=Path(__file__).resolve().parents[1] / "guides/entries")
     ck.add_argument("--static", type=Path, help="网站数据目录（$GKBENCH_DATA/static），给了就核对 ID")
     b = sub.add_parser("build", help="生成一个模式的统计条目，和人写条目合并成发布包")
-    b.add_argument("--mode", required=True, choices=["hajime", "nia", "hif"])
-    b.add_argument("--records", type=Path, required=True, help="rec_<偶像卡>.json 所在目录")
+    b.add_argument("--mode", required=True, choices=["hajime", "nia", "hif", "idolroad"])
+    b.add_argument("--records", type=Path, required=True, help="rec_<偶像卡>.json 所在目录；idolroad 是 tower-ranking-decoded（下面每个赛季一个目录）")
     b.add_argument("--fetched", required=True, help="排行榜抓取日期 YYYY-MM-DD")
-    b.add_argument("--master", type=Path, required=True, help="主数据表目录（IdolCard / ProduceInitialDeck / ExamInitialDeck .jsonl）")
+    b.add_argument("--master", type=Path, help="主数据表目录（IdolCard / ProduceInitialDeck / ExamInitialDeck .jsonl）")
     b.add_argument("--entries", type=Path, default=Path(__file__).resolve().parents[1] / "guides/entries")
     b.add_argument("--out-dir", type=Path, required=True, help="$GKBENCH_DATA/static/guides")
     b.add_argument("--static", type=Path)
@@ -485,6 +504,15 @@ def main(argv: list[str] | None = None) -> None:
         print(f"{len(es)} 条人写条目，通过")
         return
     written = _check_or_exit(load_entries(a.entries) if a.entries.exists() else [], a.static)
+    if a.mode == "idolroad":
+        seasons = {d.name: tower_summary(d) for d in sorted(a.records.iterdir()) if d.is_dir()}
+        sources = {"ranking": [{"fetch": k, "fetched": a.fetched, "n_towers": len(v["towers"])} for k, v in seasons.items()]}
+        man = write_pack(a.out_dir, a.mode, [], written, {"seasons": seasons}, sources=sources, today=a.today)
+        p = man["packs"][a.mode]
+        print(f"idolroad: {len(seasons)} 个赛季、{p['entries']} 条人写 → {p['name']}（{p['bytes'] // 1024} KB）")
+        return
+    if not a.master:
+        raise SystemExit("--master 必填（初 / N.I.A / H.I.F 要读初始牌组和偶像卡）")
     idols = idol_meta(a.master)
     decks = initial_decks(a.master)
     stats, summ = [], {}

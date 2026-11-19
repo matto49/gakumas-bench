@@ -259,3 +259,39 @@ def test_build_cli_refuses_bad_entries(tmp_path):
     (entries / "common.yaml").write_text("- id: x\n  kind: written\n", encoding="utf-8")
     with pytest.raises(SystemExit):
         guides.main(["check", str(entries)])
+
+
+# ---- 偶像之路：按层汇总 ----
+
+def test_tower_summary_per_layer(tmp_path):
+    season = tmp_path / "current-20261101"
+    season.mkdir()
+    hist = [{"score": 10, "memories": [{"idol_card_id": "i_card-a"}, {"idol_card_id": "i_card-b"}]},
+            {"score": 20, "memories": [{"idol_card_id": "i_card-a"}]}]
+    layer = {"layer": 3, "idols": [{"idol_card_id": "i_card-a", "n": 100, "top": 9, "r5": 5, "r10": 4, "r50": 2, "r100": 1}],
+             "conversions": [{"before": "p_card-1", "after": "p_card-2", "count": 7}] * 12, "histories": hist}
+    (season / "tower_001-shro.json").write_text(json.dumps({"season": "current-20261101", "tower": "tower_001-shro",
+                                                             "total_ranking": {"n": 100}, "layers": [layer]}), encoding="utf-8")
+    s = guides.tower_summary(season)
+    t = s["towers"]["tower_001-shro"]
+    assert s["season"] == "current-20261101" and t["character"] == "shro"
+    L = t["layers"][0]
+    assert L["layer"] == 3 and L["idols"][0]["idol_card_id"] == "i_card-a"
+    assert len(L["conversions"]) == 10
+    assert L["memories"] == [{"id": "i_card-a", "share": 1.0}, {"id": "i_card-b", "share": 0.5}]
+    assert L["n_histories"] == 2 and "histories" not in L
+
+
+def test_build_cli_idolroad_packs_layer_summaries(tmp_path):
+    root = tmp_path / "decoded"
+    for season in ("current-20261101", "previous-20260801"):
+        (root / season).mkdir(parents=True)
+        (root / season / "tower_001-shro.json").write_text(json.dumps({"tower": "tower_001-shro", "layers": [
+            {"layer": 1, "idols": [], "conversions": [], "histories": []}]}), encoding="utf-8")
+    out = tmp_path / "out"
+    guides.main(["build", "--mode", "idolroad", "--records", str(root), "--fetched", "2026-11-20", "--out-dir", str(out),
+                 "--entries", str(tmp_path / "none"), "--today", "20261120"])
+    pack = json.loads((out / "idolroad.json").read_text(encoding="utf-8"))
+    assert sorted(pack["summary"]["seasons"]) == ["current-20261101", "previous-20260801"]
+    assert pack["summary"]["seasons"]["current-20261101"]["towers"]["tower_001-shro"]["layers"][0]["layer"] == 1
+    assert pack["entries"] == []
