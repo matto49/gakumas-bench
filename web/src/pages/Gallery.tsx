@@ -14,7 +14,8 @@ import { cx, Empty, ErrorState, PageHeader, Skeleton } from '../components/ui'
 
 /** 图鉴：每个偶像的立绘、偶像卡卡面（含「光景」换装卡面）、支援卡卡面、衣装、发型。
  * 数据 api/site/gallery（gkbench/gallery.py），图在 sprites/gallery/（gkmas-assets/tools/export_gallery.py 导出）。
- * 不选角色时是立绘墙；选了角色（?c=）按标签页看；点任何一张图放大，左右键翻 */
+ * 不选角色时是立绘墙；选了角色（?c=）按标签页看；点任何一张图放大，左右键翻。
+ * 卡面是 9:16、支援卡 16:9（导出时已从游戏贴图的 1:2 / 2:1 拉回原比例） */
 
 type Tab = 'cards' | 'supports' | 'costumes' | 'heads'
 const TABS: { key: Tab; label: string }[] = [
@@ -192,12 +193,12 @@ function CharView({ g, ch, tab, art, lang, onTab, onArt, onView }: {
       </div>
 
       {tab === 'cards' && (cards.length ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-x-3 gap-y-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] items-start gap-x-3 gap-y-4">
           {cards.map((x, i) => {
             const v = x.arts.includes(art) ? art : x.arts[0]
             return (
-              <button key={x.id} type="button" onClick={() => onView(cardItems, i, v)} className="group cursor-zoom-in text-left">
-                <div className="aspect-[1/2] overflow-hidden rounded-xl bg-surface-3 ring-1 ring-line">
+              <button key={x.id} type="button" onClick={() => onView(cardItems, i, v)} className="group flex cursor-zoom-in flex-col text-left">
+                <div className="aspect-[9/16] overflow-hidden rounded-xl bg-surface-3 ring-1 ring-line">
                   <img src={cardArtUrl(x.asset, v, true)} alt="" loading="lazy" className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" />
                 </div>
                 <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-snug font-semibold text-ink">{pick(x.name, lang)}</p>
@@ -209,11 +210,11 @@ function CharView({ g, ch, tab, art, lang, onTab, onArt, onView }: {
       ) : <Empty>还没有她的卡面。</Empty>)}
 
       {tab === 'supports' && (sups.length ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-x-3 gap-y-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] items-start gap-x-3 gap-y-4">
           {sups.map((x, i) => (
-            <button key={x.id} type="button" className="group cursor-zoom-in text-left"
+            <button key={x.id} type="button" className="group flex cursor-zoom-in flex-col text-left"
               onClick={() => onView(sups.map((s) => ({ key: s.id, title: pick(s.name, lang), sub: `${s.rarity} 支援卡`, src: () => supportArtUrl(s.id), wide: true })), i, 0)}>
-              <div className="aspect-[2/1] overflow-hidden rounded-xl bg-surface-3 ring-1 ring-line">
+              <div className="aspect-[16/9] overflow-hidden rounded-xl bg-surface-3 ring-1 ring-line">
                 <img src={supportArtUrl(x.id, true)} alt="" loading="lazy" className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" />
               </div>
               <p className="mt-1.5 truncate text-[12.5px] font-semibold text-ink">{pick(x.name, lang)}</p>
@@ -228,7 +229,7 @@ function CharView({ g, ch, tab, art, lang, onTab, onArt, onView }: {
         const url = tab === 'costumes' ? costumeUrl : headUrl
         const items = outfitItems(xs, url)
         return xs.length ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] items-start gap-3">
             {xs.map((x, i) => (
               <button key={x.id} type="button" onClick={() => onView(items, i, 0)}
                 className="group flex cursor-zoom-in flex-col rounded-xl bg-surface p-2 text-left ring-1 ring-line transition-shadow duration-150 hover:ring-line-strong">
