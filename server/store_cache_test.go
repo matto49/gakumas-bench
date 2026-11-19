@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -134,5 +136,74 @@ func TestLeaderboardCacheInvalidates(t *testing.T) {
 	}
 	if !named {
 		t.Fatalf("family rename not seen: %+v", rows)
+	}
+}
+
+// 预热：启动后台把各集合默认排行算好，之后同样的请求直接命中缓存（不再读摘要文件）
+func TestWarmFillsLeaderboardCache(t *testing.T) {
+	s := &Store{Data: t.TempDir()}
+	writeTemplateRun(t, s, "a1", "algo-a", map[string][]float64{"A": {100}})
+	writeTemplateRun(t, s, "b1", "algo-b", map[string][]float64{"A": {50}})
+	if err := os.MkdirAll(filepath.Join(s.Data, "problems", "hif"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	s.Warm()
+	key := "hif\x00\x00\x00template\x00"
+	s.rc.mu.Lock()
+	e, ok := s.rc.lb[key]
+	nIdx := len(s.rc.index)
+	s.rc.mu.Unlock()
+	if !ok || len(e.rows) != 2 || nIdx != 2 {
+		t.Fatalf("预热后默认排行和两份摘要都要在缓存里：lb=%v rows=%d index=%d", ok, len(e.rows), nIdx)
+	}
+	rows, err := s.Leaderboard("hif", "", "", "template", "")
+	if err != nil || len(rows) != 2 {
+		t.Fatalf("预热后的请求：%v %v", rows, err)
+	}
+}
+
+// 并行读摘要：结果和一个一个读一样（顺序、内容）
+func TestPrefetchIndexesSameResult(t *testing.T) {
+	s := &Store{Data: t.TempDir()}
+	for i, l := range []string{"a", "b", "c", "d", "e", "f"} {
+		writeTemplateRun(t, s, "r"+l, "algo-"+l, map[string][]float64{"A": {float64(10 * (i + 1))}, "B": {float64(i)}})
+	}
+	want, err := (&Store{Data: s.Data}).leaderboardUncached("hif", "", "", "template", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.prefetchIndexes("hif")
+	got, err := s.leaderboardUncached("hif", "", "", "template", "")
+	if err != nil || len(got) != len(want) {
+		t.Fatalf("%d vs %d %v", len(got), len(want), err)
+	}
+	for i := range want {
+		if got[i].Run != want[i].Run || got[i].Mean != want[i].Mean {
+			t.Fatalf("第 %d 行不同：%+v vs %+v", i, got[i], want[i])
+		}
+	}
+}
+
+// 摘要用 goccy/go-json 解析（readJSONFast）：每个字段的结果都要和 encoding/json 一样，包括 tags 里的数字、空值、中文和转义
+func TestFastJSONMatchesStdlib(t *testing.T) {
+	raw := `{"episodes":[{"id":"AS-1","name":"選抜 1「本戦」☃","fixed_id":"f","seed_index":3,"exam_sha":"ab",` +
+		`"score":1234567.125,"finished":true,"decisions":88,"secs":0.000123,"over_steps":2,"err":"","at":"2026-11-19T01:02:03Z",` +
+		`"route":"a\"b\\c","tags":{"round":2,"plan":"logic","x":null,"n":1e21,"nest":{"k":[1,"2",false]}},"step_ms":[0.5,12,1e-7],"types":[1,2,3]},` +
+		`{"id":"AS-2","seed_index":0,"score":0,"finished":false,"decisions":0,"secs":0,"over_steps":0,"step_ms":null}]}`
+	var a, b struct {
+		Episodes []EpisodeSummary `json:"episodes"`
+	}
+	if err := json.Unmarshal([]byte(raw), &a); err != nil {
+		t.Fatal(err)
+	}
+	p := filepath.Join(t.TempDir(), "index.json")
+	if err := os.WriteFile(p, []byte(raw), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := readJSONFast(p, &b); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(a, b) {
+		t.Fatalf("两个库解析结果不同：\n%+v\n%+v", a, b)
 	}
 }

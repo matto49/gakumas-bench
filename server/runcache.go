@@ -7,9 +7,11 @@ package main
 import (
 	"fmt"
 	"hash/fnv"
+	"log"
 	"maps"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sync"
 	"time"
@@ -169,6 +171,8 @@ func (s *Store) Leaderboard(set, base, group, kind, scope string) ([]Row, error)
 	if hit && e.sig == sig {
 		return e.rows, nil
 	}
+	// 缓存没命中：先用全部核并行把这个集合的摘要读进缓存，下面现算时就不用一个文件一个文件串着解析
+	s.prefetchIndexes(set)
 	rows, err := s.leaderboardUncached(set, base, group, kind, scope)
 	if err != nil {
 		return nil, err
@@ -181,4 +185,42 @@ func (s *Store) Leaderboard(set, base, group, kind, scope string) ([]Row, error)
 	s.rc.lb[key] = lbEntry{sig, rows}
 	s.rc.mu.Unlock()
 	return rows, nil
+}
+
+// prefetchIndexes：并行读一个集合（空 = 全部）所有运行的摘要进缓存。已经在缓存里、文件没变的只 stat 一下
+func (s *Store) prefetchIndexes(set string) {
+	var names []string
+	for _, info := range s.Runs(set) {
+		if n, _ := info["run"].(string); n != "" {
+			names = append(names, n)
+		}
+	}
+	jobs := make(chan string)
+	var wg sync.WaitGroup
+	for range max(1, min(runtime.NumCPU(), len(names))) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for n := range jobs {
+				_, _ = s.Index(n)
+			}
+		}()
+	}
+	for _, n := range names {
+		jobs <- n
+	}
+	close(jobs)
+	wg.Wait()
+}
+
+// Warm：服务启动后在后台跑一次，把每个集合的默认排行（排行页打开时的那个请求）算好放进缓存。
+// 之后只有改过的运行会重读，所以除了刚启动的这几秒，没人会碰到冷请求
+func (s *Store) Warm() {
+	t0 := time.Now()
+	s.prefetchIndexes("")
+	sets := s.Sets()
+	for _, set := range sets {
+		_, _ = s.Leaderboard(set, "", "", "template", "")
+	}
+	log.Printf("缓存预热：%d 个集合的默认排行，用时 %v", len(sets), time.Since(t0).Round(time.Millisecond))
 }

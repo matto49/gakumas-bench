@@ -138,6 +138,7 @@ func main() {
 
 	// 路由在 routes.go（Gin）
 	handler := app.routes(filepath.Join(data, "static"), env("GKBENCH_WEB", "../web/dist"))
+	go app.store.Warm() // 后台预热排行缓存（runcache.go），不挡着开始监听
 
 	addr := env("GKBENCH_ADDR", "127.0.0.1:19150")
 	srv := &http.Server{Addr: addr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}

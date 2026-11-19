@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	fastjson "github.com/goccy/go-json"
 	"github.com/klauspost/compress/zstd"
 )
 
@@ -375,7 +376,7 @@ func (s *Store) indexUncached(run string) ([]EpisodeSummary, error) {
 	var idx struct {
 		Episodes []EpisodeSummary `json:"episodes"`
 	}
-	if readJSON(filepath.Join(dir, "index.json"), &idx) == nil {
+	if readJSONFast(filepath.Join(dir, "index.json"), &idx) == nil {
 		return idx.Episodes, nil
 	}
 	// 逐局追加的运行（托管、保密种子评测）：index.jsonl 一局一行，同一局重打时以最后一行为准
@@ -387,7 +388,7 @@ func (s *Store) indexUncached(run string) ([]EpisodeSummary, error) {
 		sc.Buffer(make([]byte, 1<<20), 64<<20)
 		for sc.Scan() {
 			var e EpisodeSummary
-			if json.Unmarshal(sc.Bytes(), &e) != nil {
+			if fastjson.Unmarshal(sc.Bytes(), &e) != nil {
 				continue
 			}
 			k := key{e.ID, e.SeedIndex}
@@ -518,4 +519,13 @@ func (s *Store) AppendEpisode(run string, info map[string]any, e map[string]any)
 func fileExists(p string) bool {
 	_, err := os.Stat(p)
 	return err == nil
+}
+
+// readJSONFast：每局摘要（几十 MB）用更快的 goccy/go-json 解析，结果和 encoding/json 一样
+func readJSONFast(path string, v any) error {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return fastjson.Unmarshal(b, v)
 }
