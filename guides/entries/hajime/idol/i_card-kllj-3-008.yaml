@@ -1,0 +1,63 @@
+# 初 · 偶像卡层 i_card-kllj-3-008（Mac 账号 2 有这张卡）
+
+- id: hajime.idol.i_card-kllj-3-008.formation.main_attr.vi
+  kind: written
+  scope:
+    mode: hajime
+    idol_card: i_card-kllj-3-008
+  decision: formation.main_attr
+  content:
+    prefer:
+    - vi
+    why: 初 LEGEND 排行榜前 100 名里，这张卡终局 71% 是 Vi 最高。支援卡按这个主属性编。
+  evidence:
+  - kind: ranking
+    mode: hajime
+    n: 100
+    fetched: '2026-11-19'
+    share: 0.71
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.idol.i_card-kllj-3-008.card_upgrade.signature
+  kind: written
+  scope:
+    mode: hajime
+    idol_card: i_card-kllj-3-008
+  decision: card_upgrade
+  content:
+    prefer:
+    - id: p_card-03-ido-3_113
+      upgrade: 1
+      role: idol
+      note: きらきらプリズム：温存时才能用，直接转到强气 2 段，之后强气 2 段时打メンタル卡会加强强气主动卡
+    why: 固有卡排行榜前 100 名里 95% 强化过。定制方向攻略没给结论，先只强化。
+  evidence:
+  - kind: guide
+    ref: game8 極光
+    url: https://game8.jp/gakuen-idolmaster/677551
+    date: '2026-11-20'
+  - kind: ranking
+    mode: hajime
+    n: 100
+    fetched: '2026-11-19'
+    share: 0.95
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.idol.i_card-kllj-3-008.exam_style.signature
+  kind: written
+  scope:
+    mode: hajime
+    idol_card: i_card-kllj-3-008
+  decision: exam_style
+  content:
+    prefer:
+    - id: p_card-03-ido-3_113
+      role: idol
+    why: 固有卡きらきらプリズム要在温存时打，打完直接进强气 2 段；固有道具小さな銀河在强气 2 段打メンタル卡时多给元気，但每次扣 2 体力（每节课三次）。评价里多人说体力难管：强气 2 段的回合留意体力，元気不够时少打メンタル卡。
+  evidence:
+  - kind: guide
+    ref: game8 極光
+    url: https://game8.jp/gakuen-idolmaster/677551
+    date: '2026-11-20'
+  updated: '2026-11-20'
+  by: bench
