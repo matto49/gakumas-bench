@@ -247,7 +247,7 @@
     # 旧数据（v1）转换
     .venv/bin/python -m gkbench.migrate [--dry-run]
 
-线上部署（ycy）：`GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gkbench-server ./server`，放 `/opt/gkbench/bin/`；`web/dist` 放 `/opt/gkbench/web/dist`；Python 部分放 `/opt/gkbench/app`（自带 `.venv`）；systemd `gkbench.service`（`Environment=` 里带空格的值要加引号），nginx 站点 `/etc/nginx/sites-available/hiro`（`hiro.matto.top`，certbot 证书）把 `/gkbench/` 转到 127.0.0.1:19150，根路径跳 `/gkbench/`。旧地址 `api.matto.top/gkbench/` 的网页 308 跳到新域名，`/gkbench/api/` 暂时继续转发，给还没换默认地址的老客户端用。
+线上部署（ycy）：`GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gkbench-server ./server`，放 `/opt/gkbench/bin/`；`web/dist` 用 `tools/deploy-web.sh [提交]` 部署到 `/opt/gkbench/web/dist`（干净 worktree 构建，保留旧版本的 hash 分片，免得部署前打开的页面切路由时 404）；Python 部分放 `/opt/gkbench/app`（自带 `.venv`）；systemd `gkbench.service`（`Environment=` 里带空格的值要加引号），nginx 站点 `/etc/nginx/sites-available/hiro`（`hiro.matto.top`，certbot 证书）把 `/gkbench/` 转到 127.0.0.1:19150，根路径跳 `/gkbench/`。旧地址 `api.matto.top/gkbench/` 的网页 308 跳到新域名，`/gkbench/api/` 暂时继续转发，给还没换默认地址的老客户端用。
 
 ## 题集
 
