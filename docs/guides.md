@@ -47,7 +47,7 @@ by: bench
 | `evidence` | Evidence[] | 至少一条；统计条目只有 `ranking` |
 | `updated` / `by` | 日期 / string | 人写必填 |
 
-**依据级别不单独存**：消费方按 `evidence` 里最高的一级算，避免冗余字段不一致。级别从高到低：`guide` = `decision` > `ranking` > `live`。`decision`（用户 / 总控定的规则，广的手写知识多是这类）暂定和 `guide` 同级，等协调确认（依据级别是用户定的）。
+**依据级别不单独存**：消费方按 `evidence` 里最高的一级算，避免冗余字段不一致。级别从高到低：`guide` = `decision` > `ranking` > `live`。`decision`（用户 / 总控定的规则，广的手写知识多是这类）和 `guide` 同级（协调 11-20 定）。
 
 **Item**：字符串（只写 ID）或对象。
 

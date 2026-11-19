@@ -15,3 +15,6 @@ server/gkbench-server
 # pip install . 的产物
 build/
 *.egg-info/
+
+# 本地临时产物
+.temp/
