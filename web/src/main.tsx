@@ -34,6 +34,7 @@ const router = createBrowserRouter(
         { path: '/compare', lazy: page(() => import('./pages/Compare'), 'Compare') },
         { path: '/cards', lazy: page(() => import('./pages/Cards'), 'Cards') },
         { path: '/gallery', lazy: page(() => import('./pages/Gallery'), 'Gallery') },
+        { path: '/assist', lazy: page(() => import('./pages/Assist'), 'Assist') },
         { path: '/exams', lazy: page(() => import('./pages/Exams'), 'Exams') },
         { path: '/exams/:set', lazy: page(() => import('./pages/Exams'), 'ExamSet') },
         { path: '/me', lazy: page(() => import('./pages/Me'), 'Me') },
