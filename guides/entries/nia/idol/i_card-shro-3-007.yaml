@@ -1,0 +1,17 @@
+# N.I.A · 偶像卡层：【Campus mode!!】篠澤広。
+
+- id: nia.idol.i_card-shro-3-007.formation.main_attr.da
+  kind: written
+  scope:
+    mode: nia
+    idol_card: i_card-shro-3-007
+  decision: formation.main_attr
+  content:
+    prefer:
+    - da
+    why: N.I.A 暂时沿用 H.I.F 的 Da（决策-07），等用户定。用户 11-20 只把初改成了 Vo；没有这条的话 N.I.A 会落到排行榜统计（Vo 约九成），等于悄悄改成 Vo。
+  evidence:
+  - kind: decision
+    ref: 决策-07
+  updated: '2026-11-20'
+  by: bench
