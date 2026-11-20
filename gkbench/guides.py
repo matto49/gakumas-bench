@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import statistics
 from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
@@ -447,6 +448,100 @@ def tower_summary(season_dir: Path) -> dict:
         towers[tid] = {"character": tid.rsplit("-", 1)[-1], "total": t.get("total_ranking"), "layers": layers}
     return {"season": season_dir.name, "towers": towers}
 
+# ---- 偶像之路：每层 10 条完整编成（ListLayerPlayerHistories，原始数据 tower-ranking/<赛季>/<塔>/layer_NN.json） ----
+# 开局卡组的拼法（GKMS rev383 docs/idol_road_master.md「Memory formation」，GKMS 拿它和真实 Tower/Start 逐项对过）：
+# 主回忆的考试牌，再按槽位接各副回忆的；ProduceCard.noDeckDuplication 的卡只留一张（强化最多、再定制最多、再靠前的那张，
+# 留在它自己的位置）；最后接 ExamInitialDeck initial_deck-<流派> 的 2 张。三维和体力 = 主 + 每个副回忆的 20%（向下取整）。
+# 换卡（produce_card_conversions）不进开局卡组，单独列。
+
+TOWER_THEME = dict(STYLES, EXAM_PRESERVATION="full_power")   # 保留流派用全力的初始卡
+
+
+def _master_rows(master_dir: Path, name: str):
+    for line in (Path(master_dir) / f"{name}.jsonl").read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            d = json.loads(line)
+            yield d.get("decoded") or d
+
+
+def tower_rules(master_dir: Path) -> dict:
+    """拼卡组要的主数据：不可重复的卡、各流派的 2 张初始卡、偶像卡 → 流派。"""
+    no_dup = {r["id"] for r in _master_rows(master_dir, "ProduceCard") if r.get("noDeckDuplication")}
+    initial = {r["id"].removeprefix("initial_deck-"): list(r.get("produceCardIds") or [])
+               for r in _master_rows(master_dir, "ExamInitialDeck") if str(r.get("id", "")).startswith("initial_deck-")}
+    theme = {r["id"]: TOWER_THEME.get(((r.get("examEffectType") or {}).get("name") or "").removeprefix("PRODUCE_EXAM_EFFECT_TYPE_"))
+             for r in _master_rows(master_dir, "IdolCard")}
+    return {"no_dup": no_dup, "initial": initial, "theme": theme}
+
+
+def _card_str(c: dict) -> str:
+    """{"id", "upgrade_count", "customizes"} → 卡组写法 id+强化/定制方向*次数（和题库的 deck_cards 一样）"""
+    up = int(c.get("upgrade_count") or 0)
+    cz = "".join(f"/{x['id']}" + (f"*{int(x['customize_count'])}" if int(x.get("customize_count") or 1) > 1 else "")
+                 for x in c.get("customizes") or () if int(x.get("customize_count") or 0) > 0)
+    return c["id"] + (f"+{up}" if up else "") + cz
+
+
+def tower_deck(memories: list[dict], rules: dict) -> list[str]:
+    """主回忆在前、副回忆按槽位 → 开局卡组（卡组写法）。"""
+    no_dup = rules["no_dup"]
+    best = {}
+    for n, m in enumerate(memories):
+        for i, c in enumerate(m.get("exam_battle_produce_cards") or ()):
+            if c["id"] in no_dup:
+                rank = (int(c.get("upgrade_count") or 0), sum(int(x.get("customize_count") or 0) for x in c.get("customizes") or ()))
+                if c["id"] not in best or rank > best[c["id"]][0]:
+                    best[c["id"]] = (rank, (n, i))
+    kept = {slot for _, slot in best.values()}
+    deck = [_card_str(c) for n, m in enumerate(memories) for i, c in enumerate(m.get("exam_battle_produce_cards") or ())
+            if c["id"] not in no_dup or (n, i) in kept]
+    theme = rules["theme"].get(memories[0].get("idol_card_id")) if memories else None
+    return deck + list(rules["initial"].get(theme or "", []))
+
+
+def tower_examples(layer: dict, rules: dict) -> list[dict]:
+    """原始数据的一层 → 这一层的完整编成（按分数降序）。不带玩家和回忆的编号。"""
+    out = []
+    for h in layer.get("histories") or []:
+        ms = h.get("memories") or []
+        if not ms:
+            continue
+        main, subs = ms[0], ms[1:]
+        share = lambda k: int(main.get(k) or 0) + sum(int(s.get(k) or 0) * 200 // 1000 for s in subs)
+        out.append({
+            "score": h.get("score"), "clear_rank": h.get("clear_rank"), "producer_level": h.get("producer_level"),
+            "idol": main.get("idol_card_id"),
+            "memories": [{"idol": m.get("idol_card_id"), "grade": str(m.get("grade") or "").removeprefix("RESULT_GRADE_").replace("_PLUS", "+"),
+                          "vo": m.get("vocal"), "da": m.get("dance"), "vi": m.get("visual"), "stamina": m.get("stamina")} for m in ms],
+            "params": [share("vocal"), share("dance"), share("visual")], "stamina": share("stamina"),
+            "deck": tower_deck(ms, rules), "items": list(main.get("exam_battle_produce_item_ids") or []),
+            "conversions": [[c.get("before_produce_card_id"), c.get("after_produce_card_id")] for c in h.get("produce_card_conversions") or []],
+        })
+    out.sort(key=lambda e: -(e["score"] or 0))
+    return out
+
+
+def tower_deck_files(raw_season: Path, rules: dict) -> dict[str, dict]:
+    """原始数据的一个赛季 → {塔: {"layers": {层: [编成…]}}}（只收有编成的层）"""
+    towers = {}
+    for tdir in sorted(Path(raw_season).iterdir()):
+        if not tdir.is_dir():
+            continue
+        layers = {}
+        for f in sorted(tdir.glob("layer_*.json")):
+            L = json.loads(f.read_text(encoding="utf-8"))
+            ex = tower_examples(L, rules)
+            if ex:
+                layers[str(int(L.get("layer") or f.stem.removeprefix("layer_")))] = ex
+        if layers:
+            towers[tdir.name] = {"layers": layers}
+    return towers
+
+
+def deck_file_name(season: str, tower: str) -> str:
+    """网站按 guides/<名字>.json 取，名字只许小写字母、数字、连字符"""
+    return re.sub(r"[^a-z0-9-]", "-", f"idolroad-decks-{season}-{tower}".lower())
+
 # ---- 命令行 ----
 
 def idol_meta(master_dir: Path) -> dict[str, dict]:
@@ -494,6 +589,7 @@ def main(argv: list[str] | None = None) -> None:
     b = sub.add_parser("build", help="生成一个模式的统计条目，和人写条目合并成发布包")
     b.add_argument("--mode", required=True, choices=["hajime", "nia", "hif", "idolroad"])
     b.add_argument("--records", type=Path, required=True, help="rec_<偶像卡>.json 所在目录；idolroad 是 tower-ranking-decoded（下面每个赛季一个目录）")
+    b.add_argument("--raw", type=Path, help="idolroad：tower-ranking 原始数据目录（带每层 10 条完整编成），要和 --master 一起给")
     b.add_argument("--fetched", required=True, help="排行榜抓取日期 YYYY-MM-DD")
     b.add_argument("--master", type=Path, help="主数据表目录（IdolCard / ProduceInitialDeck / ExamInitialDeck .jsonl）")
     b.add_argument("--entries", type=Path, default=Path(__file__).resolve().parents[1] / "guides/entries")
@@ -508,6 +604,19 @@ def main(argv: list[str] | None = None) -> None:
     written = _check_or_exit(load_entries(a.entries) if a.entries.exists() else [], a.static)
     if a.mode == "idolroad":
         seasons = {d.name: tower_summary(d) for d in sorted(a.records.iterdir()) if d.is_dir()}
+        if a.raw and a.master:                       # 每座塔一个编成文件，点开一层时网页再取
+            rules = tower_rules(a.master)
+            a.out_dir.mkdir(parents=True, exist_ok=True)
+            for name, sv in seasons.items():
+                if not (a.raw / name).is_dir():
+                    continue
+                for tid, body in tower_deck_files(a.raw / name, rules).items():
+                    if tid not in sv["towers"]:
+                        continue
+                    fn = deck_file_name(name, tid)
+                    (a.out_dir / f"{fn}.json").write_text(json.dumps({"season": name, "tower": tid, **body}, ensure_ascii=False,
+                                                                     separators=(",", ":")), encoding="utf-8")
+                    sv["towers"][tid]["decks"] = fn
         sources = {"ranking": [{"fetch": k, "fetched": a.fetched, "n_towers": len(v["towers"])} for k, v in seasons.items()]}
         man = write_pack(a.out_dir, a.mode, [], written, {"seasons": seasons}, sources=sources, today=a.today)
         p = man["packs"][a.mode]

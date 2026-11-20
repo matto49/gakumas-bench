@@ -7,16 +7,18 @@ import { pairBi, type SupportCatalog } from '../lib/supports'
 import { IDOL_STYLE } from '../lib/game'
 import {
   ACTION_LABEL, applies, DECISIONS, GUIDE_MODES, item, LAYER_LABEL, layerOf, LEVEL_LABEL, levelOf, PLAN_KEY, sortEntries, STYLE_KEY,
-  type GuideEntry, type GuideItem, type GuideItemObj, type GuideMode, type GuidePack, type Quartiles, type TowerSeason,
+  type GuideEntry, type GuideItem, type GuideItemObj, type GuideMode, type GuidePack, type Quartiles, type TowerDecks, type TowerExample, type TowerSeason,
 } from '../lib/guides'
 import { AttrChip, cx, Empty, ErrorState, Help, IdolThumb, PageHeader, SectionTitle, Skeleton, Tip } from '../components/ui'
 import { CardDetail, CardImage, RarityTag } from '../components/CardDetail'
 import { ItemDetail } from '../components/ItemDetail'
 import { useDetailPopup } from '../components/DetailPopups'
 import { SupportThumb, TypeChip } from '../components/SupportCard'
+import { SkillCard } from '../components/GameBits'
+import { parseDeckCard } from '../components/DeckView'
 
 /** 偶像卡攻略：每张偶像卡一页，按决策点列出排行榜统计和人写攻略（docs/guides.md）。
- * 数据 api/guides/<模式>（gkbench.guides build 生成）；偶像之路只有按层的汇总 */
+ * 数据 api/guides/<模式>（gkbench.guides build 生成）；偶像之路是按层的汇总，点开一层再取这座塔的完整编成（api/guides/idolroad-decks-…） */
 
 const modeOf = (v: string | null): GuideMode => (GUIDE_MODES.some((m) => m.key === v) ? (v as GuideMode) : 'hajime')
 const pct = (v: number | undefined) => (v == null ? '—' : `${Math.round(v * 100)}%`)
@@ -437,7 +439,7 @@ function IdolRoad({ idol, seasons, open, sup }: { idol: string; seasons: Record<
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {names.map((n) => <Chip key={n} on={season === n} onClick={() => { setSeason(n); setLayer(null) }}>{n.startsWith('current') ? '本赛季' : '上赛季'}（{n.split('-')[1].slice(0, 4)}.{n.split('-')[1].slice(4, 6)}）</Chip>)}
       </div>
-      <p className="mb-3 text-[12.5px] text-ink-3">{idolShort(cat, idol)} 的塔：每层每张偶像卡排行榜前 100 名的分数。点一层看这一层常见的换卡和编成里的回忆。</p>
+      <p className="mb-3 text-[12.5px] text-ink-3">{idolShort(cat, idol)} 的塔：每层每张偶像卡排行榜前 100 名的分数。点一层看这一层的完整编成（开局卡组）、常见的换卡和编成里的回忆。</p>
       <div className="overflow-x-auto rounded-2xl border border-line">
         <table className="w-full min-w-[620px] text-[13.5px]">
           <thead className="bg-surface-2 text-[12px] text-ink-3"><tr>
@@ -468,6 +470,7 @@ function IdolRoad({ idol, seasons, open, sup }: { idol: string; seasons: Record<
           </tbody>
         </table>
       </div>
+      {L && t.decks && <LayerDecks file={t.decks} layer={L.layer} idol={idol} open={open} sup={sup} />}
       {L && (
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-line bg-surface p-4">
@@ -492,3 +495,95 @@ function IdolRoad({ idol, seasons, open, sup }: { idol: string; seasons: Record<
     </div>
   )
 }
+
+/** 一层的完整编成：排行接口每层给 10 条玩家记录，带回忆的考试牌，按偶像之路的规则拼出开局卡组 */
+function LayerDecks({ file, layer, idol, open, sup }: { file: string; layer: number; idol: string; open: Open; sup?: SupportCatalog }) {
+  const cat = useCatalog()
+  const d = useApi<TowerDecks>(`api/guides/${file}`)
+  const all = d.data?.layers[String(layer)] ?? []
+  const mine = all.filter((e) => e.idol === idol)
+  const [onlyMine, setOnlyMine] = useState(true)
+  const shown = onlyMine && mine.length ? mine : all
+  if (d.error) return <div className="mt-4"><ErrorState error={d.error} onRetry={d.reload} /></div>
+  if (!d.data) return <Skeleton className="mt-4 h-60 rounded-2xl" />
+  if (!all.length) return null
+  return (
+    <section className="mt-4 rounded-2xl border border-line bg-surface p-4">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <h3 className="text-[14px] font-bold">第 {layer} 层的完整编成<Help tip="排行接口每层给 10 条玩家记录（不分偶像卡），带每份回忆的考试牌。开局卡组按游戏规则拼：主回忆的考试牌，再接副回忆的（不能重复的卡只留强化最多的那张），最后加 2 张初始卡。三维和体力 = 主回忆 + 每份副回忆的 20%。不显示玩家信息" /></h3>
+        <span className="text-[12.5px] text-ink-3">{all.length} 条，用 {idolShort(cat, idol)} 当主回忆的 {mine.length} 条</span>
+        {mine.length > 0 && mine.length < all.length && (
+          <span className="ml-auto flex gap-1.5">
+            <Chip on={onlyMine} onClick={() => setOnlyMine(true)}>只看这张卡</Chip>
+            <Chip on={!onlyMine} onClick={() => setOnlyMine(false)}>全部 {all.length} 条</Chip>
+          </span>
+        )}
+      </div>
+      <div className="space-y-3">
+        {shown.map((e, i) => <TowerDeck key={i} e={e} rank={all.indexOf(e) + 1} open={open} sup={sup} />)}
+      </div>
+    </section>
+  )
+}
+
+function TowerDeck({ e, rank, open, sup }: { e: TowerExample; rank: number; open: Open; sup?: SupportCatalog }) {
+  const cat = useCatalog()
+  const cards = e.deck.map(parseDeckCard).filter((c): c is NonNullable<typeof c> => !!c)
+  return (
+    <article className="rounded-xl border border-line bg-surface-2/60 p-3">
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="num text-[12px] text-ink-3">#{rank}</span>
+        <span className="num text-[18px] font-bold text-ink">{e.score.toLocaleString()}</span>
+        <span className="flex items-center gap-1">
+          {e.memories.map((m, j) => (
+            <Tip key={j} tip={<span className="block"><b>{j === 0 ? '主回忆' : `副回忆 ${j}`}</b>：{cat?.idols[m.idol]?.name ?? m.idol}<br />评价 {m.grade} · Vo {m.vo} / Da {m.da} / Vi {m.vi} · 体力 {m.stamina}</span>}>
+              <button type="button" onClick={() => open.idol(m.idol)} className={cx('relative cursor-pointer rounded-md', j === 0 && 'ring-2 ring-brand')}>
+                <IdolThumb id={m.idol} size={j === 0 ? 34 : 28} title={false} />
+                <span className="absolute -right-1 -bottom-1 rounded bg-ink/75 px-0.5 text-[9px] leading-tight font-bold text-white">{m.grade}</span>
+              </button>
+            </Tip>
+          ))}
+        </span>
+        <span className="flex items-center gap-2 text-[12.5px] text-ink-2">
+          {e.params.map((v, j) => <span key={j} className="inline-flex items-center gap-1"><AttrChip t={j + 1} size="xs" /><span className="num">{v.toLocaleString()}</span></span>)}
+          <span>体力 <span className="num">{e.stamina}</span></span>
+        </span>
+      </header>
+      <div className="mt-3">
+        <div className="mb-1.5 text-[12px] font-semibold text-ink-2">开局卡组 {cards.length} 张</div>
+        <div className="flex flex-wrap gap-1">
+          {cards.map((c, j) => (
+            <button key={j} type="button" onClick={() => open.card(c.id)} className="cursor-pointer rounded-md">
+              <SkillCard card={c} size={44} />
+            </button>
+          ))}
+        </div>
+      </div>
+      {(e.items.length > 0 || e.conversions.length > 0) && (
+        <div className="mt-3 grid gap-3 text-[12.5px] md:grid-cols-2">
+          {e.items.length > 0 && (
+            <div>
+              <div className="mb-1 font-semibold text-ink-2">P 道具（主回忆的）</div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">{e.items.map((id) => <Thing key={id} id={id} sup={sup} onCard={open.card} onItem={open.item} onSupport={open.support} onIdol={open.idol} />)}</div>
+            </div>
+          )}
+          {e.conversions.length > 0 && (
+            <details>
+              <summary className="cursor-pointer font-semibold text-ink-2">换卡设置 {e.conversions.length} 条</summary>
+              <ul className="mt-1.5 space-y-1">
+                {e.conversions.map(([b, a], j) => (
+                  <li key={j} className="flex flex-wrap items-center gap-2">
+                    <Thing id={b} sup={sup} onCard={open.card} onItem={open.item} onSupport={open.support} onIdol={open.idol} />
+                    <span className="text-ink-3">→</span>
+                    <Thing id={a} sup={sup} onCard={open.card} onItem={open.item} onSupport={open.support} onIdol={open.idol} />
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
+    </article>
+  )
+}
+

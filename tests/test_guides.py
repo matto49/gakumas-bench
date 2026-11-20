@@ -308,3 +308,69 @@ def test_any_idol_path_is_mode_free_idol_layer():
     assert check_one(e, path="any/idol/i_card-shro-3-007.yaml") == []
     bad = written(id="any.idol.i_card-shro-3-007.card_pick.x", scope={"mode": "hif", "idol_card": "i_card-shro-3-007"})
     assert any("mode" in x for x in check_one(bad, path="any/idol/i_card-shro-3-007.yaml"))
+
+
+# ---- 偶像之路：每层 10 条完整编成的考试卡组 ----
+
+def _master(tmp_path):
+    m = tmp_path / "master"
+    m.mkdir()
+    rows = lambda xs: "\n".join(json.dumps({"decoded": x}) for x in xs)
+    (m / "ProduceCard.jsonl").write_text(rows([{"id": "p_card-u", "noDeckDuplication": True}, {"id": "p_card-x"}]))
+    (m / "ExamInitialDeck.jsonl").write_text(rows([{"id": "initial_deck-review", "produceCardIds": ["p_card-i1", "p_card-i2"]},
+                                                   {"id": "initial_deck-full_power", "produceCardIds": ["p_card-f1", "p_card-f2"]}]))
+    (m / "IdolCard.jsonl").write_text(rows([{"id": "i_card-a", "examEffectType": {"name": "PRODUCE_EXAM_EFFECT_TYPE_EXAM_REVIEW"}},
+                                            {"id": "i_card-p", "examEffectType": {"name": "PRODUCE_EXAM_EFFECT_TYPE_EXAM_PRESERVATION"}}]))
+    return m
+
+
+def test_tower_deck_follows_formation_rule(tmp_path):
+    """主回忆的考试牌 → 各副回忆的（不可重复的卡只留强化最多、再定制最多的那张，留在它自己的位置）→ 2 张初始卡"""
+    rules = guides.tower_rules(_master(tmp_path))
+    main = {"idol_card_id": "i_card-a", "exam_battle_produce_cards": [
+        {"id": "p_card-u"}, {"id": "p_card-x", "upgrade_count": 1,
+                             "customizes": [{"id": "p_card_custom-1", "customize_count": 2}]}]}
+    sub = {"idol_card_id": "i_card-a", "exam_battle_produce_cards": [{"id": "p_card-x"}, {"id": "p_card-u", "upgrade_count": 1}]}
+    assert guides.tower_deck([main, sub], rules) == ["p_card-x+1/p_card_custom-1*2", "p_card-x", "p_card-u+1", "p_card-i1", "p_card-i2"]
+    pres = {"idol_card_id": "i_card-p", "exam_battle_produce_cards": [{"id": "p_card-x"}]}
+    assert guides.tower_deck([pres], rules)[-2:] == ["p_card-f1", "p_card-f2"]        # 保留流派用全力的初始卡
+
+
+def test_tower_examples_from_raw_layer(tmp_path):
+    rules = guides.tower_rules(_master(tmp_path))
+    mem = lambda iid, vo, st, cards: {"user_memory_id": "secret-mem", "idol_card_id": iid, "grade": "RESULT_GRADE_SSS",
+                                      "vocal": vo, "dance": 0, "visual": 0, "stamina": st, "exam_battle_produce_cards": cards,
+                                      "exam_battle_produce_item_ids": ["pitem-1"] if vo > 100 else ["pitem-sub"]}
+    hist = [{"public_user_id": "secret-player", "producer_level": 80, "clear_rank": 3, "score": 50, "play_time": 9,
+             "memories": [mem("i_card-a", 1000, 40, [{"id": "p_card-x"}]), mem("i_card-a", 99, 9, [{"id": "p_card-u"}])],
+             "produce_card_conversions": [{"before_produce_card_id": "p_card-x", "after_produce_card_id": "p_card-y"}]},
+            {"public_user_id": "p2", "score": 90, "clear_rank": 3, "memories": [mem("i_card-a", 500, 30, [])], "produce_card_conversions": []}]
+    ex = guides.tower_examples({"layer": 4, "histories": hist}, rules)
+    assert [e["score"] for e in ex] == [90, 50]                                         # 按分数降序
+    e = ex[1]
+    assert e["idol"] == "i_card-a" and e["params"] == [1000 + 19, 0, 0] and e["stamina"] == 40 + 1
+    assert e["deck"] == ["p_card-x", "p_card-u", "p_card-i1", "p_card-i2"] and e["items"] == ["pitem-1"]
+    assert e["memories"][0] == {"idol": "i_card-a", "grade": "SSS", "vo": 1000, "da": 0, "vi": 0, "stamina": 40}
+    assert e["conversions"] == [["p_card-x", "p_card-y"]]
+    hist[0]["memories"][0]["grade"] = "RESULT_GRADE_SSS_PLUS"
+    assert guides.tower_examples({"histories": hist[:1]}, rules)[0]["memories"][0]["grade"] == "SSS+"
+    assert "secret" not in json.dumps(ex)                                               # 不带玩家和回忆的编号
+
+
+def test_build_cli_idolroad_writes_deck_files(tmp_path):
+    decoded, raw = tmp_path / "decoded", tmp_path / "raw"
+    (decoded / "current-20261101").mkdir(parents=True)
+    (decoded / "current-20261101" / "tower_001-shro.json").write_text(json.dumps({"tower": "tower_001-shro", "layers": [
+        {"layer": 1, "idols": [], "conversions": [], "histories": []}]}), encoding="utf-8")
+    (raw / "current-20261101" / "tower_001-shro").mkdir(parents=True)
+    (raw / "current-20261101" / "tower_001-shro" / "layer_01.json").write_text(json.dumps({"layer": 1, "histories": [
+        {"score": 5, "memories": [{"idol_card_id": "i_card-a", "exam_battle_produce_cards": [{"id": "p_card-x"}]}]}]}))
+    out = tmp_path / "out"
+    guides.main(["build", "--mode", "idolroad", "--records", str(decoded), "--raw", str(raw), "--master", str(_master(tmp_path)),
+                 "--fetched", "2026-11-20", "--out-dir", str(out), "--entries", str(tmp_path / "none"), "--today", "20261120"])
+    f = out / "idolroad-decks-current-20261101-tower-001-shro.json"
+    d = json.loads(f.read_text(encoding="utf-8"))
+    assert d["layers"]["1"][0]["deck"][0] == "p_card-x"
+    pack = json.loads((out / "idolroad.json").read_text(encoding="utf-8"))
+    t = pack["summary"]["seasons"]["current-20261101"]["towers"]["tower_001-shro"]
+    assert t["decks"] == "idolroad-decks-current-20261101-tower-001-shro"

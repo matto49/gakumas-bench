@@ -49,7 +49,21 @@ export type GuideEntry = {
 export type IdolSummary = { n: number; score_p10: number; score_p50: number; score_max: number; final_pitems: { id: string; share: number }[] }
 export type TowerIdol = { idol_card_id: string; n: number; top: number; r5: number; r10: number; r50: number; r100: number }
 export type TowerLayer = { layer: number; idols: TowerIdol[]; conversions: { before: string; after: string; count: number }[]; memories: { id: string; share: number }[]; n_histories: number }
-export type TowerSeason = { season: string; towers: Record<string, { character: string; total?: Record<string, number>; layers: TowerLayer[] }> }
+export type TowerSeason = { season: string; towers: Record<string, { character: string; total?: Record<string, number>; layers: TowerLayer[]; decks?: string }> }
+/** 偶像之路一层的一条完整编成（ListLayerPlayerHistories）：deck 是按回忆拼出的开局卡组（卡组写法），memories 主回忆在前 */
+export type TowerExample = {
+  score: number
+  clear_rank?: number
+  producer_level?: number
+  idol: string
+  memories: { idol: string; grade: string; vo: number; da: number; vi: number; stamina: number }[]
+  params: [number, number, number]
+  stamina: number
+  deck: string[]
+  items: string[]
+  conversions: [string, string][]
+}
+export type TowerDecks = { season: string; tower: string; layers: Record<string, TowerExample[]> }
 export type GuidePack = {
   format: string
   schema: number
