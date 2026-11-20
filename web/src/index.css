@@ -241,6 +241,16 @@ body {
 @keyframes boot-slide {
   to { transform: translateX(0); }
 }
+/* 站名字标（登录页等）：同一套 Black 字体，逐字的颜色写在 <b> 上 */
+.wordmark {
+  display: flex;
+  font-family: "GKB Wordmark", var(--font-sans);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  color: var(--color-ink);
+}
+.wordmark b { font-weight: inherit; }
 .boot-title {
   display: flex;
   margin-top: 2px;

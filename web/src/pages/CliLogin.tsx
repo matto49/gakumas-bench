@@ -61,7 +61,7 @@ export function CliLogin() {
       <>
         {header}
         <p className="max-w-[520px] rounded-lg bg-surface-2 px-3 py-2 text-[13px] text-ink-2">先登录，登录后回到这一页授权（代码 <span className="font-mono text-ink">{d.code}</span>）。</p>
-        <Login onDone={info.reload} next={`/cli-login?code=${d.code}`} />
+        <Login onDone={info.reload} next={`/cli-login?code=${d.code}`} embedded />
       </>
     )
   }
