@@ -502,8 +502,6 @@ function LayerDecks({ file, layer, idol, open, sup }: { file: string; layer: num
   const d = useApi<TowerDecks>(`api/guides/${file}`)
   const all = d.data?.layers[String(layer)] ?? []
   const mine = all.filter((e) => e.idol === idol)
-  const [onlyMine, setOnlyMine] = useState(true)
-  const shown = onlyMine && mine.length ? mine : all
   if (d.error) return <div className="mt-4"><ErrorState error={d.error} onRetry={d.reload} /></div>
   if (!d.data) return <Skeleton className="mt-4 h-60 rounded-2xl" />
   if (!all.length) return null
@@ -512,15 +510,9 @@ function LayerDecks({ file, layer, idol, open, sup }: { file: string; layer: num
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h3 className="text-[14px] font-bold">第 {layer} 层的完整编成<Help tip="排行接口每层给 10 条玩家记录（不分偶像卡），带每份回忆的考试牌。开局卡组按游戏规则拼：主回忆的考试牌，再接副回忆的（不能重复的卡只留强化最多的那张），最后加 2 张初始卡。三维和体力 = 主回忆 + 每份副回忆的 20%。不显示玩家信息" /></h3>
         <span className="text-[12.5px] text-ink-3">{all.length} 条，用 {idolShort(cat, idol)} 当主回忆的 {mine.length} 条</span>
-        {mine.length > 0 && mine.length < all.length && (
-          <span className="ml-auto flex gap-1.5">
-            <Chip on={onlyMine} onClick={() => setOnlyMine(true)}>只看这张卡</Chip>
-            <Chip on={!onlyMine} onClick={() => setOnlyMine(false)}>全部 {all.length} 条</Chip>
-          </span>
-        )}
       </div>
       <div className="space-y-3">
-        {shown.map((e, i) => <TowerDeck key={i} e={e} rank={all.indexOf(e) + 1} open={open} sup={sup} />)}
+        {all.map((e, i) => <TowerDeck key={i} e={e} rank={i + 1} open={open} sup={sup} />)}
       </div>
     </section>
   )
