@@ -3,7 +3,7 @@ import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import { UserRound } from 'lucide-react'
 import { useApi } from '../lib/hooks'
 import { useLang } from '../lib/catalog'
-import { cx } from './ui'
+import { cx, GithubMark } from './ui'
 import { BootSplash } from './BootSplash'
 
 const nav = [
@@ -114,6 +114,16 @@ export function Layout() {
             </nav>
             <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
               <LangSwitch onArt={onArt} />
+              <a
+                href="https://github.com/matto49/gakumas-bench"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="源代码（GitHub）"
+                title="源代码（GitHub）"
+                className={cx(pill(onArt)({ isActive: false }), 'inline-flex items-center px-2 sm:px-2')}
+              >
+                <GithubMark size={17} />
+              </a>
               <NavLink to="/me" aria-label={me.data?.user ?? '登录'} className={(s) => cx(pill(onArt)(s), 'inline-flex items-center gap-1.5')}>
                 {me.data?.avatar ? <img src={me.data.avatar} alt="" width={18} height={18} className="size-[18px] rounded-full" /> : <UserRound size={14} aria-hidden />}
                 <span className="hidden sm:inline">{me.data?.user ?? '登录'}</span>
