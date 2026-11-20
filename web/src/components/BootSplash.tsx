@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 
 const KEY = 'gkb-boot'
-const MIN = 1200 // 最短停留：站名 0.82 秒才完整滑出，再留 0.4 秒看清
+const MIN = 1450 // 最短停留：五个字 1.06 秒才全部弹完，再留 0.4 秒看清
 const MAX = 2600 // 头图再慢也不挡着
 
-/** 进站动画：白底上 Vo / Da / Vi 三道斜杠依次落下，站名从左滑出，然后整块斜着擦走。
+/** 进站动画：白底上 Vo / Da / Vi 三道斜杠依次落下，英文副标滑出，「初星攻略站」五个字逐个弹上来，然后整块斜着擦走。
  * 每次打开网站（同一个标签页会话）只播一次；系统开了「减少动态效果」不播。
  * 首页等头图卡面加载完（HomeHero 发 gkb-ready）再擦开，等的时候斜杠轻轻闪；别的页面停够 MIN 就走 */
 export function BootSplash() {
@@ -54,9 +54,16 @@ export function BootSplash() {
           <i className="bg-da" />
           <i className="bg-vi" />
         </div>
-        <div className="overflow-hidden">
-          <span className="boot-sub disp not-italic">HATSUBOSHI GUIDE</span>
-          <span className="boot-title">初星攻略站</span>
+        <div className="-ml-1 overflow-hidden pb-1 pl-1">
+          <span className="boot-sub disp">HATSUBOSHI GUIDE</span>
+          {/* 字标：思源黑体 Black 只截这五个字（assets/fonts/wordmark-black.woff2），前三个字对应 Vo / Da / Vi，和宣传视频封面一致 */}
+          <span className="boot-title">
+            <b className="text-vo">初</b>
+            <b className="text-da">星</b>
+            <b className="text-vi">攻</b>
+            <b>略</b>
+            <b>站</b>
+          </span>
         </div>
       </div>
     </div>

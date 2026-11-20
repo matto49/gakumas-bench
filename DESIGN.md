@@ -44,7 +44,7 @@ shadcn 的语义变量（`background` `foreground` `primary` `muted` `accent` `b
 | `toast`（sonner） | 操作结果提示（上传收下 / 失败），右下角 |
 | 首页头图 | `components/HomeHero.tsx`：最新 SSR 偶像卡的特训后横版卡面（16:9；游戏贴图存成 2:1，导出时拉回）（`lib/site.ts` 的 `heroCard`，没有就用 `HERO_FALLBACK`）。宽屏上卡面占右边 76%，左边渐隐到 `#17141C` 暗底放站名和两个按钮；手机上卡面占上面六成，字在下面。右下角胶囊写「日期 新卡【卡名】偶像名」，点开原地看详情。「现在」做成白色浮层压在头图下沿（`NowSection flat`：各栏不带框，栏间一道分隔线） |
 | 首页底色 | `components/HomeBackdrop.tsx`：头图以下铺满视口宽的暖白底 `#F7F4F0`，一层 18px 细网点，不加彩色光斑或渐变（试过三色光斑，去掉了）。只在首页用，内容卡片仍是白底 |
-| 进站动画 | `components/BootSplash.tsx` + `index.css` 的 `.boot*`：白底，Vo / Da / Vi 三道斜杠依次落下，站名滑出，最少停 1.2 秒，然后斜着擦走。首页等头图加载完（`gkb-ready` 事件）再擦，最多 2.6 秒。同一个标签页会话只播一次（`sessionStorage`），系统开了「减少动态效果」不播 |
+| 进站动画 | `components/BootSplash.tsx` + `index.css` 的 `.boot*`：白底，Vo / Da / Vi 三道斜杠依次落下，英文副标 HATSUBOSHI GUIDE 滑出，「初星攻略站」字标五个字逐个弹上来（思源黑体 Black 只截这五个字，`web/src/assets/fonts/wordmark-black.woff2`，1.5 KB，构建时内联进 CSS；初 / 星 / 攻 用 Vo / Da / Vi 色，和宣传视频封面一致；这是全站唯一不用系统字体的中文），最少停 1.45 秒，然后斜着擦走。首页等头图加载完（`gkb-ready` 事件）再擦，最多 2.6 秒。同一个标签页会话只播一次（`sessionStorage`），系统开了「减少动态效果」不播 |
 | 首页（初星攻略站） | 头图下面照一般攻略站的骨架：「现在」（进行中的卡池活动，手写、空了就不出现；新卡；生日）→ 本站最近更新 → 角色强度榜（只放 S、A 档，下面一行写还有几张）→ 按模式（每个模式现在有什么，没有的写「还没有」）→ 游戏资料 → 工具 → 关于本站一小段。组件在 `components/HomeGuide.tsx`。原来首页上的算法排行说明、现在的排行、题集、交成绩搬到 `/about`（`pages/About.tsx`） |
 | 首页「数量级标尺」 | `Home.tsx` 的 `ScaleFigure`：对数横轴（10 的 0 到 24 次方）上的范围条和点，说明一局的打法有多少、30 秒搜得了多少。条用 `brand`，「搜得了的」用 `ink` 的圆点；每个标记旁边直接写数值，悬停有说明 |
 | 首页节标题、重点数字 | `Home.tsx` 的 `HomeTitle`（21px，比内页的 `SectionTitle` 大一号，可带一行说明和右侧链接）；正文里的重点数字用 `N`：加粗，下半截垫一道 `brand` 40% 的荧光笔。只在首页的说明段落用 |
