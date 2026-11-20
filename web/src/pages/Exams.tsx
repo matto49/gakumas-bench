@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select } from '../components/Select'
 import { btn, Code, CodeBlock, Empty, ErrorState, Help, IdolThumb, PageHeader, SectionTitle, Skeleton, TableSkeleton, Tip } from '../components/ui'
+import { BenchTabs } from '../components/BenchTabs'
 
 /** 試験集合：收集来的考试集合。所有算法排行、托管评测都按集合选题。 */
 
@@ -67,6 +68,7 @@ export function Exams() {
   ]
   return (
     <div>
+      <BenchTabs />
       <PageHeader
         title="試験集合"
         sub="收集来的考试集合，所有算法排行和托管评测都按集合选题。官方集合由管理员维护；登录后可以建自己的集合、上传考试。"
@@ -242,6 +244,7 @@ export function ExamSet() {
 
   return (
     <div>
+      <BenchTabs />
       <PageHeader
         crumb={<><Link to="/exams" className="hover:text-brand-ink">試験集合</Link> / {set}</>}
         title={<span className="inline-flex flex-wrap items-center gap-2.5">{setTitleOf(sets, set)}<StatusBadge s={info?.status} /></span>}

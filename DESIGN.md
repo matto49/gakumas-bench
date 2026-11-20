@@ -55,7 +55,7 @@ shadcn 的语义变量（`background` `foreground` `primary` `muted` `accent` `b
 | 偶像卡攻略 | `pages/Guide.tsx`：`/guide` 偶像卡列表（模式、流派筛选），`/guide/<偶像卡>?mode=` 单卡页。按「开局编成 / 培育 / 考试」分组，每个决策点一张白卡：人写攻略在上（浅橙底，标依据级别和层），排行榜统计在下（灰色「排行榜统计」小标签 + 样本数）。表格默认 10 行、「展开全部」；手机上不画比例条只写数字。支援卡可切「没满凸的玩家怎么选」（按非满凸占比排）。偶像之路是按层的表，点一层看换卡和回忆。数据 `api/guides/<模式>`（`gkbench.guides`，格式 docs/guides.md） |
 | 登录页 | `pages/Me.tsx` 的 `Login`：暖白网点底（`HomeBackdrop`）上一张居中的卡。宽屏左栏浅灰底，放 HATSUBOSHI GUIDE、站名字标（`.wordmark`，同进站动画的字体和三色）、「登录以后可以」三条（前面 Vo / Da / Vi 小斜杠）；右栏表单：GitHub 登录是 `ink` 底白字的胶囊（和下面橙色的提交按钮分开），提交按钮没填完时是中性灰不是淡橙。手机上单栏、卡片贴顶。命令行授权页里用 `embedded`，只出表单 |
 | `Empty` | 空状态：`surface-2` 浅灰底、虚线框 + 一句话说该做什么 |
-| 顶栏 | `Layout.tsx`：白底、底边一条 `line`；首页没滚过头图时透明叠在卡面上，字和胶囊变白（`useOnArt`）；logo 前是 Vo 粉、Da 蓝、Vi 黄三道小斜杠；当前页是 `surface-2` 的浅灰胶囊。斜纹底（`.stripes`）已经去掉，不要再加 |
+| 顶栏 | `Layout.tsx`：白底、底边一条 `line`；首页没滚过头图时透明叠在卡面上，字和胶囊变白（`useOnArt`）；logo 前是 Vo 粉、Da 蓝、Vi 黄三道小斜杠；当前页是 `surface-2` 的浅灰胶囊。斜纹底（`.stripes`）已经去掉，不要再加。11-20 起「試験集合」并进「算法排行」一项：`/sets`、`/exams`、`/runs`、`/compare` 下都高亮它，两页顶上用 `components/BenchTabs.tsx` 的胶囊切换 |
 
 ## 素材
 

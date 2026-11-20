@@ -11,8 +11,8 @@ const nav = [
   { to: '/tiers', label: '角色强度榜' },
   { to: '/usage', label: '配置强度榜' },
   { to: '/guide', label: '偶像卡攻略' },
-  { to: '/exams', label: '試験集合' },
-  { to: '/sets', label: '算法排行' },
+  // 算法排行和試験集合并成一项（2026-11-20）：这几条路径下都算在「算法排行」里，页内再用 BenchTabs 切换
+  { to: '/sets', label: '算法排行', also: ['/exams', '/runs', '/compare'] },
   { to: '/gallery', label: '图鉴' },
   { to: '/cards', label: '游戏资源一览' },
   // 「对比」不放导航：从复盘页的「和别的算法对比」进（/compare 路由还在）
@@ -89,6 +89,7 @@ export function Layout() {
     return () => window.removeEventListener('gkb-auth', f)
   }, [me.reload])
   const { home, onArt } = useOnArt()
+  const { pathname } = useLocation()
   return (
     <div className="flex min-h-dvh flex-col overflow-x-clip">
       <BootSplash />
@@ -107,7 +108,7 @@ export function Layout() {
             </Link>
             <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1">
               {nav.map((n) => (
-                <NavLink key={n.to} to={n.to} end={n.end} className={(s) => cx(pill(onArt)(s), 'wide' in n && 'max-sm:hidden')}>
+                <NavLink key={n.to} to={n.to} end={n.end} className={(s) => cx(pill(onArt)({ isActive: s.isActive || !!n.also?.some((p) => pathname.startsWith(p)) }), 'wide' in n && 'max-sm:hidden')}>
                   {n.label}
                 </NavLink>
               ))}
