@@ -47,7 +47,8 @@ export type GuideEntry = {
   by?: string
 }
 export type IdolSummary = { n: number; score_p10: number; score_p50: number; score_max: number; final_pitems: { id: string; share: number }[] }
-export type TowerIdol = { idol_card_id: string; n: number; top: number; r5: number; r10: number; r50: number; r100: number }
+/** 上榜不到 N 人时 rN 是 null */
+export type TowerIdol = { idol_card_id: string; n: number; top: number; r5: number | null; r10: number | null; r50: number | null; r100: number | null }
 export type TowerLayer = { layer: number; idols: TowerIdol[]; conversions: { before: string; after: string; count: number }[]; memories: { id: string; share: number }[]; n_histories: number }
 export type TowerSeason = { season: string; towers: Record<string, { character: string; total?: Record<string, number>; layers: TowerLayer[]; decks?: string }> }
 /** 偶像之路一层的一条完整编成（ListLayerPlayerHistories）：deck 是按回忆拼出的开局卡组（卡组写法），memories 主回忆在前 */

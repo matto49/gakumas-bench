@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useApi } from '../lib/hooks'
 import { cardName, idolShort, spriteUrl, useCatalog, useLang, useTerms } from '../lib/catalog'
@@ -7,7 +7,7 @@ import { pairBi, type SupportCatalog } from '../lib/supports'
 import { IDOL_STYLE } from '../lib/game'
 import {
   ACTION_LABEL, applies, DECISIONS, GUIDE_MODES, item, LAYER_LABEL, layerOf, LEVEL_LABEL, levelOf, PLAN_KEY, sortEntries, STYLE_KEY,
-  type GuideEntry, type GuideItem, type GuideItemObj, type GuideMode, type GuidePack, type Quartiles, type TowerDecks, type TowerExample, type TowerSeason,
+  type GuideEntry, type GuideItem, type GuideItemObj, type GuideMode, type GuidePack, type Quartiles, type TowerDecks, type TowerLayer, type TowerExample, type TowerSeason,
 } from '../lib/guides'
 import { AttrChip, cx, Empty, ErrorState, Help, IdolThumb, PageHeader, SectionTitle, Skeleton, Tip } from '../components/ui'
 import { CardDetail, CardImage, RarityTag } from '../components/CardDetail'
@@ -110,7 +110,7 @@ export function GuideIndex() {
   }
   return (
     <div>
-      <PageHeader title="偶像卡攻略" sub="每张偶像卡一页：排行榜前 100 名的编成、拿卡、删卡、强化和三维，加上人写的攻略。" />
+      <PageHeader title="偶像卡攻略" sub={mode === 'idolroad' ? '偶像之路：选偶像和层数，看这一层各偶像卡的分数线、完整编成和常见换卡。' : '每张偶像卡一页：排行榜前 100 名的编成、拿卡、删卡、强化和三维，加上人写的攻略。'} />
       <div className="mb-5 space-y-3 rounded-2xl border border-line bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-12 text-[12.5px] text-ink-3">模式</span>
@@ -151,29 +151,131 @@ export function GuideIndex() {
   )
 }
 
+/** 偶像之路：选偶像（哪座塔）和层数，看这一层各偶像卡的分数线，再往下是这一层的完整编成、回忆和换卡。状态在网址里（t、layer、season） */
 function IdolRoadIndex() {
   const cat = useCatalog()
+  const terms = useTerms()
   const pack = useApi<GuidePack>('api/guides/idolroad')
-  const season = Object.values(pack.data?.summary.seasons ?? {})[0]
+  const sup = useApi<SupportCatalog>('api/supports')
+  const [q, setQ] = useSearchParams()
+  const [openCard, setOpenCard] = useState<string | null>(null)
+  const [openItem, setOpenItem] = useState<string | null>(null)
+  const detail = useDetailPopup()
+  const open: Open = { card: setOpenCard, item: setOpenItem, support: (id) => detail.open('support', id), idol: (id) => detail.open('idol', id) }
+  const set = (patch: Record<string, string>) => {
+    const n = new URLSearchParams(q)
+    for (const [k, v] of Object.entries(patch)) (v ? n.set(k, v) : n.delete(k))
+    setQ(n, { replace: true })
+  }
+  // 手机上偶像、层数是横向滑动的一行：把选中的那个滚到看得见的地方
+  const filters = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    filters.current?.querySelectorAll<HTMLElement>('[data-on]').forEach((el) => {
+      const row = el.parentElement!
+      row.scrollLeft = el.offsetLeft - row.offsetLeft - (row.clientWidth - el.offsetWidth) / 2
+    })
+  }, [q, pack.data])
+  const seasons = pack.data?.summary.seasons ?? {}
+  const names = Object.keys(seasons).sort((x, y) => Number(y.startsWith('current')) - Number(x.startsWith('current')) || y.localeCompare(x))
+  const season = names.includes(q.get('season') ?? '') ? q.get('season')! : names.find((n) => n.startsWith('current')) ?? names[0]
   if (pack.error) return <ErrorState error={pack.error} onRetry={pack.reload} />
-  if (!season) return <Skeleton className="h-60 rounded-2xl" />
+  if (!season) return <Skeleton className="h-96 rounded-2xl" />
+  const towers = Object.values(seasons[season].towers)
+  const t = towers.find((x) => x.character === q.get('t')) ?? towers[0]
+  const layers = [...t.layers].sort((a, b) => b.layer - a.layer)
+  const L = layers.find((x) => x.layer === Number(q.get('layer'))) ?? layers[0]
+  const face = (x: (typeof towers)[number]) => x.layers[x.layers.length - 1]?.idols[0]?.idol_card_id
+  const ranked = [...L.idols].sort((a, b) => (b.r10 ?? 0) - (a.r10 ?? 0))
+  const top10 = ranked[0]?.r10 || 1
+  const fmt = (v: number | null | undefined) => (v == null ? '—' : v.toLocaleString())
+  const label = (n: string) => `${n.startsWith('current') ? '本赛季' : '上赛季'}（${n.split('-')[1].slice(0, 4)}.${n.split('-')[1].slice(4, 6)}）`
+
   return (
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2">
-      {Object.entries(season.towers).map(([tid, t]) => {
-        const best = t.layers[t.layers.length - 1]?.idols[0]?.idol_card_id
-        return (
-          <li key={tid}>
-            <Link to={`/guide/${best ?? tid}?mode=idolroad`} className="flex min-h-14 items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2 hover:border-brand hover:bg-brand-tint">
-              <IdolThumb id={best} size={40} title={false} />
-              <span className="min-w-0">
-                <span className="block truncate text-[13.5px] text-ink">{best ? idolShort(cat, best) : t.character} 的塔</span>
-                <span className="text-[11.5px] text-ink-3">{t.layers.length} 层</span>
-              </span>
-            </Link>
-          </li>
-        )
-      })}
-    </ul>
+    <div>
+      <div ref={filters} className="mb-5 space-y-3 rounded-2xl border border-line bg-surface p-4">
+        <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+          <span className="w-12 shrink-0 text-[12.5px] text-ink-3">偶像</span>
+          {towers.map((x) => {
+            const f = face(x)
+            const on = x === t
+            return (
+              <button key={x.character} type="button" data-on={on || undefined} onClick={() => set({ t: x.character })}
+                className={cx('inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border py-1 pr-3.5 pl-1 text-[13px] whitespace-nowrap transition-colors',
+                  on ? 'border-ink bg-ink font-semibold text-white' : 'border-line-strong text-ink-2 hover:border-ink-3 hover:text-ink')}>
+                <IdolThumb id={f} size={28} title={false} className="rounded-full" />
+                {f ? idolShort(cat, f) : x.character}
+              </button>
+            )
+          })}
+        </div>
+        <div className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+          <span className="w-12 shrink-0 text-[12.5px] text-ink-3">层数</span>
+          {layers.map((x) => (
+            <button key={x.layer} type="button" data-on={x === L || undefined} onClick={() => set({ layer: String(x.layer) })}
+              className={cx('num h-10 w-10 shrink-0 cursor-pointer rounded-lg border text-[13px] transition-colors',
+                x === L ? 'border-ink bg-ink font-semibold text-white' : 'border-line text-ink-2 hover:border-ink-3 hover:text-ink')}>
+              {x.layer}
+            </button>
+          ))}
+        </div>
+        {names.length > 1 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-12 shrink-0 text-[12.5px] text-ink-3">赛季</span>
+            {names.map((n) => <Chip key={n} on={season === n} onClick={() => set({ season: n.startsWith('current') ? '' : n })}>{label(n)}</Chip>)}
+          </div>
+        )}
+      </div>
+
+      <SectionTitle>{face(t) ? idolShort(cat, face(t)!) : t.character} 的塔 · 第 {L.layer} 层：各偶像卡的分数线</SectionTitle>
+      <p className="-mt-1 mb-3 text-[12.5px] text-ink-3">每张偶像卡在这一层排行榜前 100 名的分数，按第 10 名排。点卡名看这张卡每一层的成绩。</p>
+      <div className="overflow-x-auto rounded-2xl border border-line">
+        <table className="w-full text-[13.5px] sm:min-w-[680px]">
+          <thead className="bg-surface-2 text-[12px] text-ink-3"><tr>
+            <th className="w-8 px-2 py-2 text-left font-semibold sm:w-12 sm:px-3">#</th>
+            <th className="px-2 py-2 text-left font-semibold sm:px-3">偶像卡</th>
+            <th className="hidden px-3 py-2 text-right font-semibold sm:table-cell">第 1 名</th>
+            <th className="px-2 py-2 text-left font-semibold sm:px-3">第 10 名</th>
+            <th className="hidden px-3 py-2 text-right font-semibold sm:table-cell">第 50 名</th>
+            <th className="px-2 py-2 text-right font-semibold sm:px-3">第 100 名</th>
+            <th className="hidden px-3 py-2 text-right font-semibold sm:table-cell">上榜人数</th>
+          </tr></thead>
+          <tbody>
+            {ranked.map((r, i) => {
+              const info = cat?.idols[r.idol_card_id]
+              return (
+                <tr key={r.idol_card_id} className="border-t border-line">
+                  <td className="num px-2 py-1.5 font-semibold text-ink-2 sm:px-3">{i + 1}</td>
+                  <td className="px-2 py-1.5 sm:px-3">
+                    <Link to={`/guide/${r.idol_card_id}?mode=idolroad`} className="flex min-w-0 items-center gap-2 hover:text-brand-ink">
+                      <IdolThumb id={r.idol_card_id} size={30} title={false} />
+                      <span className="min-w-0">
+                        <span className="block text-[12.5px] leading-snug sm:truncate sm:text-[13.5px]">{info?.name ?? r.idol_card_id}</span>
+                        <span className="block text-[11px] text-ink-3">{[terms.plan[info?.plan ?? ''], terms.style[info?.style ?? '']].filter(Boolean).join(' · ')}</span>
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="num hidden px-3 py-1.5 text-right sm:table-cell">{fmt(r.top)}</td>
+                  <td className="px-2 py-1.5 sm:px-3">
+                    <span className="flex items-center gap-2">
+                      <span className="relative hidden h-[6px] w-20 overflow-hidden rounded-full bg-surface-3 sm:block"><i className="absolute inset-y-0 left-0 rounded-full bg-da" style={{ width: `${Math.max(2, ((r.r10 ?? 0) / top10) * 100)}%` }} /></span>
+                      <span className="num font-semibold">{fmt(r.r10)}</span>
+                    </span>
+                  </td>
+                  <td className="num hidden px-3 py-1.5 text-right sm:table-cell">{fmt(r.r50)}</td>
+                  <td className="num px-2 py-1.5 text-right sm:px-3">{fmt(r.r100)}</td>
+                  <td className="num hidden px-3 py-1.5 text-right text-ink-3 sm:table-cell">{r.n}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <LayerDetail decks={t.decks} L={L} open={open} sup={sup.data ?? undefined} />
+      <Source pack={pack.data!} />
+      {openCard && cat?.cards[openCard] && <CardDetail id={openCard} c={cat.cards[openCard]} onClose={() => setOpenCard(null)} />}
+      {openItem && cat && <ItemDetail id={openItem} cat={cat} onClose={() => setOpenItem(null)} />}
+      {detail.popup}
+    </div>
   )
 }
 
@@ -452,7 +554,7 @@ function IdolRoad({ idol, seasons, open, sup }: { idol: string; seasons: Record<
           </tr></thead>
           <tbody>
             {[...t.layers].sort((a, b) => b.layer - a.layer).map((x) => {
-              const ranked = [...x.idols].sort((a, b) => b.r10 - a.r10)
+              const ranked = [...x.idols].sort((a, b) => (b.r10 ?? 0) - (a.r10 ?? 0))
               const k = ranked.findIndex((r) => r.idol_card_id === idol)
               const me = ranked[k]
               return (
@@ -461,8 +563,8 @@ function IdolRoad({ idol, seasons, open, sup }: { idol: string; seasons: Record<
                   <td className="num px-3 py-1.5 font-semibold">{x.layer}</td>
                   <td className="num px-3 py-1.5">{me ? `${k + 1} / ${ranked.length}` : '—'}</td>
                   <td className="num px-3 py-1.5 text-right">{me?.top.toLocaleString() ?? '—'}</td>
-                  <td className="num px-3 py-1.5 text-right">{me?.r10.toLocaleString() ?? '—'}</td>
-                  <td className="num px-3 py-1.5 text-right">{me?.r100.toLocaleString() ?? '—'}</td>
+                  <td className="num px-3 py-1.5 text-right">{me?.r10?.toLocaleString() ?? '—'}</td>
+                  <td className="num px-3 py-1.5 text-right">{me?.r100?.toLocaleString() ?? '—'}</td>
                   <td className="px-3 py-1.5"><span className="flex items-center gap-1.5"><IdolThumb id={ranked[0]?.idol_card_id} size={22} title={false} /><span className="truncate text-[12.5px] text-ink-2">{ranked[0] ? cat?.idols[ranked[0].idol_card_id]?.name : ''}</span></span></td>
                 </tr>
               )
@@ -470,35 +572,41 @@ function IdolRoad({ idol, seasons, open, sup }: { idol: string; seasons: Record<
           </tbody>
         </table>
       </div>
-      {L && t.decks && <LayerDecks file={t.decks} layer={L.layer} idol={idol} open={open} sup={sup} />}
-      {L && (
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-line bg-surface p-4">
-            <h3 className="mb-2 text-[14px] font-bold">第 {L.layer} 层编成里的回忆<Help tip={`这一层 ${L.n_histories} 条编成里，用到这张偶像卡回忆的比例`} /></h3>
-            <ItemRows rows={L.memories.map((m) => ({ id: m.id, stat: { share: m.share } }))} cols={['share']} open={open} sup={sup} limit={12} />
-          </div>
-          <div className="rounded-2xl border border-line bg-surface p-4">
-            <h3 className="mb-2 text-[14px] font-bold">第 {L.layer} 层常见的换卡<Help tip="前 5 名牌组里，「换卡」把哪张换成了哪张，按次数排" /></h3>
-            <ul className="space-y-1.5 text-[13px]">
-              {L.conversions.map((c, i) => (
-                <li key={i} className="flex flex-wrap items-center gap-2">
-                  <Thing id={c.before} sup={sup} onCard={open.card} onItem={open.item} onSupport={open.support} onIdol={open.idol} />
-                  <span className="text-ink-3">→</span>
-                  <Thing id={c.after} sup={sup} onCard={open.card} onItem={open.item} onSupport={open.support} onIdol={open.idol} />
-                  <span className="num text-ink-3">{c.count} 次</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+      {L && <LayerDetail decks={t.decks} L={L} idol={idol} open={open} sup={sup} />}
     </div>
   )
 }
 
+/** 一层的详情：完整编成，再是编成里的回忆和常见换卡 */
+function LayerDetail({ decks, L, idol, open, sup }: { decks?: string; L: TowerLayer; idol?: string; open: Open; sup?: SupportCatalog }) {
+  return (
+    <>
+      {decks && <LayerDecks file={decks} layer={L.layer} idol={idol} open={open} sup={sup} />}
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-line bg-surface p-4">
+          <h3 className="mb-2 text-[14px] font-bold">第 {L.layer} 层编成里的回忆<Help tip={`这一层 ${L.n_histories} 条编成里，用到各偶像卡回忆的比例`} /></h3>
+          <ItemRows rows={L.memories.map((m) => ({ id: m.id, stat: { share: m.share } }))} cols={['share']} open={open} sup={sup} limit={12} />
+        </div>
+        <div className="rounded-2xl border border-line bg-surface p-4">
+          <h3 className="mb-2 text-[14px] font-bold">第 {L.layer} 层常见的换卡<Help tip="前 5 名牌组里，「换卡」把哪张换成了哪张，按次数排" /></h3>
+          <ul className="space-y-1.5 text-[13px]">
+            {L.conversions.map((c, i) => (
+              <li key={i} className="flex flex-wrap items-center gap-2">
+                <Thing id={c.before} sup={sup} onCard={open.card} onItem={open.item} onSupport={open.support} onIdol={open.idol} />
+                <span className="text-ink-3">→</span>
+                <Thing id={c.after} sup={sup} onCard={open.card} onItem={open.item} onSupport={open.support} onIdol={open.idol} />
+                <span className="num text-ink-3">{c.count} 次</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </>
+  )
+}
+
 /** 一层的完整编成：排行接口每层给 10 条玩家记录，带回忆的考试牌，按偶像之路的规则拼出开局卡组 */
-function LayerDecks({ file, layer, idol, open, sup }: { file: string; layer: number; idol: string; open: Open; sup?: SupportCatalog }) {
-  const cat = useCatalog()
+function LayerDecks({ file, layer, idol, open, sup }: { file: string; layer: number; idol?: string; open: Open; sup?: SupportCatalog }) {
   const d = useApi<TowerDecks>(`api/guides/${file}`)
   const all = d.data?.layers[String(layer)] ?? []
   const mine = all.filter((e) => e.idol === idol)
@@ -509,7 +617,7 @@ function LayerDecks({ file, layer, idol, open, sup }: { file: string; layer: num
     <section className="mt-4 rounded-2xl border border-line bg-surface p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h3 className="text-[14px] font-bold">第 {layer} 层的完整编成<Help tip="排行接口每层给 10 条玩家记录（不分偶像卡），带每份回忆的考试牌。开局卡组按游戏规则拼：主回忆的考试牌，再接副回忆的（不能重复的卡只留强化最多的那张），最后加 2 张初始卡。三维和体力 = 主回忆 + 每份副回忆的 20%。不显示玩家信息" /></h3>
-        <span className="text-[12.5px] text-ink-3">{all.length} 条，用 {idolShort(cat, idol)} 当主回忆的 {mine.length} 条</span>
+        <span className="text-[12.5px] text-ink-3">{all.length} 条，按分数排{idol ? `；其中主回忆是这张偶像卡的 ${mine.length} 条` : ''}</span>
       </div>
       <div className="space-y-3">
         {all.map((e, i) => <TowerDeck key={i} e={e} rank={i + 1} open={open} sup={sup} />)}
