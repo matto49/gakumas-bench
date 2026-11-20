@@ -11,7 +11,7 @@ package main
 // 在 users.json 里预先写一条 {"<id>": {"user": "<用户名>"}}（matto49 → matto 就是这样绑的）。
 //
 // 环境变量：GKBENCH_GITHUB_CLIENT_ID、GKBENCH_GITHUB_CLIENT_SECRET（没配就不显示 GitHub 登录），
-// GKBENCH_PUBLIC_URL（对外地址，回调用，默认 https://hiro.matto.top/gkbench）。
+// GKBENCH_PUBLIC_URL（对外地址，回调用，默认 https://gakumas.wiki）。
 //
 //	GET    /api/auth                     {github: 是否可用}
 //	GET    /api/auth/github?next=/me     跳到 GitHub 授权
@@ -140,7 +140,7 @@ type githubConf struct {
 
 func loadGithubConf() githubConf {
 	return githubConf{ID: os.Getenv("GKBENCH_GITHUB_CLIENT_ID"), Secret: os.Getenv("GKBENCH_GITHUB_CLIENT_SECRET"),
-		Public: strings.TrimRight(env("GKBENCH_PUBLIC_URL", "https://hiro.matto.top/gkbench"), "/")}
+		Public: strings.TrimRight(env("GKBENCH_PUBLIC_URL", "https://gakumas.wiki"), "/")}
 }
 
 func (g githubConf) ok() bool { return g.ID != "" && g.Secret != "" }

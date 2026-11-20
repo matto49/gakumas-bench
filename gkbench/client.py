@@ -1,6 +1,6 @@
 """客户端：把本地运行上传到服务器；或者托管跑（种子留在服务器，每一步交动作）。
 
-  GKBENCH_SERVER   服务器地址，默认 https://hiro.matto.top/gkbench
+  GKBENCH_SERVER   服务器地址，默认 https://gakumas.wiki
   GKBENCH_TOKEN    令牌；不设时读 ~/.config/gkbench/token
 """
 from __future__ import annotations
@@ -12,7 +12,7 @@ from pathlib import Path
 
 import httpx
 
-SERVER = os.environ.get("GKBENCH_SERVER", "https://hiro.matto.top/gkbench").rstrip("/")
+SERVER = os.environ.get("GKBENCH_SERVER", "https://gakumas.wiki").rstrip("/")
 TOKEN_FILE = Path(os.environ.get("GKBENCH_TOKEN_FILE", Path.home() / ".config/gkbench/token")).expanduser()
 
 

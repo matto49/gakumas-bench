@@ -1,6 +1,6 @@
 {
  "$schema": "https://json-schema.org/draft/2020-12/schema",
- "$id": "https://hiro.matto.top/gkbench/guides/entry.schema.json",
+ "$id": "https://gakumas.wiki/guides/entry.schema.json",
  "title": "gkbench 偶像卡攻略条目（schema 1）",
  "description": "docs/guides.md 的机器版。人写条目文件是这种条目的列表。",
  "type": "object",

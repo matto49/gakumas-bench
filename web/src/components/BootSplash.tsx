@@ -17,7 +17,7 @@ export function BootSplash() {
   useEffect(() => {
     if (phase !== 'in') return
     sessionStorage.setItem(KEY, '1')
-    const home = location.pathname.replace(/\/?$/, '/') === import.meta.env.BASE_URL // 首页：/gkbench 或 /gkbench/
+    const home = location.pathname.replace(/\/?$/, '/') === import.meta.env.BASE_URL // 首页：/
     let ready = !home || !!(window as { __gkbReady?: boolean }).__gkbReady
     let minDone = false
     const go = () => setPhase('out')

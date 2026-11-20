@@ -1,5 +1,5 @@
 // 接口：和 Go 服务器（server/）一一对应
-export const BASE = import.meta.env.BASE_URL // '/gkbench/'
+export const BASE = import.meta.env.BASE_URL // '/'
 
 export class ApiError extends Error {
   status: number

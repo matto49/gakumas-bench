@@ -67,7 +67,7 @@ ls -1d dist.bak-deploy-* 2>/dev/null | sort | head -n -"$KEEP_BAK" | xargs -r rm
 REMOTE
 
 # 4. 检查线上
-URL=https://hiro.matto.top/gkbench
+URL=https://gakumas.wiki
 LIVE=$(curl -fsS "$URL/" | grep -o 'assets/index-[^"]*\.js' | head -1)
 CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL/$LIVE")
 if [ "$LIVE" = "$INDEX_JS" ] && [ "$CODE" = 200 ]; then

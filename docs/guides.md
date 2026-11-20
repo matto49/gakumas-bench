@@ -199,7 +199,7 @@ static/guides/
 
 - `version` = `YYYYMMDD.N`（同一天第 N 次发布）。发布包：`{"format": "gkbench.guides.v1", "schema": 1, "mode", "version", "generated_at", "sources": {"entries_commit", "ranking": [{fetch, fetched, n_idols}]}, "entries": [...], "summary": {<偶像卡>: {n, score_p10, score_p50, score_max, final_pitems}}}`。
 - 网站接口：`GET /gkbench/api/guides/<名字>`（和 `/api/usage/:mode` 同一套静态 JSON 服务，名字只能是小写字母、数字、短横线），例如 `/gkbench/api/guides/manifest`、`/gkbench/api/guides/hajime-20261120-1`。
-- 数字小广下载：取 `https://hiro.matto.top/gkbench/api/guides/manifest`，版本比本地新就按 `packs.<mode>.name` 下对应模式的不可变包，核对 sha256 后缓存；`schema` 比自己认得的大时不用新包、写日志。拿不到就用本地缓存，再没有就退回现在的规则。
+- 数字小广下载：取 `https://gakumas.wiki/api/guides/manifest`，版本比本地新就按 `packs.<mode>.name` 下对应模式的不可变包，核对 sha256 后缓存；`schema` 比自己认得的大时不用新包、写日志。拿不到就用本地缓存，再没有就退回现在的规则。
 
 ## 7. 网页
 

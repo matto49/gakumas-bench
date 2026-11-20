@@ -1,6 +1,6 @@
 // gkbench：gakumas-bench 的命令行工具，一个不依赖别的东西的可执行文件。
 //
-//	curl -fsSL https://hiro.matto.top/gkbench/install.sh | sh     # 装到 ~/.local/bin/gkbench
+//	curl -fsSL https://gakumas.wiki/install.sh | sh     # 装到 ~/.local/bin/gkbench
 //	gkbench login                                                 # 浏览器里点一下授权，令牌存到 ~/.config/gkbench/token
 //	gkbench upload exam.json --set <集合>                          # 传考试，服务器核对后逐道报结果
 //
@@ -57,7 +57,7 @@ const usage = `gkbench：学マス考试出牌算法 benchmark（gakumas-bench�
   GKBENCH_TOKEN_FILE  令牌文件，默认 ~/.config/gkbench/token
 `
 
-const defaultServer = "https://hiro.matto.top/gkbench"
+const defaultServer = "https://gakumas.wiki"
 const repoURL = "https://github.com/matto49/gakumas-bench"
 
 // 和 docs/format.md「写一道题」里的例子相同

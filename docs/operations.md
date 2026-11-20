@@ -61,7 +61,7 @@
 
     .venv/bin/python -m pytest -q tests
 
-账号：网页上「用 GitHub 登录」（推荐，第一次登录自动建账号，用户名取 GitHub 名，只读公开信息），或者用用户名 + 密码注册（没有邮箱，忘了密码找不回；GitHub 账号也能在「我的」页补设密码）。命令行用的令牌在「我的」页自己生成、吊销，存到 `~/.config/gkbench/token`（600）；服务器地址 `GKBENCH_SERVER`，默认 `https://hiro.matto.top/gkbench`。
+账号：网页上「用 GitHub 登录」（推荐，第一次登录自动建账号，用户名取 GitHub 名，只读公开信息），或者用用户名 + 密码注册（没有邮箱，忘了密码找不回；GitHub 账号也能在「我的」页补设密码）。命令行用的令牌在「我的」页自己生成、吊销，存到 `~/.config/gkbench/token`（600）；服务器地址 `GKBENCH_SERVER`，默认 `https://gakumas.wiki`。
 
 ## 服务器接口
 
@@ -143,4 +143,4 @@
 
 ## 线上部署
 
-线上部署（ycy）：`GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gkbench-server ./server`，放 `/opt/gkbench/bin/`；`web/dist` 用 `tools/deploy-web.sh [提交]` 部署到 `/opt/gkbench/web/dist`（干净 worktree 构建，保留旧版本的 hash 分片，免得部署前打开的页面切路由时 404）；Python 部分放 `/opt/gkbench/app`（自带 `.venv`）；systemd `gkbench.service`（`Environment=` 里带空格的值要加引号），nginx 站点 `/etc/nginx/sites-available/hiro`（`hiro.matto.top`，certbot 证书）把 `/gkbench/` 转到 127.0.0.1:19150，根路径跳 `/gkbench/`。旧地址 `api.matto.top/gkbench/` 的网页 308 跳到新域名，`/gkbench/api/` 暂时继续转发，给还没换默认地址的老客户端用。
+线上部署（ycy）：`GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gkbench-server ./server`，放 `/opt/gkbench/bin/`；`web/dist` 用 `tools/deploy-web.sh [提交]` 部署到 `/opt/gkbench/web/dist`（干净 worktree 构建，保留旧版本的 hash 分片，免得部署前打开的页面切路由时 404）；Python 部分放 `/opt/gkbench/app`（自带 `.venv`）；systemd `gkbench.service`（`Environment=` 里带空格的值要加引号），nginx 站点 `/etc/nginx/sites-available/gakumas-wiki`（`gakumas.wiki`，certbot 证书）整站转到 127.0.0.1:19150，`www.gakumas.wiki` 301 到不带 www 的地址；systemd 里 `GKBENCH_PUBLIC_URL=https://gakumas.wiki`（GitHub 登录回调、命令行登录链接都用它，GitHub OAuth App 的回调地址要跟着改）。旧地址（2026-11-20 迁走）：`hiro.matto.top/gkbench/` 和更早的 `api.matto.top/gkbench/` 的网页 301 跳到 `gakumas.wiki` 同一路径；`/gkbench/api/`、`/gkbench/install.sh`、`/gkbench/install.ps1`、`/gkbench/cli/` 继续转发，给还没换默认地址的老客户端（命令行、`gkbench.client`、数字小广下载攻略包）用。

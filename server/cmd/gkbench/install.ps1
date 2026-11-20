@@ -1,10 +1,10 @@
 # gkbench 命令行工具的安装脚本（Windows PowerShell）。
 #
-#   irm https://hiro.matto.top/gkbench/install.ps1 | iex
+#   irm https://gakumas.wiki/install.ps1 | iex
 #
 # 把 gkbench.exe 下载到 %USERPROFILE%\.local\bin，核对 SHA-256，并把这个目录加进当前用户的 PATH。
 $ErrorActionPreference = 'Stop'
-$base = if ($env:GKBENCH_SERVER) { $env:GKBENCH_SERVER.TrimEnd('/') } else { 'https://hiro.matto.top/gkbench' }
+$base = if ($env:GKBENCH_SERVER) { $env:GKBENCH_SERVER.TrimEnd('/') } else { 'https://gakumas.wiki' }
 $dir = if ($env:GKBENCH_INSTALL_DIR) { $env:GKBENCH_INSTALL_DIR } else { Join-Path $env:USERPROFILE '.local\bin' }
 $arch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { 'amd64' }
 $name = "gkbench-windows-$arch.exe"

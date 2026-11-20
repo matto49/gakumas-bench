@@ -2,7 +2,7 @@
 
 学园偶像大师（学マス）玩家做的中文攻略站：角色强度榜、配置统计、游戏资料图鉴，以及一套考试出牌算法的公开评测。
 
-**网站：<https://hiro.matto.top/gkbench/>**　·　介绍视频：[为了成为学马高手，我们制作了「初星攻略站」](https://www.bilibili.com/video/BV1qmst63EU6/)
+**网站：<https://gakumas.wiki/>**　·　介绍视频：[为了成为学马高手，我们制作了「初星攻略站」](https://www.bilibili.com/video/BV1qmst63EU6/)
 
 ![首页](docs/img/home.jpg)
 
@@ -58,7 +58,7 @@
 
 试験集合可以自己建，题目自己传。按 [docs/format.md](docs/format.md) 的「写一道题」写一份开局配置（字段表、完整例子都在那一章，可以直接交给 AI 照着写），然后用命令行工具上传：
 
-    curl -fsSL https://hiro.matto.top/gkbench/install.sh | sh
+    curl -fsSL https://gakumas.wiki/install.sh | sh
     gkbench login
     gkbench upload exam.json --set <集合>
 
