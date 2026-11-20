@@ -451,7 +451,7 @@ function IdolRoad({ idol, seasons, open, sup }: { idol: string; seasons: Record<
             <th className="px-3 py-2 text-left font-semibold">这一层最强的卡</th>
           </tr></thead>
           <tbody>
-            {t.layers.map((x) => {
+            {[...t.layers].sort((a, b) => b.layer - a.layer).map((x) => {
               const ranked = [...x.idols].sort((a, b) => b.r10 - a.r10)
               const k = ranked.findIndex((r) => r.idol_card_id === idol)
               const me = ranked[k]
