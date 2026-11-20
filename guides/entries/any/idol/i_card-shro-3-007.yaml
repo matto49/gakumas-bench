@@ -201,17 +201,3 @@
     ref: もりし
   updated: '2026-11-20'
   by: 3940a9
-- id: any.idol.i_card-shro-3-007.formation.main_attr.default
-  kind: written
-  scope:
-    idol_card: i_card-shro-3-007
-  decision: formation.main_attr
-  content:
-    prefer:
-    - da
-    why: 开局编成的默认主属性（支援卡没定下来时）
-  evidence:
-  - kind: decision
-    ref: formation_plan.DEFAULT_MAIN
-  updated: '2026-11-20'
-  by: 3940a9

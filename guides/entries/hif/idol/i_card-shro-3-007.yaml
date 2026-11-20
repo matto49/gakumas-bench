@@ -1,0 +1,19 @@
+# H.I.F · 偶像卡层：【Campus mode!!】篠澤広。主属性 Da 只适用 H.I.F（用户 11-20：初里是 Vo）。
+
+- id: hif.idol.i_card-shro-3-007.formation.main_attr.default
+  kind: written
+  scope:
+    mode: hif
+    idol_card: i_card-shro-3-007
+  decision: formation.main_attr
+  content:
+    prefer:
+    - da
+    why: H.I.F 开局编成的默认主属性（支援卡没定下来时）用 Da（决策-07）。初里是 Vo，另见初的偶像卡层条目。
+  evidence:
+  - kind: decision
+    ref: 决策-07
+  - kind: decision
+    ref: formation_plan.DEFAULT_MAIN
+  updated: '2026-11-20'
+  by: 3940a9
