@@ -71,16 +71,23 @@ const ATTR = { vo: { label: 'Vo', tone: 'bg-vo', chip: 'bg-vo-strong text-white'
 type Attr = keyof typeof ATTR
 const AttrTag = ({ a }: { a: Attr }) => <span className={cx('mx-0.5 inline-grid h-5 place-items-center rounded-[4px] px-1.5 align-[1px] text-[11px] font-bold', ATTR[a].chip)}>{ATTR[a].label}</span>
 
-/** 典型牌组：按出现率从高到低取卡，每张按平均张数（四舍五入）算，凑够中位数张数为止 */
-function typicalDeck(ins: GuideInsight) {
-  const out: GuideInsight['deck']['cards'] = []
+type DeckCard = GuideInsight['deck']['cards'][number]
+
+/** 典型牌组：N 卡（初始牌组里没删掉的「〜の基本」、事件塞进来的「眠気」这类）不算推荐，单独记张数；
+ * 其余按出现率从高到低取，每张按平均张数（四舍五入）算，凑够「牌组中位数 − 平均留着的 N 卡张数」为止 */
+function typicalDeck(ins: GuideInsight, isFiller: (id: string) => boolean) {
+  const filler = ins.deck.cards.filter((c) => isFiller(c.id))
+  const fillerCount = filler.reduce((s, c) => s + c.share * c.copies, 0)
+  const target = Math.max(0, Math.round(ins.deck.size.p50 - fillerCount))
+  const out: DeckCard[] = []
   let count = 0
   for (const c of ins.deck.cards) {
-    if (count >= ins.deck.size.p50 || c.share < 0.3) break
+    if (isFiller(c.id)) continue
+    if (count >= target || c.share < 0.3) break
     out.push(c)
     count += Math.max(1, Math.round(c.copies))
   }
-  return out
+  return { deck: out, filler, fillerCount, target }
 }
 
 export function GuideDashboard({ ins, stats, summary, sup, open, modeLabel, fetched }: {
@@ -102,10 +109,11 @@ export function GuideDashboard({ ins, stats, summary, sup, open, modeLabel, fetc
   const supports = (stat('formation.support')?.content.prefer ?? []).map(item).slice(0, 8)
   const pitems = (stat('formation.pitem')?.content.prefer ?? []).map(item).slice(0, 8)
   const targets = stat('params_target')?.content.targets as Record<Attr, Quartiles | undefined> | undefined
-  const deck = ins ? typicalDeck(ins) : []
+  const isFiller = (id: string) => cat?.cards[id]?.rarity === 'N'
+  const { deck, filler, fillerCount, target } = ins ? typicalDeck(ins, isFiller) : { deck: [] as DeckCard[], filler: [] as DeckCard[], fillerCount: 0, target: 0 }
   const inDeck = new Set(deck.map((c) => c.id))
-  const also = ins ? ins.deck.cards.filter((c) => !inDeck.has(c.id) && c.share >= 0.25).slice(0, 10) : []
-  const must = ins ? ins.deck.cards.filter((c) => c.share >= 0.9).length : 0
+  const also = ins ? ins.deck.cards.filter((c) => !inDeck.has(c.id) && !isFiller(c.id) && c.share >= 0.25).slice(0, 10) : []
+  const must = ins ? ins.deck.cards.filter((c) => !isFiller(c.id) && c.share >= 0.9).length : 0
   // 分差：两倍标准误以内的算「看不出差别」，不进「该带 / 拖分」
   const sig = (ins?.lift ?? []).filter((l) => Math.abs(l.diff) >= 2 * l.se)
   const best = sig.filter((l) => l.diff > 0).slice(0, 6)
@@ -123,7 +131,7 @@ export function GuideDashboard({ ins, stats, summary, sup, open, modeLabel, fetc
           {attrKey && ATTR[attrKey] && (split && ATTR[split.id as Attr]
             ? <>{modeLabel} 的主属性分两派：<AttrTag a={attrKey} />（<span className="num">{pct(mainAttr!.stat?.share ?? 0)}</span>）和 <AttrTag a={split.id as Attr} />（<span className="num">{pct(split.stat?.share ?? 0)}</span>）。</>
             : <>{modeLabel} 走 <AttrTag a={attrKey} /> 主属性（<span className="num">{pct(mainAttr!.stat?.share ?? 0)}</span> 的人）。</>)}
-          {ins && <>牌组一般 <b className="num">{ins.deck.size.p50}</b> 张，其中 <b className="num">{must}</b> 张几乎人人都带。</>}
+          {ins && <>牌组一般 <b className="num">{ins.deck.size.p50}</b> 张（含没删掉的基本卡），其中 <b className="num">{must}</b> 张几乎人人都带。</>}
           {supports.length > 0 && <>支援卡最常见的是{supports.slice(0, 3).map((s, i) => <span key={s.id}>{i > 0 && '、'}「<button type="button" onClick={() => open.support(s.id)} className="cursor-pointer font-semibold hover:text-brand-ink">{supName(s.id).replace(/[、，,。！!]+$/, '')}</button>」</span>)}。</>}
           {targets && <>终局三维中位数 {(['vo', 'da', 'vi'] as const).map((a, i) => targets[a] && <span key={a}>{i > 0 && ' / '}{ATTR[a].label} <b className="num">{targets[a]!.p50.toLocaleString()}</b></span>)}。</>}
         </p>
@@ -131,8 +139,8 @@ export function GuideDashboard({ ins, stats, summary, sup, open, modeLabel, fetc
 
       <div className="grid gap-4 lg:grid-cols-2">
         {ins && (
-          <Panel title="推荐牌组" sub={`排行榜上的典型牌组 · ${ins.deck.size.p50} 张`}
-            help="按每张卡在终局牌组里的出现率从高到低取，凑够牌组张数的中位数为止；百分比是带这张卡的人的比例。+ = 多数强化过，忆 = 多数是回忆带进来的，×2 = 平均带两张。点卡看效果">
+          <Panel title="推荐牌组" sub={`排行榜上的典型牌组 · ${target} 张`}
+            help="按每张卡在终局牌组里的出现率从高到低取，凑够常见张数为止；百分比是带这张卡的人的比例。「〜の基本」这类初始基本卡和「眠気」不算推荐，单独写在下面。+ = 这张卡多数是强化过的；忆 = 终局牌组里的这张卡，过半是回忆带进来的（排行榜记录里每张卡都标了是不是回忆带入），不是培育中拿的；×2 = 平均带两张。点卡看效果">
             <div className="flex flex-wrap gap-1">
               {deck.map((c) => (
                 <CardChip key={c.id} id={c.id} upgraded={c.upgraded >= 0.5} memory={c.memory >= 0.5} copies={c.copies} onOpen={open.card}>
@@ -141,8 +149,15 @@ export function GuideDashboard({ ins, stats, summary, sup, open, modeLabel, fetc
               ))}
             </div>
             <p className="mt-3 text-[13px] text-ink-2">
-              必带 <b className="num text-ink">{must}</b> 张（≥ 90%）· 牌组多为 <b className="num text-ink">{ins.deck.size.p25}–{ins.deck.size.p75}</b> 张
+              必带 <b className="num text-ink">{must}</b> 张（≥ 90%）· 整副牌多为 <b className="num text-ink">{ins.deck.size.p25}–{ins.deck.size.p75}</b> 张
+              {fillerCount >= 0.5 && <>，其中平均 <b className="num text-ink">{fillerCount.toFixed(1)}</b> 张是没删掉的基本卡和眠気</>}
             </p>
+            {fillerCount >= 0.5 && (
+              <p className="mt-1 text-[12px] text-ink-3">
+                {filler.filter((c) => c.share >= 0.2).map((c, i) => <span key={c.id}>{i > 0 && '、'}{cardName(cat, c.id)} <span className="num">{pct(c.share)}</span>{c.copies >= 1.5 && <> ×{Math.round(c.copies)}</>}</span>)}
+                。删卡次数有限，这些多半是来不及删，不是特意留的；先删哪张看下面「删哪些卡」。
+              </p>
+            )}
             {also.length > 0 && (
               <div className="mt-3 border-t border-line pt-3">
                 <p className="mb-1.5 text-[12px] text-ink-3">也常见（替换位）</p>
