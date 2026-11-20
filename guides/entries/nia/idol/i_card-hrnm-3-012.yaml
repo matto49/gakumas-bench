@@ -9,7 +9,7 @@
   content:
     prefer:
     - vi
-    why: N.I.A MASTER 排行榜前 100 名里，这张卡终局 93% 是 Vi 最高。支援卡按这个主属性编。
+    why: N.I.A MASTER 排行榜上，这张卡终局 93% 是 Vi 最高。支援卡按这个主属性编。
   evidence:
   - kind: ranking
     mode: nia
@@ -30,7 +30,7 @@
       upgrade: 1
       role: idol
       note: どんな世界でも：涨分时集中效果按两倍算，集中叠高后再打
-    why: 固有卡排行榜前 100 名里 99% 强化过。定制方向攻略没给结论，先只强化。
+    why: 固有卡排行榜上 99% 强化过。定制方向攻略没给结论，先只强化。
   evidence:
   - kind: guide
     ref: game8 Howling over the World

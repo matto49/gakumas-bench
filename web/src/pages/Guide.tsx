@@ -7,7 +7,7 @@ import { pairBi, type SupportCatalog } from '../lib/supports'
 import { IDOL_STYLE } from '../lib/game'
 import {
   ACTION_LABEL, applies, DECISIONS, GUIDE_MODES, item, LAYER_LABEL, layerOf, LEVEL_LABEL, levelOf, PLAN_KEY, sortEntries, STYLE_KEY,
-  type GuideEntry, type GuideItem, type GuideItemObj, type GuideMode, type GuidePack, type Quartiles, type TowerDecks, type TowerLayer, type TowerExample, type TowerSeason,
+  type GuideEntry, type GuideInsights, type GuideItem, type GuideItemObj, type GuideMode, type GuidePack, type Quartiles, type TowerDecks, type TowerLayer, type TowerExample, type TowerSeason,
 } from '../lib/guides'
 import { AttrChip, cx, Empty, ErrorState, Help, IdolThumb, PageHeader, SectionTitle, Skeleton, Tip } from '../components/ui'
 import { CardDetail, CardImage, RarityTag } from '../components/CardDetail'
@@ -16,6 +16,7 @@ import { useDetailPopup } from '../components/DetailPopups'
 import { SupportThumb, TypeChip } from '../components/SupportCard'
 import { SkillCard } from '../components/GameBits'
 import { parseDeckCard } from '../components/DeckView'
+import { GuideDashboard } from '../components/GuideDashboard'
 
 /** 偶像卡攻略：每张偶像卡一页，按决策点列出排行榜统计和人写攻略（docs/guides.md）。
  * 数据 api/guides/<模式>（gkbench.guides build 生成）；偶像之路是按层的汇总，点开一层再取这座塔的完整编成（api/guides/idolroad-decks-…） */
@@ -110,7 +111,7 @@ export function GuideIndex() {
   }
   return (
     <div>
-      <PageHeader title="偶像卡攻略" sub={mode === 'idolroad' ? '偶像之路：选偶像和层数，看这一层各偶像卡的分数线、完整编成和常见换卡。' : '每张偶像卡一页：排行榜前 100 名的编成、拿卡、删卡、强化和三维，加上人写的攻略。'} />
+      <PageHeader title="偶像卡攻略" sub={mode === 'idolroad' ? '偶像之路：选偶像和层数，看这一层各偶像卡的分数线、完整编成和常见换卡。' : '每张偶像卡一页：先看结论（推荐牌组、该带的卡、支援卡、三维），再往下是排行榜统计和人写攻略。'} />
       <div className="mb-5 space-y-3 rounded-2xl border border-line bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-12 text-[12.5px] text-ink-3">模式</span>
@@ -137,7 +138,7 @@ export function GuideIndex() {
                     <IdolThumb id={i} size={40} title={false} />
                     <span className="min-w-0">
                       <span className="block truncate text-[13.5px] text-ink">{cat?.idols[i]?.name ?? i}</span>
-                      <span className="text-[11.5px] text-ink-3">{terms.style[cat?.idols[i]?.style ?? ''] ?? ''} · 前 100 名 {pack.data!.summary[i].n} 份</span>
+                      <span className="text-[11.5px] text-ink-3">{terms.plan[cat?.idols[i]?.plan ?? ''] ?? ''} · {terms.style[cat?.idols[i]?.style ?? ''] ?? ''}</span>
                     </span>
                   </Link>
                 </li>
@@ -227,7 +228,7 @@ function IdolRoadIndex() {
       </div>
 
       <SectionTitle>{face(t) ? idolShort(cat, face(t)!) : t.character} 的塔 · 第 {L.layer} 层：各偶像卡的分数线</SectionTitle>
-      <p className="-mt-1 mb-3 text-[12.5px] text-ink-3">每张偶像卡在这一层排行榜前 100 名的分数，按第 10 名排。点卡名看这张卡每一层的成绩。</p>
+      <p className="-mt-1 mb-3 text-[12.5px] text-ink-3">每张偶像卡在这一层排行榜上的分数线，按第 10 名排。点卡名看这张卡每一层的成绩。</p>
       <div className="overflow-x-auto rounded-2xl border border-line">
         <table className="w-full text-[13.5px] sm:min-w-[680px]">
           <thead className="bg-surface-2 text-[12px] text-ink-3"><tr>
@@ -296,6 +297,7 @@ export function GuidePage() {
   const [q, setQ] = useSearchParams()
   const mode = modeOf(q.get('mode'))
   const pack = useApi<GuidePack>(`api/guides/${mode}`)
+  const insights = useApi<GuideInsights>(mode === 'idolroad' ? null : `api/guides/insights-${mode}`)
   const sup = useApi<SupportCatalog>('api/supports')
   const [openCard, setOpenCard] = useState<string | null>(null)
   const [openItem, setOpenItem] = useState<string | null>(null)
@@ -313,7 +315,7 @@ export function GuidePage() {
       <PageHeader
         crumb={<Link to={`/guide${mode === 'hajime' ? '' : `?mode=${mode}`}`} className="hover:text-brand-ink">偶像卡攻略</Link>}
         title={<span className="flex items-center gap-3"><IdolThumb id={idol} size={48} title={false} /><span className="min-w-0">{info?.name ?? idol}</span></span>}
-        sub={info && <>{terms.plan[info.plan ?? ''] ?? ''} · {terms.style[info.style ?? ''] ?? ''}{summary && <> · 排行榜前 100 名 {summary.n} 份，分数中位数 <span className="num">{Math.round(summary.score_p50).toLocaleString()}</span>，最高 <span className="num">{summary.score_max.toLocaleString()}</span></>}</>}
+        sub={info && <>{terms.plan[info.plan ?? ''] ?? ''} · {terms.style[info.style ?? ''] ?? ''}{summary && <> · 排行榜分数中位数 <span className="num">{Math.round(summary.score_p50).toLocaleString()}</span>，最高 <span className="num">{summary.score_max.toLocaleString()}</span></>}</>}
       />
       <div className="mb-6 flex flex-wrap gap-2">
         {GUIDE_MODES.map((m) => <Chip key={m.key} on={mode === m.key} onClick={() => setMode(m.key)}>{m.label}</Chip>)}
@@ -324,6 +326,10 @@ export function GuidePage() {
       {d && mode !== 'idolroad' && (
         <>
           {!summary && <div className="mb-6"><Empty>这个模式的排行榜里没有这张偶像卡的记录，下面只有通用的攻略。</Empty></div>}
+          {summary && (
+            <GuideDashboard ins={insights.data?.idols[idol]} stats={mine.filter((e) => e.scope.idol_card === idol)} summary={summary} sup={sup.data ?? undefined}
+              open={open} modeLabel={GUIDE_MODES.find((m) => m.key === mode)?.label ?? mode} fetched={insights.data?.fetched ?? d.sources.ranking?.[0]?.fetched} />
+          )}
           {(['开局编成', '培育', '考试'] as const).map((g) => (
             <section key={g} className="mb-8">
               <SectionTitle>{g}</SectionTitle>
@@ -401,7 +407,7 @@ function Written({ e, open, sup }: { e: GuideEntry; open: Open; sup?: SupportCat
       {e.content.fallback && <p className="mt-1 text-[12.5px] text-ink-2">都没有时：{e.content.fallback}</p>}
       <p className="mt-2 text-[11.5px] text-ink-3">
         出处：{e.evidence.map((ev, i) => (
-          <span key={i}>{i > 0 && '、'}{ev.kind === 'ranking' ? `排行榜 ${ev.n?.toLocaleString() ?? ''} 份（${ev.fetched ?? ''}）`
+          <span key={i}>{i > 0 && '、'}{ev.kind === 'ranking' ? `排行榜（${ev.fetched ?? ''}）`
             : ev.url ? <a href={ev.url} target="_blank" rel="noreferrer" className="text-brand-ink hover:underline">{ev.ref}</a> : ev.ref ?? ev.kind}</span>
         ))}{e.updated && ` · ${e.updated}`}
       </p>
@@ -476,7 +482,7 @@ function StatBlock({ e, decision, open, sup }: { e: GuideEntry; decision: string
   const head = (
     <p className="mb-2 flex flex-wrap items-center gap-1.5 text-[11.5px] text-ink-3">
       <span className="rounded-full bg-surface-2 px-2 py-0.5 font-semibold text-ink-2 ring-1 ring-line">排行榜统计</span>
-      前 100 名 {ev?.n} 份 · {ev?.fetched}{ev?.low_sample && <span className="rounded-full bg-critical/10 px-2 py-0.5 text-critical">样本少</span>}
+      {ev?.fetched} 抓取{ev?.low_sample && <span className="rounded-full bg-critical/10 px-2 py-0.5 text-critical">样本少</span>}
     </p>
   )
   let body: React.ReactNode
@@ -541,7 +547,7 @@ function IdolRoad({ idol, seasons, open, sup }: { idol: string; seasons: Record<
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {names.map((n) => <Chip key={n} on={season === n} onClick={() => { setSeason(n); setLayer(null) }}>{n.startsWith('current') ? '本赛季' : '上赛季'}（{n.split('-')[1].slice(0, 4)}.{n.split('-')[1].slice(4, 6)}）</Chip>)}
       </div>
-      <p className="mb-3 text-[12.5px] text-ink-3">{idolShort(cat, idol)} 的塔：每层每张偶像卡排行榜前 100 名的分数。点一层看这一层的完整编成（开局卡组）、常见的换卡和编成里的回忆。</p>
+      <p className="mb-3 text-[12.5px] text-ink-3">{idolShort(cat, idol)} 的塔：每层每张偶像卡在排行榜上的分数线。点一层看这一层的完整编成（开局卡组）、常见的换卡和编成里的回忆。</p>
       <div className="overflow-x-auto rounded-2xl border border-line">
         <table className="w-full min-w-[620px] text-[13.5px]">
           <thead className="bg-surface-2 text-[12px] text-ink-3"><tr>

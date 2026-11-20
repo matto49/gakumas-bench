@@ -141,6 +141,15 @@
     # 旧数据（v1）转换
     .venv/bin/python -m gkbench.migrate [--dry-run]
 
+### 偶像卡攻略看板数据
+
+单卡攻略页顶上的看板（推荐牌组、技能卡分差）读 `api/guides/insights-<模式>`，不在攻略包里（攻略包是给数字小广的契约，不含整副牌组和分差）。每次换了排行榜抓取、重打攻略包时一起重算，抓取目录和攻略包 `sources.ranking[0].fetch` 一致：
+
+    python -m gkbench.guide_insights <gakumas-bench-data>/private/ranking-decoded/<抓取> <hajime|nia|hif> insights-<模式>.json --fetched <抓取日期>
+    rsync -a insights-*.json ycy:/srv/gkbench-data/static/guides/
+
+口径写在 `gkbench/guide_insights.py` 开头：分差 = 带这张卡的平均分 − 不带的平均分（占平均分的比例），附标准误，只算带的比例在 10%–90% 的卡；网页上两倍标准误以内的不列。是排行榜上的相关，不是因果。
+
 ## 线上部署
 
 线上部署（ycy）：`GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gkbench-server ./server`，放 `/opt/gkbench/bin/`；`web/dist` 用 `tools/deploy-web.sh [提交]` 部署到 `/opt/gkbench/web/dist`（干净 worktree 构建，保留旧版本的 hash 分片，免得部署前打开的页面切路由时 404）；Python 部分放 `/opt/gkbench/app`（自带 `.venv`）；systemd `gkbench.service`（`Environment=` 里带空格的值要加引号），nginx 站点 `/etc/nginx/sites-available/gakumas-wiki`（`gakumas.wiki`，certbot 证书）整站转到 127.0.0.1:19150，`www.gakumas.wiki` 301 到不带 www 的地址；systemd 里 `GKBENCH_PUBLIC_URL=https://gakumas.wiki`（GitHub 登录回调、命令行登录链接都用它，GitHub OAuth App 的回调地址要跟着改）。旧地址（2026-11-20 迁走）：`hiro.matto.top/gkbench/` 和更早的 `api.matto.top/gkbench/` 的网页 301 跳到 `gakumas.wiki` 同一路径；`/gkbench/api/`、`/gkbench/install.sh`、`/gkbench/install.ps1`、`/gkbench/cli/` 继续转发，给还没换默认地址的老客户端（命令行、`gkbench.client`、数字小广下载攻略包）用。

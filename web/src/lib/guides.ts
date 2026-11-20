@@ -152,3 +152,12 @@ export const ACTION_LABEL: Record<string, string> = {
   consult: '相談', rest: '休息', allowance: '活動支給', gift: '差し入れ', business: '営業', special_guidance: '特別指導',
   vo: 'Vo', da: 'Da', vi: 'Vi', 'class:basic': '基本卡', 'class:trouble': 'トラブル卡', 'class:off_plan': 'プラン不一致的卡', 'class:other_buff': '主打另一种 buff 的卡', 'class:genki_cash': '靠元気出分的卡',
 }
+
+/** 攻略看板数据（gkbench.guide_insights.v1）：python -m gkbench.guide_insights 生成，GET api/guides/insights-<模式>。
+ * deck = 整副终局牌组（含固有卡、初始牌组、回忆带入）里每张卡；lift = 带 vs 不带的平均分差（占平均分的比例）和标准误 */
+export type GuideInsight = {
+  n: number
+  deck: { cards: { id: string; share: number; copies: number; upgraded: number; memory: number }[]; size: Quartiles }
+  lift: { id: string; share: number; diff: number; se: number }[]
+}
+export type GuideInsights = { format: string; mode: string; fetch: string; fetched?: string | null; generated_at: string; idols: Record<string, GuideInsight> }

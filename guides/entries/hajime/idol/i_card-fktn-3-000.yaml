@@ -6,7 +6,7 @@
   decision: formation.main_attr
   content:
     prefer: [da]
-    why: 初 LEGEND 排行榜前 100 名里，这张卡终局 96% 是 Da 最高，Vi 第二。支援卡按主 Da 编。
+    why: 初 LEGEND 排行榜上，这张卡终局 96% 是 Da 最高，Vi 第二。支援卡按主 Da 编。
   evidence:
     - {kind: ranking, mode: hajime, n: 100, fetched: 2026-11-19, share: 0.96}
   updated: 2026-11-20
@@ -20,7 +20,7 @@
     prefer:
       - {id: p_card-02-ido-3_015, upgrade: 1, role: idol, note: 强化后好印象 +7 → +9}
     why: >-
-      固有卡よそ見はダメ♪是开局攒好印象的主力，排行榜前 100 名里 100% 强化过。
+      固有卡よそ見はダメ♪是开局攒好印象的主力，排行榜上 100% 强化过。
       它能定制成「好印象强化 +50%（5 回合）」或「使用数 +1」，攻略和排行榜都没给出哪个更好，先只强化。
   evidence:
     - {kind: guide, ref: game8 世界一可愛い私, url: "https://game8.jp/gakuen-idolmaster/609650", date: 2026-11-20}
