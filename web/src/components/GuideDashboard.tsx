@@ -26,6 +26,16 @@ function Panel({ title, sub, help, children, className }: { title: ReactNode; su
   )
 }
 
+/** 结论条的一格：小标题 + 内容，格与格之间一道细线 */
+function Cell({ label, wide, children }: { label: string; wide?: boolean; children: ReactNode }) {
+  return (
+    <div className={cx('min-w-0 bg-surface px-4 py-3', wide && 'col-span-2 lg:col-span-1')}>
+      <p className="mb-2 text-[12px] text-ink-3">{label}</p>
+      {children}
+    </div>
+  )
+}
+
 function Bar({ v, max = 1, tone = 'bg-da' }: { v: number; max?: number; tone?: string }) {
   return (
     <span className="block h-[6px] overflow-hidden rounded-full bg-surface-3">
@@ -69,7 +79,6 @@ function ItemIcon({ id, size = 40, onOpen, children }: { id: string; size?: numb
 
 const ATTR = { vo: { label: 'Vo', tone: 'bg-vo', chip: 'bg-vo-strong text-white' }, da: { label: 'Da', tone: 'bg-da', chip: 'bg-da-strong text-white' }, vi: { label: 'Vi', tone: 'bg-vi', chip: 'bg-vi-strong text-ink' } } as const
 type Attr = keyof typeof ATTR
-const AttrTag = ({ a }: { a: Attr }) => <span className={cx('mx-0.5 inline-grid h-5 place-items-center rounded-[4px] px-1.5 align-[1px] text-[11px] font-bold', ATTR[a].chip)}>{ATTR[a].label}</span>
 
 type DeckCard = GuideInsight['deck']['cards'][number]
 
@@ -125,16 +134,64 @@ export function GuideDashboard({ ins, stats, summary, sup, open, modeLabel, fetc
   const attrKey = mainAttr?.id as Attr | undefined
   return (
     <div className="mb-10 space-y-4">
-      {/* 结论：一段话说清楚这张卡怎么配 */}
-      <section className="rounded-xl border border-line bg-surface-2 px-4 py-3.5 text-[14px] leading-[1.9] text-ink">
-        <p>
-          {attrKey && ATTR[attrKey] && (split && ATTR[split.id as Attr]
-            ? <>{modeLabel} 的主属性分两派：<AttrTag a={attrKey} />（<span className="num">{pct(mainAttr!.stat?.share ?? 0)}</span>）和 <AttrTag a={split.id as Attr} />（<span className="num">{pct(split.stat?.share ?? 0)}</span>）。</>
-            : <>{modeLabel} 走 <AttrTag a={attrKey} /> 主属性（<span className="num">{pct(mainAttr!.stat?.share ?? 0)}</span> 的人）。</>)}
-          {ins && <>牌组一般 <b className="num">{ins.deck.size.p50}</b> 张（含没删掉的基本卡），其中 <b className="num">{must}</b> 张几乎人人都带。</>}
-          {supports.length > 0 && <>支援卡最常见的是{supports.slice(0, 3).map((s, i) => <span key={s.id}>{i > 0 && '、'}「<button type="button" onClick={() => open.support(s.id)} className="cursor-pointer font-semibold hover:text-brand-ink">{supName(s.id).replace(/[、，,。！!]+$/, '')}</button>」</span>)}。</>}
-          {targets && <>终局三维中位数 {(['vo', 'da', 'vi'] as const).map((a, i) => targets[a] && <span key={a}>{i > 0 && ' / '}{ATTR[a].label} <b className="num">{targets[a]!.p50.toLocaleString()}</b></span>)}。</>}
-        </p>
+      {/* 结论：四格一眼看完——主属性、牌组、支援卡首选、终局三维 */}
+      <section aria-label="结论" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-[auto_auto_minmax(0,1.3fr)_minmax(0,1fr)]">
+        {attrKey && ATTR[attrKey] && (
+          <Cell label={split ? `${modeLabel} 主属性 · 分两派` : `${modeLabel} 主属性`}>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              {[mainAttr!, ...(split ? [split] : [])].map((a) => (
+                <span key={a.id} className="inline-flex items-center gap-1.5">
+                  <span className={cx('inline-grid h-7 min-w-9 place-items-center rounded-md px-2 text-[14px] font-bold', ATTR[a.id as Attr]?.chip)}>{ATTR[a.id as Attr]?.label}</span>
+                  <span className="num text-[13px] text-ink-2">{pct(a.stat?.share ?? 0)}</span>
+                </span>
+              ))}
+            </div>
+          </Cell>
+        )}
+        {ins && (
+          <Cell label="牌组">
+            <p className="text-ink-2"><b className="num text-[22px] leading-none text-ink">{ins.deck.size.p50}</b> 张<span className="mx-2 text-line-strong">·</span>必带 <b className="num text-[16px] text-ink">{must}</b> 张</p>
+            {fillerCount >= 0.5 && <p className="mt-1 text-[12px] text-ink-3">含没删掉的基本卡约 {fillerCount.toFixed(1)} 张</p>}
+          </Cell>
+        )}
+        {supports.length > 0 && (
+          <Cell label="支援卡首选" wide>
+            <div className="flex gap-2.5">
+              {supports.slice(0, 5).map((s, i) => (
+                <button key={s.id} type="button" onClick={() => open.support(s.id)} title={supName(s.id)} className={cx(i >= 3 && 'max-lg:hidden', 'group flex w-[5.5rem] min-w-0 cursor-pointer flex-col items-center gap-1')}>
+                  <span className="relative">
+                    <SupportThumb id={s.id} size={44} className="rounded-lg transition-transform group-hover:-translate-y-0.5" />
+                    <span className="num absolute -right-1 -bottom-1 rounded-full bg-ink px-1.5 text-[10.5px] leading-[16px] font-semibold text-white">{pct(s.stat?.share ?? 0)}</span>
+                  </span>
+                  <span className="w-full truncate text-center text-[11.5px] text-ink-2 group-hover:text-brand-ink">{supName(s.id).replace(/[、，,。！!？?]+$/, '')}</span>
+                </button>
+              ))}
+            </div>
+          </Cell>
+        )}
+        {targets && (
+          <Cell label="终局三维（中位数）" wide>
+            {(() => {
+              const vals = (['vo', 'da', 'vi'] as const).map((a) => targets[a]?.p50 ?? 0)
+              const sum = vals.reduce((x, y) => x + y, 0) || 1
+              return (
+                <>
+                  <span className="flex h-2 overflow-hidden rounded-full">
+                    {(['vo', 'da', 'vi'] as const).map((a, i) => <i key={a} className={ATTR[a].tone} style={{ width: `${(100 * vals[i]) / sum}%` }} />)}
+                  </span>
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {(['vo', 'da', 'vi'] as const).map((a, i) => (
+                      <span key={a} className="min-w-0">
+                        <span className={cx('block text-[11.5px]', a === attrKey ? 'font-semibold text-ink' : 'text-ink-3')}>{ATTR[a].label}</span>
+                        <b className={cx('num text-[16px]', a === attrKey ? 'text-ink' : 'text-ink-2')}>{vals[i].toLocaleString()}</b>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )
+            })()}
+          </Cell>
+        )}
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
