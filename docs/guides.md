@@ -139,7 +139,7 @@ unless:
 
 ## 4. 统计条目（自动生成）
 
-- 来源：`gakumas-bench-data/private/ranking-decoded/<抓取>/rec_<偶像卡>.json`（每张偶像卡前 100 名的终局：支援卡含等级和凸数、最终牌组、P 道具、回忆、三维、分数）；偶像之路用 `private/tower-ranking-decoded/<赛季>/<塔>.json`。只发布统计量。
+- 来源：`gakumas-bench-data/private/ranking-decoded/<抓取>/rec_<偶像卡>.json`（每张偶像卡前 100 名的终局：支援卡含等级和凸数、最终牌组、P 道具、回忆、三维、分数）；偶像之路用 `private/tower-ranking-decoded/<赛季>/<塔>.json`。只发布统计量；例外是偶像之路每层的 10 条完整编成（用户 11-20 要放上去，重点看开局卡组）：`build --raw private/tower-ranking --master <主数据>` 按 GKMS rev383 docs/idol_road_master.md 的拼法（主回忆考试牌 → 副回忆的，不可重复的卡只留一张 → 2 张初始卡；三维、体力 = 主 + 每份副回忆 20%）写成每座塔一个 `idolroad-decks-<赛季>-<塔>.json`，发布包里塔的 `decks` 字段给文件名。不带玩家和回忆的编号。
 - 每张偶像卡、每个能统计的决策点一条：`id` = `stat.<mode>.<idol_card>.<decision>`（偶像之路加 `.L<层>`），`scope` = `{mode, idol_card}`（偶像之路加 `layer`）。
 - `prefer` 按占比从高到低，最多 30 项，占比 < 5% 的不列。每项 `stat`：
 
