@@ -18,7 +18,8 @@ const SOURCES: [string, React.ReactNode][] = [
   ['支援卡、生日、新卡', <>社区同步的完整游戏数据 <a href="https://github.com/vertesan/gakumasu-diff" className="text-brand-ink hover:underline">gakumasu-diff</a>；「新卡」的日期是这份数据第一次出现那张卡的日期，不一定是上线日。</>],
   ['中文卡名和效果', <><a href="https://github.com/imas-tools/gakumas-master-translation" className="text-brand-ink hover:underline">学マス汉化插件的翻译数据</a>；还没翻译的显示日文。</>],
   ['强度榜', <>小泉ケンタロう 的「H.I.F 好印象强度榜」数据包（<a href="https://www.bilibili.com/video/BV1mGsJ6AEJ1/" className="text-brand-ink hover:underline">原视频</a>），站上只放汇总。</>],
-  ['考试模拟', <>GKMS 原生核心，规则版本跟着 GKMS 更新。</>],
+  ['考试模拟', <>GKMS 原生核心（AGPL-3.0 版本，未修改），规则版本跟着 GKMS 更新。</>],
+  ['本站代码', <>以 AGPL-3.0 开源：<a href="https://github.com/matto49/gakumas-bench" className="text-brand-ink hover:underline">matto49/gakumas-bench</a>。</>],
   ['卡池、活动', <>游戏数据里没有排期，手动整理。</>],
 ]
 
