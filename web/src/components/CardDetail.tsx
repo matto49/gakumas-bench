@@ -158,9 +158,8 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
               <p className="mb-2 text-[12px] text-ink-2">
                 {source ? `${source}里` : '排行榜上'}带这张卡的 <b className="num text-ink">{stats.n}</b> 份记录，<b className="num text-ink">{Math.round(stats.share * 100)}%</b> 做了定制
                 <span className="text-ink-3">
-                  {' · 「选」= 定制到这一档的比例'}
-                  {!rec && stats.n < RECOMMEND.minN && `；记录不到 ${RECOMMEND.minN} 份，不给推荐`}
-                  {!rec && stats.n >= RECOMMEND.minN && stats.share >= RECOMMEND.minShare && '；选法分散，不给推荐'}
+                  {!rec && stats.n < RECOMMEND.minN && ` · 记录不到 ${RECOMMEND.minN} 份，不给推荐`}
+                  {!rec && stats.n >= RECOMMEND.minN && stats.share >= RECOMMEND.minShare && ' · 选法分散，不给推荐'}
                 </span>
               </p>
             )}
