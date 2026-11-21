@@ -126,7 +126,6 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
           </button>
         )}
         {merged && <p className="text-[12px] text-ink-3">主数据里这张卡后面几档的效果和前一档完全一样，合成了一格：再往上强化不会变。</p>}
-        {groups.length > 1 && <p className="text-[12px] text-ink-3"><mark className="rounded-[3px] bg-up-soft px-1 font-semibold text-up">绿色</mark> 是比上一档新增或改动的字。</p>}
       </>
   )
   return (
