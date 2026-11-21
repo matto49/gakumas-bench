@@ -76,7 +76,9 @@ export function Usage() {
   const scope = card ? [card] : inChar
 
   const supports = useMemo(() => (d ? aggregate<SupportUse>(scope.map((i) => d.idols[i].supports)) : []), [d, scope.join()])
-  const items = useMemo(() => (d ? aggregate<ItemUse>(scope.map((i) => d.idols[i].items)) : []), [d, scope.join()])
+  // 偶像卡自带的 P 道具（特训前后两个 id）人手一件，不算配置选择；去掉后剩下的就是支援卡给的
+  const idolItems = useMemo(() => new Set(Object.values(cat?.idols ?? {}).flatMap((i) => [i.item, i.item_up]).filter(Boolean)), [cat])
+  const items = useMemo(() => (d ? aggregate<ItemUse>(scope.map((i) => d.idols[i].items)).filter((r) => !idolItems.has(r.id)) : []), [d, scope.join(), idolItems])
   const cards = useMemo(() => (d ? aggregate<CardUse>(scope.map((i) => d.idols[i].cards)).filter((c) => sourceOf(c.id) !== 'idol') : []), [d, scope.join()])
   const memCards = useMemo(() => (d ? aggregate<MemCardUse>(scope.map((i) => d.idols[i].mem_cards ?? [])) : []), [d, scope.join()])
   const memItems = useMemo(() => (d ? aggregate<UsageRow>(scope.map((i) => d.idols[i].mem_items ?? [])) : []), [d, scope.join()])
@@ -270,7 +272,7 @@ function ItemTable({ rows, single, onOpen, noUp }: { rows: Agg<ItemUse>[]; singl
           })}
         </tbody>
       </table>
-      {!noUp && <p className="border-t border-line bg-surface-2 px-3 py-2 text-[12px] text-ink-3">不含 H.I.F 人人都有的固定道具；特训前后算同一件。</p>}
+      {!noUp && <p className="border-t border-line bg-surface-2 px-3 py-2 text-[12px] text-ink-3">只列支援卡给的 P 道具，不含偶像卡自带的和 H.I.F 人人都有的固定道具；特训前后算同一件。</p>}
     </div>
   )
 }
