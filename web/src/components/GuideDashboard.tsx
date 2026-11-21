@@ -4,6 +4,7 @@ import { pairBi, type SupportCatalog } from '../lib/supports'
 import { item, type GuideEntry, type GuideInsight, type IdolSummary, type Quartiles } from '../lib/guides'
 import { cx, Help, Tip } from './ui'
 import { CardImage, RarityTag } from './CardDetail'
+import { CustomPriority } from './CustomStats'
 import { SupportThumb } from './SupportCard'
 
 /** 偶像卡攻略单卡页顶上的看板：一段结论 + 推荐牌组、技能卡分差、常用搭配、三维四块（版式参考强度榜单卡页）。
@@ -227,6 +228,7 @@ export function GuideDashboard({ ins, stats, summary, sup, open, modeLabel, fetc
                 </div>
               </div>
             )}
+            {ins.custom && <CustomPriority cs={ins.custom} onOpen={open.card} />}
           </Panel>
         )}
 

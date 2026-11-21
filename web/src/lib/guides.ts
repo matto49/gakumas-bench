@@ -159,5 +159,14 @@ export type GuideInsight = {
   n: number
   deck: { cards: { id: string; share: number; copies: number; upgraded: number; memory: number }[]; size: Quartiles }
   lift: { id: string; share: number; diff: number; se: number }[]
+  /** 记录里带了每张卡的定制时才有 */
+  custom?: CustomStats
 }
+/** 一张技能卡的定制统计：n 带这张卡的记录数，adopt 入选率，share 其中做了定制的比例；
+ * combos 各种定制组合（c 为空 = 不定制）的比例，tiers 各方向各档（键「方向编号*档」）的比例，都以带这张卡的记录为分母 */
+export type CustomCard = { id: string; n: number; adopt: number; share: number; combos: { c: [string, number][]; share: number }[]; tiers: Record<string, number> }
+/** 一张偶像卡的定制统计（gkbench.guide_insights 的 custom）：per_run 一局做了定制的卡有几张，hist[k] = 定制 k 张的记录数 */
+export type CustomStats = { per_run: { mean: number; median: number; hist: number[] }; cards: CustomCard[] }
+/** 偶像之路的看板数据（api/guides/insights-idolroad）：只有定制统计 */
+export type IdolRoadInsights = { format: string; mode: string; fetch: string; generated_at: string; idols: Record<string, { n: number; custom: CustomStats }> }
 export type GuideInsights = { format: string; mode: string; fetch: string; fetched?: string | null; generated_at: string; idols: Record<string, GuideInsight> }

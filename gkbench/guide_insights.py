@@ -4,6 +4,7 @@
 看板要的是玩家最终实际带着的整副牌，还要分差，这些只给网页用，不进契约。
 
     python -m gkbench.guide_insights <排行榜目录> <模式> <输出.json> [--fetched 2026-11-18]
+    python -m gkbench.guide_insights <偶像之路牌组目录> idolroad insights-idolroad.json   # 只有定制统计
 
 排行榜目录 = gakumas-bench-data/private/ranking-decoded/<抓取>/（rec_<偶像卡>.json，每个是一张卡的终局记录列表）。
 输出发到服务器 $DATA/static/guides/insights-<模式>.json，网页 GET api/guides/insights-<模式>。
@@ -27,6 +28,13 @@ FORMAT = "gkbench.guide_insights.v1"
 MIN_SIDE = 8          # 带 / 不带两边各至少几份才算分差
 SHARE_RANGE = (0.10, 0.90)
 DECK_MIN_SHARE = 0.05  # 完整牌组里出现率低于这个的不列
+CUSTOM_MIN_N = 8       # 带这张卡的记录不到这么多份，不列它的定制分布
+
+# 定制统计（custom）：记录里有每张卡的定制时才有（排行榜记录要解码时带上 deck_cards[].customizes；
+# 偶像之路牌组的卡写成「卡编号+强化/定制编号*次数/…」本来就带）。口径：
+#   per_run：一份记录里做了定制的卡有几张（同一张卡带两张、都定制了算两张）
+#   cards[]：带这张卡的记录里做了定制的比例（share）、各种定制组合的比例（combos，c 为空 = 不定制）、
+#            各方向各档的比例（tiers，键「方向编号*档」）。同一份记录带了好几张同名卡时，取定制最多的那张。
 
 
 def _r(x: float, n: int = 3) -> float:
@@ -55,6 +63,60 @@ def deck_stats(recs: list[dict]) -> dict:
     cards.sort(key=lambda c: (-c["share"], -c["copies"], c["id"]))
     q = statistics.quantiles(sizes, n=4, method="inclusive") if len(sizes) >= 2 else [sizes[0]] * 3 if sizes else [0] * 3
     return {"cards": cards, "size": {"p25": round(q[0]), "p50": round(q[1]), "p75": round(q[2])}}
+
+
+Custom = tuple[tuple[str, int], ...]
+
+
+def card_customizes(c: dict) -> Custom:
+    """排行榜记录里一张卡的定制 → ((方向编号, 档), …)。认 [{id, customize_count}]、[[方向, 档]]、{方向: 档} 三种写法"""
+    raw = c.get("customizes") or []
+    if isinstance(raw, dict):
+        pairs = raw.items()
+    else:
+        pairs = [(x.get("id"), x.get("customize_count", 1)) if isinstance(x, dict) else (x[0], x[1] if len(x) > 1 else 1) for x in raw]
+    return tuple(sorted((str(k), int(v)) for k, v in pairs if k and int(v) > 0))
+
+
+def parse_compact(s: str) -> tuple[str, Custom]:
+    """偶像之路牌组里的一张卡「p_card-…+1/p_card_custom-…*2/…」→ (卡编号, 定制)"""
+    head, *cus = s.split("/")
+    pairs = []
+    for c in cus:
+        k, _, m = c.partition("*")
+        pairs.append((k, int(m) if m else 1))
+    return head.split("+")[0], tuple(sorted(pairs))
+
+
+def custom_stats(decks: list[list[tuple[str, Custom]]]) -> dict | None:
+    """decks：每份记录的整副牌 [(卡编号, 定制), …]。一张卡都没定制过（记录里没带定制信息）时返回 None"""
+    if not any(cu for d in decks for _, cu in d):
+        return None
+    n = len(decks)
+    per_run = [sum(1 for _, cu in d if cu) for d in decks]
+    has, done = Counter(), Counter()
+    combos: dict[str, Counter] = defaultdict(Counter)
+    tiers: dict[str, Counter] = defaultdict(Counter)
+    for d in decks:
+        best: dict[str, Custom] = {}
+        for cid, cu in d:
+            if cid not in best or len(cu) > len(best[cid]):
+                best[cid] = cu
+        for cid, cu in best.items():
+            has[cid] += 1
+            done[cid] += bool(cu)
+            combos[cid][cu] += 1
+            for k, lv in cu:
+                tiers[cid][f"{k}*{lv}"] += 1
+    cards = [{"id": cid, "n": h, "adopt": _r(h / n), "share": _r(done[cid] / h),
+              "combos": [{"c": [list(x) for x in cu], "share": _r(v / h)} for cu, v in sorted(combos[cid].items(), key=lambda kv: (-kv[1], kv[0]))],
+              "tiers": {k: _r(v / h) for k, v in sorted(tiers[cid].items())}}
+             for cid, h in has.items() if h >= CUSTOM_MIN_N and done[cid]]
+    cards.sort(key=lambda c: (-c["share"], -c["adopt"], c["id"]))
+    hist = Counter(per_run)
+    return {"per_run": {"mean": _r(statistics.mean(per_run), 2), "median": statistics.median(per_run),
+                        "hist": [hist.get(i, 0) for i in range(max(per_run) + 1)]},
+            "cards": cards}
 
 
 def lifts(recs: list[dict]) -> list[dict]:
@@ -88,19 +150,43 @@ def build(rank_dir: Path, mode: str, fetched: str | None = None) -> dict:
         recs = json.loads(f.read_text())
         if not recs:
             continue
-        idols[f.stem[len("rec_"):]] = {"n": len(recs), "deck": deck_stats(recs), "lift": lifts(recs)}
+        ent = {"n": len(recs), "deck": deck_stats(recs), "lift": lifts(recs)}
+        cs = custom_stats([[(c["produce_card_id"], card_customizes(c)) for c in r.get("deck_cards") or []] for r in recs])
+        if cs:
+            ent["custom"] = cs
+        idols[f.stem[len("rec_"):]] = ent
     return {"format": FORMAT, "mode": mode, "fetch": rank_dir.name, "fetched": fetched,
+            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "idols": idols}
+
+
+def build_idolroad(deck_dir: Path) -> dict:
+    """偶像之路：idolroad-decks-<赛季>-<塔>.json（各层完整编成）按偶像卡合在一起，只算定制统计"""
+    by: dict[str, list] = defaultdict(list)
+    seasons = set()
+    for f in sorted(deck_dir.glob("idolroad-decks-*.json")):
+        d = json.loads(f.read_text())
+        seasons.add(d.get("season"))
+        for es in (d.get("layers") or {}).values():
+            for e in es:
+                if e.get("idol") and e.get("deck"):
+                    by[e["idol"]].append([parse_compact(s) for s in e["deck"] if isinstance(s, str)])
+    idols = {}
+    for idol, decks in sorted(by.items()):
+        cs = custom_stats(decks)
+        if cs and cs["cards"]:
+            idols[idol] = {"n": len(decks), "custom": cs}
+    return {"format": FORMAT, "mode": "idolroad", "fetch": ",".join(sorted(s for s in seasons if s)), "fetched": None,
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "idols": idols}
 
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("rank_dir", type=Path)
-    ap.add_argument("mode", choices=["hajime", "nia", "hif"])
+    ap.add_argument("mode", choices=["hajime", "nia", "hif", "idolroad"])
     ap.add_argument("out", type=Path)
     ap.add_argument("--fetched", help="抓取日期（页面上显示），例如 2026-11-18")
     a = ap.parse_args(argv)
-    data = build(a.rank_dir, a.mode, a.fetched)
+    data = build_idolroad(a.rank_dir) if a.mode == "idolroad" else build(a.rank_dir, a.mode, a.fetched)
     a.out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
     print(f"{a.mode}: {len(data['idols'])} 张偶像卡 → {a.out}（{a.out.stat().st_size // 1024} KB）")
 

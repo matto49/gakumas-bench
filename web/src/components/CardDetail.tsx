@@ -1,4 +1,6 @@
 import type { CatalogCard } from '../lib/api'
+import type { CustomCard } from '../lib/guides'
+import { CustomChoice, customLabel, recommendOf } from './CustomStats'
 import { spriteUrl, useTerms } from '../lib/catalog'
 import { CATEGORY_JA } from '../lib/game'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -62,8 +64,10 @@ export function CardTags({ id, c }: { id: string; c: CatalogCard }) {
 
 /** 一张卡的详情：未强化到 +++ 并排（效果一样的档合成一格），比上一档新增或变了的行用浅橙底标出来。
  * 下面列这张卡的定制方向（每张卡不一样）。current：牌组里这张卡的强化档（标「这张」）；customizes：这张卡做了的定制 [方向编号, 档]。
+ * stats：排行榜上这张卡的定制统计（从推荐牌组、定制优先级点进来时给）。给了就把「排行榜上的定制选择」放最上面，
+ * 定制方向每档写选的比例，数据说得清时标「推荐定制」（规则见 CustomStats.recommendOf），强化档效果折起来放最后。
  * 嵌在别的弹窗里时用 open 控制开关、不要直接卸载：直接卸载的话外层弹窗不知道里层已经关了，Esc 关不掉外层 */
-export function CardDetail({ id, c, onClose, open = true, current, customizes }: { id: string; c: CatalogCard; onClose: () => void; open?: boolean; current?: number; customizes?: [string, number][] }) {
+export function CardDetail({ id, c, onClose, open = true, current, customizes, stats }: { id: string; c: CatalogCard; onClose: () => void; open?: boolean; current?: number; customizes?: [string, number][]; stats?: CustomCard }) {
   const levels = Object.entries(c.up).sort((a, b) => Number(a[0]) - Number(b[0]))
   // 效果文字和前一档完全一样的强化档合成一格（不少卡的 ++、+++ 和 + 相同）；未强化单独一格
   const groups: { lvs: number[]; name: string; text: string }[] = []
@@ -75,19 +79,10 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes }:
   const merged = groups.some((g) => g.lvs.length > 1)
   const have = new Map(customizes ?? [])
   const unknown = (customizes ?? []).filter(([k]) => !c.custom?.dirs.some((d) => d.id === k))
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto shadow-2xl sm:max-w-3xl">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <CardImage c={c} size={72} />
-            <div className="min-w-0">
-              <DialogTitle className="text-[18px] font-bold">{c.name}</DialogTitle>
-              <div className="mt-1.5"><CardTags id={id} c={c} /></div>
-              <DialogDescription className="mt-1"><CopyId id={id} /></DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
+  const rec = recommendOf(stats)
+  const recTiers = new Set((rec?.c ?? []).map(([k, lv]) => `${k}*${lv}`))
+  const levelsBlock = (
+      <>
         {levels.length === 1 && <p className="text-[12.5px] text-ink-3">这张卡不能强化。</p>}
         <div className={cx('grid gap-3', groups.length > 1 && 'sm:grid-cols-2')}>
           {groups.map((g, k) => {
@@ -112,26 +107,57 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes }:
           })}
         </div>
         {merged && <p className="text-[12px] text-ink-3">主数据里这张卡后面几档的效果和前一档完全一样，合成了一格：再往上强化不会变。</p>}
+        {groups.length > 1 && <p className="text-[12px] text-ink-3"><span className="rounded bg-brand-soft px-1 text-ink">浅橙底</span> 是比上一档新增或变了的行。</p>}
+      </>
+  )
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto shadow-2xl sm:max-w-3xl">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <CardImage c={c} size={72} />
+            <div className="min-w-0">
+              <DialogTitle className="text-[18px] font-bold">{c.name}</DialogTitle>
+              {rec && (
+                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-2">
+                  <span className="rounded-[3px] bg-brand-deep px-1 text-[10.5px] font-bold text-white">推荐定制</span>
+                  {rec.c.map(([k, lv]) => customLabel(c, k, lv).short).join(' + ')}
+                </p>
+              )}
+              <div className="mt-1.5"><CardTags id={id} c={c} /></div>
+              <DialogDescription className="mt-1"><CopyId id={id} /></DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+        {!stats && levelsBlock}
+        {stats && <CustomChoice s={stats} c={c} />}
         {c.custom && c.custom.dirs.length > 0 && (
           <section>
             <h3 className="mb-1.5 flex flex-wrap items-baseline gap-x-2 text-[13px] font-bold text-ink">
               定制方向
-              <span className="text-[11.5px] font-normal text-ink-3">这张卡能选的 {c.custom.dirs.length} 个方向，合计最多定制 {c.custom.max} 次</span>
+              <span className="text-[11.5px] font-normal text-ink-3">这张卡能选的 {c.custom.dirs.length} 个方向，合计最多定制 {c.custom.max} 次{stats && ' · 「选」= 带这张卡的人里定制到这一档的比例（到第 2 档的算在第 2 档）'}</span>
             </h3>
             <ul className="space-y-1.5">
               {c.custom.dirs.map((d) => {
                 const got = have.get(d.id) ?? 0
                 return (
                   <li key={d.id} className={cx('flex flex-wrap items-stretch gap-1.5 rounded-xl border p-2', got ? 'border-brand/50 bg-brand-tint' : 'border-line')}>
-                    {d.levels.map((l, n) => (
-                      <div key={n} className={cx('min-w-[120px] flex-1 rounded-lg px-2 py-1.5 text-[12.5px] leading-relaxed', got === n + 1 ? 'bg-brand-soft text-ink' : 'text-ink-2')}>
-                        <p className="mb-0.5 flex items-center gap-1.5 text-[11px] text-ink-3">
-                          {d.levels.length > 1 ? `第 ${n + 1} 档` : '一档'} · {l.pp} P 点
+                    {d.levels.map((l, n) => {
+                      const key = `${d.id}*${n + 1}`
+                      const pick = stats ? stats.tiers[key] ?? 0 : null
+                      const isRec = recTiers.has(key)
+                      return (
+                      <div key={n} className={cx('min-w-[120px] flex-1 rounded-lg px-2 py-1.5 text-[12.5px] leading-relaxed', got === n + 1 || isRec ? 'bg-brand-soft text-ink' : 'text-ink-2', isRec && 'ring-[1.5px] ring-brand ring-inset')}>
+                        <p className="mb-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-ink-3">
+                          <span className="whitespace-nowrap">{d.levels.length > 1 ? `第 ${n + 1} 档` : '一档'} · {l.pp} P 点</span>
                           {got === n + 1 && <span className="rounded-[3px] bg-brand-deep px-1 text-[10.5px] font-bold text-white">这张</span>}
+                          {isRec && <span className="rounded-[3px] bg-brand-deep px-1 text-[10.5px] font-bold whitespace-nowrap text-white">推荐定制</span>}
+                          {pick != null && <span className={cx('num ml-auto text-[11.5px] whitespace-nowrap', isRec ? 'font-bold text-brand-ink' : pick > 0 ? 'font-semibold text-ink-2' : 'text-ink-3')}>选 {Math.round(pick * 100)}%</span>}
                         </p>
                         <p className="whitespace-pre-line">{l.text}</p>
                       </div>
-                    ))}
+                      )
+                    })}
                   </li>
                 )
               })}
@@ -142,10 +168,17 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes }:
             <p className="mt-1.5 text-[12px] text-ink-3">「+N」是在卡面数值上再加的量；同一方向有多档时，写的是到这一档为止的总量，不和前一档叠加。{current != null && !have.size && '这张卡没有做定制。'}</p>
           </section>
         )}
+        {stats && (
+          <details className="group rounded-xl bg-surface-2 px-3 py-2">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-[12.5px] text-ink-3 [&::-webkit-details-marker]:hidden">
+              强化档效果（{levels.length > 1 ? `未强化 ～ ${'+'.repeat(Number(levels[levels.length - 1][0]))}` : '不能强化'}）<span className="group-open:rotate-180">▾</span>
+            </summary>
+            <div className="mt-2 space-y-3">{levelsBlock}</div>
+          </details>
+        )}
         {!c.custom && !!customizes?.length && (
           <p className="font-mono text-[11px] break-all text-ink-3">定制：{customizes.map(([k, n]) => `${k} ×${n}`).join('，')}</p>
         )}
-        {groups.length > 1 && <p className="text-[12px] text-ink-3"><span className="rounded bg-brand-soft px-1 text-ink">浅橙底</span> 是比上一档新增或变了的行。</p>}
       </DialogContent>
     </Dialog>
   )

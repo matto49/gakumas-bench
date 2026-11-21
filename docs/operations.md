@@ -148,6 +148,13 @@
     python -m gkbench.guide_insights <gakumas-bench-data>/private/ranking-decoded/<抓取> <hajime|nia|hif> insights-<模式>.json --fetched <抓取日期>
     rsync -a insights-*.json ycy:/srv/gkbench-data/static/guides/
 
+偶像之路的定制统计（单卡攻略页偶像之路一栏的「定制优先级」、卡牌弹窗的「排行榜上的定制选择」）从各塔的完整编成算，换了偶像之路数据就重算：
+
+    python -m gkbench.guide_insights <放 idolroad-decks-*.json 的目录> idolroad insights-idolroad.json
+    rsync -a insights-idolroad.json ycy:/srv/gkbench-data/static/guides/
+
+H.I.F / N.I.A / 初的 `insights-<模式>.json` 里，排行榜记录的 `deck_cards[].customizes` 有值时也会带上 `custom`（强度榜单卡页、攻略看板的推荐牌组下面就会出现定制优先级）；现在的 `rec_*.json` 解码时没带定制，要先改 `ranking_decode.py`。
+
 口径写在 `gkbench/guide_insights.py` 开头：分差 = 带这张卡的平均分 − 不带的平均分（占平均分的比例），附标准误，只算带的比例在 10%–90% 的卡；网页上两倍标准误以内的不列。是排行榜上的相关，不是因果。
 
 ## 线上部署

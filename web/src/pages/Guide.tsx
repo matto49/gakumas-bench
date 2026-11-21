@@ -7,7 +7,7 @@ import { pairBi, type SupportCatalog } from '../lib/supports'
 import { IDOL_STYLE } from '../lib/game'
 import {
   ACTION_LABEL, applies, DECISIONS, GUIDE_MODES, item, LAYER_LABEL, layerOf, LEVEL_LABEL, levelOf, PLAN_KEY, sortEntries, STYLE_KEY,
-  type GuideEntry, type GuideInsights, type GuideItem, type GuideItemObj, type GuideMode, type GuidePack, type Quartiles, type TowerDecks, type TowerLayer, type TowerExample, type TowerSeason,
+  type GuideEntry, type GuideInsights, type IdolRoadInsights, type GuideItem, type GuideItemObj, type GuideMode, type GuidePack, type Quartiles, type TowerDecks, type TowerLayer, type TowerExample, type TowerSeason,
 } from '../lib/guides'
 import { AttrChip, cx, Empty, ErrorState, Help, IdolThumb, PageHeader, SectionTitle, Skeleton, Tip } from '../components/ui'
 import { CardDetail, CardImage, RarityTag } from '../components/CardDetail'
@@ -17,6 +17,7 @@ import { SupportThumb, TypeChip } from '../components/SupportCard'
 import { SkillCard } from '../components/GameBits'
 import { parseDeckCard } from '../components/DeckView'
 import { GuideDashboard } from '../components/GuideDashboard'
+import { CustomPriority } from '../components/CustomStats'
 
 /** 偶像卡攻略：每张偶像卡一页，按决策点列出排行榜统计和人写攻略（docs/guides.md）。
  * 数据 api/guides/<模式>（gkbench.guides build 生成）；偶像之路是按层的汇总，点开一层再取这座塔的完整编成（api/guides/idolroad-decks-…） */
@@ -298,6 +299,8 @@ export function GuidePage() {
   const mode = modeOf(q.get('mode'))
   const pack = useApi<GuidePack>(`api/guides/${mode}`)
   const insights = useApi<GuideInsights>(mode === 'idolroad' ? null : `api/guides/insights-${mode}`)
+  const roadIns = useApi<IdolRoadInsights>(mode === 'idolroad' ? 'api/guides/insights-idolroad' : null)
+  const custom = mode === 'idolroad' ? roadIns.data?.idols[idol]?.custom : insights.data?.idols[idol]?.custom
   const sup = useApi<SupportCatalog>('api/supports')
   const [openCard, setOpenCard] = useState<string | null>(null)
   const [openItem, setOpenItem] = useState<string | null>(null)
@@ -322,6 +325,12 @@ export function GuidePage() {
       </div>
       {pack.error && <ErrorState error={pack.error} onRetry={pack.reload} />}
       {!d && !pack.error && <Skeleton className="h-96 rounded-2xl" />}
+      {d && mode === 'idolroad' && custom && (
+        <section className="mb-6 max-w-3xl rounded-xl border border-line bg-surface p-4">
+          <CustomPriority cs={custom} onOpen={open.card} bare />
+          <p className="mt-1 text-[12px] text-ink-3">数据：偶像之路 {roadIns.data?.fetch} 各层编成里这张偶像卡的 {roadIns.data?.idols[idol]?.n} 份记录。</p>
+        </section>
+      )}
       {d && mode === 'idolroad' && <IdolRoad idol={idol} seasons={d.summary.seasons ?? {}} open={open} sup={sup.data ?? undefined} />}
       {d && mode !== 'idolroad' && (
         <>
@@ -350,7 +359,7 @@ export function GuidePage() {
           <Source pack={d} />
         </>
       )}
-      {openCard && cat?.cards[openCard] && <CardDetail id={openCard} c={cat.cards[openCard]} onClose={() => setOpenCard(null)} />}
+      {openCard && cat?.cards[openCard] && <CardDetail id={openCard} c={cat.cards[openCard]} stats={custom?.cards.find((x) => x.id === openCard)} onClose={() => setOpenCard(null)} />}
       {openItem && cat && <ItemDetail id={openItem} cat={cat} onClose={() => setOpenItem(null)} />}
       {detail.popup}
     </div>
