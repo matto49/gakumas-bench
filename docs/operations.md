@@ -133,6 +133,7 @@
     # 汉化数据用学マス汉化插件那份：git clone https://github.com/imas-tools/gakumas-master-translation，-zh 指它的 data/
     # （插件 gakumas-local/local-files/masterTrans 是同一种格式）。做法照插件：按表的 primaryKeys 找到同一行，只换文字，
     # 汉化留空或对不上的保留日文；生成时会打印每张表命中多少行（cmd/catalog/zh.go）。上线时两份 json 一起放 $GKBENCH_DATA/static/。
+    # 每档强化带体力消耗（up[档].stamina，先扣元气；force_stamina 直接扣体力，效果文字里本来就写「体力消費N」），不少卡强化只改体力消耗。
     # 目录里每张卡带它自己的定制方向（custom：各方向各档的 P 点和效果）；主数据没有定制的说明文字，
     # 数值类的按效果类型拼（cmd/catalog 的 growValueText），加 / 换效果的用那条效果自己的说明。
 

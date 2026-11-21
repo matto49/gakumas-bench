@@ -1,9 +1,9 @@
 import { useContext, useState } from 'react'
 import type { CatalogCard } from '../lib/api'
-import { diffAdded, toLines } from '../lib/textdiff'
+import { diffLines } from '../lib/textdiff'
 import type { CustomCard } from '../lib/guides'
 import { CustomStatsContext, RECOMMEND, customLabel, recommendOf } from './CustomStats'
-import { spriteUrl, useTerms } from '../lib/catalog'
+import { spriteUrl, useLang, useTerms } from '../lib/catalog'
 import { CATEGORY_JA } from '../lib/game'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CopyId, cx } from './ui'
@@ -71,13 +71,20 @@ export function CardTags({ id, c }: { id: string; c: CatalogCard }) {
  * 数据说得清时标「推荐定制」（规则见 CustomStats.recommendOf）。
  * 嵌在别的弹窗里时用 open 控制开关、不要直接卸载：直接卸载的话外层弹窗不知道里层已经关了，Esc 关不掉外层 */
 export function CardDetail({ id, c, onClose, open = true, current, customizes, stats: given }: { id: string; c: CatalogCard; onClose: () => void; open?: boolean; current?: number; customizes?: [string, number][]; stats?: CustomCard }) {
+  const { lang } = useLang()
   const levels = Object.entries(c.up).sort((a, b) => Number(a[0]) - Number(b[0]))
-  // 效果文字和前一档完全一样的强化档合成一格（不少卡的 ++、+++ 和 + 相同）；未强化单独一格
+  // 普通体力消耗（先扣元气）不在效果文字里，不少卡强化只改它，有的话写成第一行，和效果一起比、一起标绿。
+  // 直接扣体力的（force_stamina）效果文字开头本来就写「体力消費N」，集中消費等别的消耗也在效果里，都不另写。
+  // 一张卡有一档写了体力消耗、别的档没写 = 那档是 0
+  const hasCost = levels.some(([, x]) => x.stamina != null)
+  const costLine = (x: CatalogCard['up'][string]) => `${lang === 'zh' ? '体力消耗' : 'コスト'} ${x.stamina ?? 0}`
+  // 效果文字（连体力消耗）和前一档完全一样的强化档合成一格（不少卡的 ++、+++ 和 + 相同）；未强化单独一格
   const groups: { lvs: number[]; name: string; text: string }[] = []
   for (const [lv, x] of levels) {
+    const text = hasCost ? `${costLine(x)}\n${x.text}` : x.text
     const last = groups[groups.length - 1]
-    if (last && last.lvs[0] > 0 && last.text === x.text) last.lvs.push(Number(lv))
-    else groups.push({ lvs: [Number(lv)], name: x.name, text: x.text })
+    if (last && last.lvs[0] > 0 && last.text === text) last.lvs.push(Number(lv))
+    else groups.push({ lvs: [Number(lv)], name: x.name, text })
   }
   const merged = groups.some((g) => g.lvs.length > 1)
   const have = new Map(customizes ?? [])
@@ -99,7 +106,7 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
         <div className={cx('grid gap-3', groups.length > 1 && 'sm:grid-cols-2')}>
           {groups.map((g, k) => {
             if (g.lvs[0] >= 2 && !showMore) return null
-            const lines = toLines(k > 0 ? diffAdded(groups[k - 1].text, g.text) : [{ t: g.text, add: false }])
+            const lines = k > 0 ? diffLines(groups[k - 1].text, g.text) : g.text.split('\n').map((t) => [{ t, add: false }])
             const mine = current != null && g.lvs.includes(current)
             return (
               <div key={g.lvs[0]} className={cx('rounded-xl border p-3', mine ? 'border-brand/50 bg-brand-tint' : 'border-line')}>

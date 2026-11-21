@@ -223,7 +223,7 @@ export type Job = { job: string; run: string; status: 'queued' | 'running' | 'do
 
 /** 卡的定制（カスタマイズ）：每张卡有自己的几个方向，每个方向 1～3 档（pp 是这一档花的 P 点，text 是到这一档为止的效果），一张卡总共能定制 max 次 */
 export type CardCustom = { max: number; dirs: { id: string; levels: { pp: number; text: string }[] }[] }
-export type CatalogCard = { name: string; rarity: string; plan: string; category: string; asset?: string; up: Record<string, { name: string; text: string }>; custom?: CardCustom; unlock?: number }
+export type CatalogCard = { name: string; rarity: string; plan: string; category: string; asset?: string; up: Record<string, { name: string; text: string; stamina?: number; force_stamina?: number }>; custom?: CardCustom; unlock?: number }
 /** unlock：解锁 P 等级（技能卡、饮料才有；没有 = 不靠等级解锁） */
 export type CatalogThing = { name: string; rarity?: string; plan?: string; text?: string; asset?: string; unlock?: number }
 /** 偶像卡：流派（style，如 EXAM_PARAMETER_BUFF）、初始 Vo/Da/Vi、成长率（千分比）、初始体力、固有技能卡和 P 道具（item_up 是特训后） */
