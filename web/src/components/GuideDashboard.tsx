@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { cardName, spriteUrl, useCatalog, useLang } from '../lib/catalog'
 import { pairBi, type SupportCatalog } from '../lib/supports'
-import { item, type GuideEntry, type GuideInsight, type IdolSummary, type Quartiles } from '../lib/guides'
+import { item, type CustomStats, type GuideEntry, type GuideInsight, type IdolSummary, type Quartiles } from '../lib/guides'
 import { cx, Help, Tip } from './ui'
 import { CardImage, RarityTag } from './CardDetail'
 import { CustomPriority } from './CustomStats'
@@ -100,8 +100,11 @@ function typicalDeck(ins: GuideInsight, isFiller: (id: string) => boolean) {
   return { deck: out, filler, fillerCount, target }
 }
 
-export function GuideDashboard({ ins, stats, summary, sup, open, modeLabel, fetched }: {
+export function GuideDashboard({ ins, stats, summary, sup, open, modeLabel, fetched, custom, customFrom }: {
   ins?: GuideInsight
+  /** 本模式没有定制数据时借来的（偶像之路），customFrom 写来源 */
+  custom?: CustomStats
+  customFrom?: string
   stats: GuideEntry[]
   summary?: IdolSummary
   sup?: SupportCatalog
@@ -228,7 +231,7 @@ export function GuideDashboard({ ins, stats, summary, sup, open, modeLabel, fetc
                 </div>
               </div>
             )}
-            {ins.custom && <CustomPriority cs={ins.custom} onOpen={open.card} />}
+            {(ins.custom ?? custom) && <CustomPriority cs={(ins.custom ?? custom)!} onOpen={open.card} source={ins.custom ? undefined : customFrom} />}
           </Panel>
         )}
 

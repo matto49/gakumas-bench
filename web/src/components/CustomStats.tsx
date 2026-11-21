@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { createContext, useState } from 'react'
 import type { CatalogCard } from '../lib/api'
 import { useCatalog } from '../lib/catalog'
 import type { CustomCard, CustomStats } from '../lib/guides'
@@ -12,6 +12,11 @@ const pct = (v: number) => `${Math.round(v * 100)}%`
 const MIN_ADOPT = 0.2
 /** 多数人选的那种定制不到做了定制的人的这个比例时，写「分两派」 */
 const SPLIT = 0.6
+
+/** 页面上下文里的定制统计：攻略页、强度榜单卡页给当前偶像卡的一份，页面里任何地方打开卡牌弹窗（推荐牌组、偶像之路示例牌组……）都用它。
+ * label 写数据从哪来（本模式没有定制数据、借用偶像之路时写「偶像之路」） */
+export type CustomSource = { cards: CustomCard[]; label?: string }
+export const CustomStatsContext = createContext<CustomSource | null>(null)
 
 /** 「推荐定制」只在数据说得清的时候给：带这张卡的记录够多、多数人做了定制、做了定制的人里多数选同一种 */
 export const RECOMMEND = { minN: 20, minShare: 0.5, minTop: 0.6 }
@@ -41,7 +46,7 @@ function Bar({ v, tone = 'bg-brand' }: { v: number; tone?: string }) {
 }
 
 /** 推荐牌组面板里的一块：一局定制几张（中位数 + 小直方图），下面按「带这张卡的人里做了定制的比例」排的列表，中位数位置画一道线 */
-export function CustomPriority({ cs, onOpen, limit = 8, bare }: { cs: CustomStats; onOpen: (id: string) => void; limit?: number; bare?: boolean }) {
+export function CustomPriority({ cs, onOpen, limit = 8, bare, source }: { cs: CustomStats; onOpen: (id: string) => void; limit?: number; bare?: boolean; source?: string }) {
   const cat = useCatalog()
   const [all, setAll] = useState(false)
   const rows = cs.cards.filter((r) => r.adopt >= MIN_ADOPT && cat?.cards[r.id]?.custom)
@@ -56,7 +61,7 @@ export function CustomPriority({ cs, onOpen, limit = 8, bare }: { cs: CustomStat
       <div className="mb-2 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div>
           <p className="text-[14px] font-bold text-ink">定制优先级</p>
-          <p className="text-[12px] text-ink-3">带这张卡的人里，做了定制的比例</p>
+          <p className="text-[12px] text-ink-3">带这张卡的人里，做了定制的比例{source && <> · <span className="text-brand-ink">数据来自{source}</span></>}</p>
         </div>
         <div className="flex items-end gap-2.5" title={`一局做了定制的卡：平均 ${cs.per_run.mean} 张`}>
           <span className="flex flex-col gap-0.5">
@@ -115,7 +120,7 @@ export function CustomPriority({ cs, onOpen, limit = 8, bare }: { cs: CustomStat
 }
 
 /** 单卡弹窗顶上：做了定制的比例，和每种定制组合各占多少（一种定制 = 一行，「不定制」放最后作对照，5% 以下并成「其他」） */
-export function CustomChoice({ s, c }: { s: CustomCard; c: CatalogCard }) {
+export function CustomChoice({ s, c, source }: { s: CustomCard; c: CatalogCard; source?: string }) {
   const done = s.combos.filter((x) => x.c.length)
   const shown = done.filter((x) => x.share >= 0.05)
   const rest = done.filter((x) => x.share < 0.05)
@@ -136,7 +141,7 @@ export function CustomChoice({ s, c }: { s: CustomCard; c: CatalogCard }) {
     <section className="rounded-xl border border-line p-3">
       <h3 className="flex flex-wrap items-baseline gap-x-2 text-[13px] font-bold text-ink">
         排行榜上的定制选择
-        <span className="text-[11.5px] font-normal text-ink-3">带这张卡的 {s.n} 份记录</span>
+        <span className="text-[11.5px] font-normal text-ink-3">{source ? `${source}里` : ''}带这张卡的 {s.n} 份记录</span>
       </h3>
       <p className="mt-1.5 mb-2 flex items-baseline gap-2">
         <b className="disp text-[32px] leading-none text-ink">{pct(s.share)}</b>

@@ -1,6 +1,8 @@
+import { useContext, useState } from 'react'
 import type { CatalogCard } from '../lib/api'
+import { diffAdded, toLines } from '../lib/textdiff'
 import type { CustomCard } from '../lib/guides'
-import { CustomChoice, customLabel, recommendOf } from './CustomStats'
+import { CustomChoice, CustomStatsContext, customLabel, recommendOf } from './CustomStats'
 import { spriteUrl, useTerms } from '../lib/catalog'
 import { CATEGORY_JA } from '../lib/game'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -62,12 +64,12 @@ export function CardTags({ id, c }: { id: string; c: CatalogCard }) {
   )
 }
 
-/** 一张卡的详情：未强化到 +++ 并排（效果一样的档合成一格），比上一档新增或变了的行用浅橙底标出来。
+/** 一张卡的详情：先只放未强化和 +（效果一样的档合成一格），++ / +++ 点「展开」再看；比上一档新增或改动的字用绿色标出来（逐字比，见 lib/textdiff）。
  * 下面列这张卡的定制方向（每张卡不一样）。current：牌组里这张卡的强化档（标「这张」）；customizes：这张卡做了的定制 [方向编号, 档]。
- * stats：排行榜上这张卡的定制统计（从推荐牌组、定制优先级点进来时给）。给了就把「排行榜上的定制选择」放最上面，
- * 定制方向每档写选的比例，数据说得清时标「推荐定制」（规则见 CustomStats.recommendOf），强化档效果折起来放最后。
+ * stats：排行榜上这张卡的定制统计；不给时取页面上下文 CustomStatsContext 里的（攻略页、强度榜单卡页会给）。给了就把「排行榜上的定制选择」放最上面，
+ * 定制方向每档写选的比例，数据说得清时标「推荐定制」（规则见 CustomStats.recommendOf），强化档效果放在定制后面。
  * 嵌在别的弹窗里时用 open 控制开关、不要直接卸载：直接卸载的话外层弹窗不知道里层已经关了，Esc 关不掉外层 */
-export function CardDetail({ id, c, onClose, open = true, current, customizes, stats }: { id: string; c: CatalogCard; onClose: () => void; open?: boolean; current?: number; customizes?: [string, number][]; stats?: CustomCard }) {
+export function CardDetail({ id, c, onClose, open = true, current, customizes, stats: given }: { id: string; c: CatalogCard; onClose: () => void; open?: boolean; current?: number; customizes?: [string, number][]; stats?: CustomCard }) {
   const levels = Object.entries(c.up).sort((a, b) => Number(a[0]) - Number(b[0]))
   // 效果文字和前一档完全一样的强化档合成一格（不少卡的 ++、+++ 和 + 相同）；未强化单独一格
   const groups: { lvs: number[]; name: string; text: string }[] = []
@@ -79,6 +81,15 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
   const merged = groups.some((g) => g.lvs.length > 1)
   const have = new Map(customizes ?? [])
   const unknown = (customizes ?? []).filter(([k]) => !c.custom?.dirs.some((d) => d.id === k))
+  const ctx = useContext(CustomStatsContext)
+  const stats = given ?? ctx?.cards.find((x) => x.id === id)
+  const source = given ? undefined : ctx?.label
+  // 先只放未强化和 +；牌组里这张卡是 ++ / +++ 时直接展开
+  const more = groups.filter((g) => g.lvs[0] >= 2)
+  // 弹窗常驻、只换卡时（示例牌组）展开状态跟着卡走
+  const [toggled, setToggled] = useState<{ id: string; v: boolean } | null>(null)
+  const showMore = toggled?.id === id ? toggled.v : current != null && more.some((g) => g.lvs.includes(current))
+  const setShowMore = (v: boolean) => setToggled({ id, v })
   const rec = recommendOf(stats)
   const recTiers = new Set((rec?.c ?? []).map(([k, lv]) => `${k}*${lv}`))
   const levelsBlock = (
@@ -86,10 +97,11 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
         {levels.length === 1 && <p className="text-[12.5px] text-ink-3">这张卡不能强化。</p>}
         <div className={cx('grid gap-3', groups.length > 1 && 'sm:grid-cols-2')}>
           {groups.map((g, k) => {
-            const prev = k > 0 ? new Set(groups[k - 1].text.split('\n')) : null
+            if (g.lvs[0] >= 2 && !showMore) return null
+            const lines = toLines(k > 0 ? diffAdded(groups[k - 1].text, g.text) : [{ t: g.text, add: false }])
             const mine = current != null && g.lvs.includes(current)
             return (
-              <div key={g.lvs[0]} className={cx('rounded-xl border p-3', (current != null ? mine : k === groups.length - 1 && groups.length > 1) ? 'border-brand/50' : 'border-line', mine && 'bg-brand-tint')}>
+              <div key={g.lvs[0]} className={cx('rounded-xl border p-3', mine ? 'border-brand/50 bg-brand-tint' : 'border-line')}>
                 <p className="mb-1.5 flex items-baseline justify-between gap-2">
                   <span className="font-bold text-ink">{g.name}</span>
                   <span className="flex shrink-0 items-center gap-1.5 text-[11.5px] text-ink-3">
@@ -98,16 +110,22 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
                   </span>
                 </p>
                 <ul className="space-y-0.5 text-[12.5px] leading-relaxed text-ink-2">
-                  {g.text.split('\n').map((line, n) => (
-                    <li key={n} className={cx('rounded px-1 -mx-1', prev && !prev.has(line) && 'bg-brand-soft text-ink')}>{line}</li>
+                  {lines.map((segs, n) => (
+                    <li key={n}>{segs.map((x, i) => x.add ? <mark key={i} className="rounded-[3px] bg-up-soft px-[1px] font-semibold text-up">{x.t}</mark> : <span key={i}>{x.t}</span>)}</li>
                   ))}
                 </ul>
               </div>
             )
           })}
         </div>
+        {more.length > 0 && (
+          <button type="button" onClick={() => setShowMore(!showMore)} className="flex w-full cursor-pointer items-center justify-center gap-1 rounded-xl border border-dashed border-line-strong py-2 text-[12.5px] text-ink-2 hover:border-brand hover:text-brand-ink">
+            {showMore ? '收起 ++ / +++' : `展开 ${more.map((g) => g.lvs.length > 1 ? `${'+'.repeat(g.lvs[0])}～${'+'.repeat(g.lvs[g.lvs.length - 1])}` : '+'.repeat(g.lvs[0])).join(' / ')} 强化`}
+            <span className={cx('transition-transform', showMore && 'rotate-180')}>▾</span>
+          </button>
+        )}
         {merged && <p className="text-[12px] text-ink-3">主数据里这张卡后面几档的效果和前一档完全一样，合成了一格：再往上强化不会变。</p>}
-        {groups.length > 1 && <p className="text-[12px] text-ink-3"><span className="rounded bg-brand-soft px-1 text-ink">浅橙底</span> 是比上一档新增或变了的行。</p>}
+        {groups.length > 1 && <p className="text-[12px] text-ink-3"><mark className="rounded-[3px] bg-up-soft px-1 font-semibold text-up">绿色</mark> 是比上一档新增或改动的字。</p>}
       </>
   )
   return (
@@ -130,7 +148,7 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
           </div>
         </DialogHeader>
         {!stats && levelsBlock}
-        {stats && <CustomChoice s={stats} c={c} />}
+        {stats && <CustomChoice s={stats} c={c} source={source} />}
         {c.custom && c.custom.dirs.length > 0 && (
           <section>
             <h3 className="mb-1.5 flex flex-wrap items-baseline gap-x-2 text-[13px] font-bold text-ink">
@@ -169,12 +187,10 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
           </section>
         )}
         {stats && (
-          <details className="group rounded-xl bg-surface-2 px-3 py-2">
-            <summary className="flex cursor-pointer list-none items-center justify-between text-[12.5px] text-ink-3 [&::-webkit-details-marker]:hidden">
-              强化档效果（{levels.length > 1 ? `未强化 ～ ${'+'.repeat(Number(levels[levels.length - 1][0]))}` : '不能强化'}）<span className="group-open:rotate-180">▾</span>
-            </summary>
-            <div className="mt-2 space-y-3">{levelsBlock}</div>
-          </details>
+          <section className="space-y-3">
+            <h3 className="text-[13px] font-bold text-ink">强化档效果</h3>
+            {levelsBlock}
+          </section>
         )}
         {!c.custom && !!customizes?.length && (
           <p className="font-mono text-[11px] break-all text-ink-3">定制：{customizes.map(([k, n]) => `${k} ×${n}`).join('，')}</p>

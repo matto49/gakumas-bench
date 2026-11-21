@@ -17,7 +17,7 @@ import { SupportThumb, TypeChip } from '../components/SupportCard'
 import { SkillCard } from '../components/GameBits'
 import { parseDeckCard } from '../components/DeckView'
 import { GuideDashboard } from '../components/GuideDashboard'
-import { CustomPriority } from '../components/CustomStats'
+import { CustomPriority, CustomStatsContext, type CustomSource } from '../components/CustomStats'
 
 /** 偶像卡攻略：每张偶像卡一页，按决策点列出排行榜统计和人写攻略（docs/guides.md）。
  * 数据 api/guides/<模式>（gkbench.guides build 生成）；偶像之路是按层的汇总，点开一层再取这座塔的完整编成（api/guides/idolroad-decks-…） */
@@ -299,8 +299,12 @@ export function GuidePage() {
   const mode = modeOf(q.get('mode'))
   const pack = useApi<GuidePack>(`api/guides/${mode}`)
   const insights = useApi<GuideInsights>(mode === 'idolroad' ? null : `api/guides/insights-${mode}`)
-  const roadIns = useApi<IdolRoadInsights>(mode === 'idolroad' ? 'api/guides/insights-idolroad' : null)
-  const custom = mode === 'idolroad' ? roadIns.data?.idols[idol]?.custom : insights.data?.idols[idol]?.custom
+  // 定制统计：本模式有就用本模式的；没有（排行榜记录还没带定制）就借同一张偶像卡在偶像之路的，写明来源
+  const roadIns = useApi<IdolRoadInsights>('api/guides/insights-idolroad')
+  const own = mode === 'idolroad' ? roadIns.data?.idols[idol]?.custom : insights.data?.idols[idol]?.custom
+  const borrowed = own ? undefined : mode === 'idolroad' ? undefined : roadIns.data?.idols[idol]?.custom
+  const custom = own ?? borrowed
+  const customCtx = useMemo<CustomSource | null>(() => (custom ? { cards: custom.cards, label: borrowed ? '偶像之路' : undefined } : null), [custom, borrowed])
   const sup = useApi<SupportCatalog>('api/supports')
   const [openCard, setOpenCard] = useState<string | null>(null)
   const [openItem, setOpenItem] = useState<string | null>(null)
@@ -314,6 +318,7 @@ export function GuidePage() {
   const setMode = (m: string) => setQ(m === 'hajime' ? {} : { mode: m }, { replace: true })
 
   return (
+    <CustomStatsContext.Provider value={customCtx}>
     <div>
       <PageHeader
         crumb={<Link to={`/guide${mode === 'hajime' ? '' : `?mode=${mode}`}`} className="hover:text-brand-ink">偶像卡攻略</Link>}
@@ -336,7 +341,7 @@ export function GuidePage() {
         <>
           {!summary && <div className="mb-6"><Empty>这个模式的排行榜里没有这张偶像卡的记录，下面只有通用的攻略。</Empty></div>}
           {summary && (
-            <GuideDashboard ins={insights.data?.idols[idol]} stats={mine.filter((e) => e.scope.idol_card === idol)} summary={summary} sup={sup.data ?? undefined}
+            <GuideDashboard ins={insights.data?.idols[idol]} custom={borrowed} customFrom="偶像之路" stats={mine.filter((e) => e.scope.idol_card === idol)} summary={summary} sup={sup.data ?? undefined}
               open={open} modeLabel={GUIDE_MODES.find((m) => m.key === mode)?.label ?? mode} fetched={insights.data?.fetched ?? d.sources.ranking?.[0]?.fetched} />
           )}
           {(['开局编成', '培育', '考试'] as const).map((g) => (
@@ -359,10 +364,11 @@ export function GuidePage() {
           <Source pack={d} />
         </>
       )}
-      {openCard && cat?.cards[openCard] && <CardDetail id={openCard} c={cat.cards[openCard]} stats={custom?.cards.find((x) => x.id === openCard)} onClose={() => setOpenCard(null)} />}
+      {openCard && cat?.cards[openCard] && <CardDetail id={openCard} c={cat.cards[openCard]} onClose={() => setOpenCard(null)} />}
       {openItem && cat && <ItemDetail id={openItem} cat={cat} onClose={() => setOpenItem(null)} />}
       {detail.popup}
     </div>
+    </CustomStatsContext.Provider>
   )
 }
 

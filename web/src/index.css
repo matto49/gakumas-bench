@@ -27,6 +27,9 @@
   --color-brand-ink: oklch(0.53 0.165 40);
   --color-brand-soft: oklch(0.955 0.038 62);
   --color-brand-tint: oklch(0.972 0.01 62);
+  /* 强化档比上一档新增 / 改动的字（卡牌详情） */
+  --color-up: oklch(0.45 0.13 152);
+  --color-up-soft: oklch(0.94 0.06 152);
 
   --color-vo: oklch(0.67 0.2 358);
   --color-da: oklch(0.6 0.165 252);
