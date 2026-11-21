@@ -5,7 +5,7 @@ import type { CustomCard, CustomStats } from '../lib/guides'
 import { CardImage } from './CardDetail'
 import { cx } from './ui'
 
-/** 定制优先级（推荐牌组面板里）和单卡弹窗里的「排行榜上的定制选择」。数据见 lib/guides.ts 的 CustomStats */
+/** 定制优先级（推荐牌组面板里）、页面上下文里的定制统计和「推荐定制」规则。数据见 lib/guides.ts 的 CustomStats */
 
 const pct = (v: number) => `${Math.round(v * 100)}%`
 /** 优先级列表只列入选率不低于这个的卡，免得几个人带的冷门卡排到前面 */
@@ -116,54 +116,5 @@ export function CustomPriority({ cs, onOpen, limit = 8, bare, source }: { cs: Cu
         {' '}· 点一行看各种定制选了多少
       </p>
     </div>
-  )
-}
-
-/** 单卡弹窗顶上：做了定制的比例，和每种定制组合各占多少（一种定制 = 一行，「不定制」放最后作对照，5% 以下并成「其他」） */
-export function CustomChoice({ s, c, source }: { s: CustomCard; c: CatalogCard; source?: string }) {
-  const done = s.combos.filter((x) => x.c.length)
-  const shown = done.filter((x) => x.share >= 0.05)
-  const rest = done.filter((x) => x.share < 0.05)
-  const none = s.combos.find((x) => !x.c.length)?.share ?? 0
-  const rec = recommendOf(s)
-  const rows: { key: string; label: string; detail?: string; share: number; none?: boolean; rec?: boolean }[] = [
-    ...shown.map((x) => ({
-      key: x.c.map((p) => p.join('*')).join('/'),
-      label: comboShort(c, x.c),
-      detail: x.c.map(([k, lv]) => customLabel(c, k, lv).detail).filter(Boolean).join('；'),
-      share: x.share,
-      rec: x === rec,
-    })),
-    ...(rest.length ? [{ key: 'rest', label: `其他 ${rest.length} 种`, share: rest.reduce((a, x) => a + x.share, 0) }] : []),
-    ...(none > 0 ? [{ key: 'none', label: '不定制', share: none, none: true }] : []),
-  ]
-  return (
-    <section className="rounded-xl border border-line p-3">
-      <h3 className="flex flex-wrap items-baseline gap-x-2 text-[13px] font-bold text-ink">
-        排行榜上的定制选择
-        <span className="text-[11.5px] font-normal text-ink-3">{source ? `${source}里` : ''}带这张卡的 {s.n} 份记录</span>
-      </h3>
-      <p className="mt-1.5 mb-2 flex items-baseline gap-2">
-        <b className="disp text-[32px] leading-none text-ink">{pct(s.share)}</b>
-        <span className="text-[13px] text-ink-2">做了定制</span>
-      </p>
-      <ul>
-        {rows.map((r, i) => (
-          <li key={r.key} className={cx('grid grid-cols-[minmax(0,1fr)_32%_40px] items-center gap-2.5 py-1.5', i > 0 && 'border-t border-dashed border-line')}>
-            <span className="min-w-0 text-[13px]">
-              <span className={cx('flex flex-wrap items-center gap-1.5', r.none ? 'text-ink-3' : 'font-semibold text-ink')}>
-                {r.label}
-                {r.rec && <span className="rounded-[3px] bg-brand-deep px-1 text-[10.5px] font-bold whitespace-nowrap text-white">推荐定制</span>}
-              </span>
-              {r.detail && <span className="block truncate text-[11.5px] text-ink-3">{r.detail}</span>}
-            </span>
-            <Bar v={r.share} tone={r.none ? 'bg-line-strong' : 'bg-brand'} />
-            <b className="num text-right text-[13px] text-ink">{pct(r.share)}</b>
-          </li>
-        ))}
-      </ul>
-      {!rec && s.n >= RECOMMEND.minN && s.share >= RECOMMEND.minShare && <p className="mt-1 text-[11.5px] text-ink-3">做了定制的人选法分散，不给推荐。</p>}
-      {s.n < RECOMMEND.minN && <p className="mt-1 text-[11.5px] text-ink-3">记录不到 {RECOMMEND.minN} 份，只作参考，不给推荐。</p>}
-    </section>
   )
 }

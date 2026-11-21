@@ -2,7 +2,7 @@ import { useContext, useState } from 'react'
 import type { CatalogCard } from '../lib/api'
 import { diffAdded, toLines } from '../lib/textdiff'
 import type { CustomCard } from '../lib/guides'
-import { CustomChoice, CustomStatsContext, customLabel, recommendOf } from './CustomStats'
+import { CustomStatsContext, RECOMMEND, customLabel, recommendOf } from './CustomStats'
 import { spriteUrl, useTerms } from '../lib/catalog'
 import { CATEGORY_JA } from '../lib/game'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -67,7 +67,8 @@ export function CardTags({ id, c }: { id: string; c: CatalogCard }) {
 /** 一张卡的详情：先只放未强化和 +（效果一样的档合成一格），++ / +++ 点「展开」再看；比上一档新增或改动的字用绿色标出来（逐字比，见 lib/textdiff）。
  * 下面列这张卡的定制方向（每张卡不一样）。current：牌组里这张卡的强化档（标「这张」）；customizes：这张卡做了的定制 [方向编号, 档]。
  * stats：排行榜上这张卡的定制统计；不给时取页面上下文 CustomStatsContext 里的（攻略页、强度榜单卡页会给）。给了就把「排行榜上的定制选择」放最上面，
- * 定制方向每档写选的比例，数据说得清时标「推荐定制」（规则见 CustomStats.recommendOf），强化档效果放在定制后面。
+ * 顺序固定：强化档效果在上，定制方向在下；有统计时定制方向标题下写一行「几份记录、几成做了定制、数据来源」，每档写选的比例，
+ * 数据说得清时标「推荐定制」（规则见 CustomStats.recommendOf）。
  * 嵌在别的弹窗里时用 open 控制开关、不要直接卸载：直接卸载的话外层弹窗不知道里层已经关了，Esc 关不掉外层 */
 export function CardDetail({ id, c, onClose, open = true, current, customizes, stats: given }: { id: string; c: CatalogCard; onClose: () => void; open?: boolean; current?: number; customizes?: [string, number][]; stats?: CustomCard }) {
   const levels = Object.entries(c.up).sort((a, b) => Number(a[0]) - Number(b[0]))
@@ -147,14 +148,23 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
             </div>
           </div>
         </DialogHeader>
-        {!stats && levelsBlock}
-        {stats && <CustomChoice s={stats} c={c} source={source} />}
+        {levelsBlock}
         {c.custom && c.custom.dirs.length > 0 && (
           <section>
             <h3 className="mb-1.5 flex flex-wrap items-baseline gap-x-2 text-[13px] font-bold text-ink">
               定制方向
-              <span className="text-[11.5px] font-normal text-ink-3">这张卡能选的 {c.custom.dirs.length} 个方向，合计最多定制 {c.custom.max} 次{stats && ' · 「选」= 带这张卡的人里定制到这一档的比例（到第 2 档的算在第 2 档）'}</span>
+              <span className="text-[11.5px] font-normal text-ink-3">这张卡能选的 {c.custom.dirs.length} 个方向，合计最多定制 {c.custom.max} 次</span>
             </h3>
+            {stats && (
+              <p className="mb-2 text-[12px] text-ink-2">
+                {source ? `${source}里` : '排行榜上'}带这张卡的 <b className="num text-ink">{stats.n}</b> 份记录，<b className="num text-ink">{Math.round(stats.share * 100)}%</b> 做了定制
+                <span className="text-ink-3">
+                  {' · 「选」= 定制到这一档的比例'}
+                  {!rec && stats.n < RECOMMEND.minN && `；记录不到 ${RECOMMEND.minN} 份，不给推荐`}
+                  {!rec && stats.n >= RECOMMEND.minN && stats.share >= RECOMMEND.minShare && '；选法分散，不给推荐'}
+                </span>
+              </p>
+            )}
             <ul className="space-y-1.5">
               {c.custom.dirs.map((d) => {
                 const got = have.get(d.id) ?? 0
@@ -184,12 +194,6 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
               <p className="mt-1.5 font-mono text-[11px] break-all text-ink-3">目录里没有的定制：{unknown.map(([k, n]) => `${k} ×${n}`).join('，')}</p>
             )}
             <p className="mt-1.5 text-[12px] text-ink-3">「+N」是在卡面数值上再加的量；同一方向有多档时，写的是到这一档为止的总量，不和前一档叠加。{current != null && !have.size && '这张卡没有做定制。'}</p>
-          </section>
-        )}
-        {stats && (
-          <section className="space-y-3">
-            <h3 className="text-[13px] font-bold text-ink">强化档效果</h3>
-            {levelsBlock}
           </section>
         )}
         {!c.custom && !!customizes?.length && (
