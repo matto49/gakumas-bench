@@ -8,6 +8,7 @@ import { IDOL_STYLE } from '../lib/game'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select } from '../components/Select'
 import { cx, Empty, ErrorState, Help, IdolThumb, PageHeader, Skeleton, Tip } from '../components/ui'
+import { CardScene, cardMode } from '../components/CustomStats'
 import { CardDetail, CardImage, Meta, RarityTag, sourceOf } from '../components/CardDetail'
 import { ItemDetail } from '../components/ItemDetail'
 import { useDetailPopup } from '../components/DetailPopups'
@@ -88,6 +89,7 @@ export function Usage() {
     : `${scope.length} 张偶像卡（${records} 份记录）各自的比例取平均`
 
   return (
+    <CardScene mode={cardMode(mode)} idol={card || undefined}>
     <div>
       <PageHeader
         title="配置强度榜"
@@ -160,6 +162,7 @@ export function Usage() {
       {openItem && cat && <ItemDetail id={openItem} cat={cat} onClose={() => setOpenItem(null)} />}
       {detail.popup}
     </div>
+    </CardScene>
   )
 }
 

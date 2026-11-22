@@ -62,3 +62,15 @@ def test_build_idolroad_pooled(tmp_path):
     d = build_idolroad(tmp_path)
     assert set(d["idols"]) == {"A", "B"}
     assert {c["id"] for c in d["pooled"]["cards"]} == {"p_card-x", "p_card-y"} and d["pooled"]["n"] == 2 * CUSTOM_MIN_N
+
+
+def test_build_pooled_only_with_customizes(tmp_path):
+    import json
+    from gkbench.guide_insights import CUSTOM_MIN_N, build
+    plain = [{"score": 100, "deck_cards": [{"produce_card_id": "a"}]}] * CUSTOM_MIN_N
+    (tmp_path / "rec_i1.json").write_text(json.dumps(plain))
+    assert "pooled" not in build(tmp_path, "hif")  # 记录没带定制：不出
+    cust = [{"score": 100, "deck_cards": [{"produce_card_id": "a", "customizes": [{"id": "d", "customize_count": 1}]}]}] * CUSTOM_MIN_N
+    (tmp_path / "rec_i2.json").write_text(json.dumps(cust))
+    d = build(tmp_path, "hif")
+    assert d["pooled"]["n"] == 2 * CUSTOM_MIN_N and d["pooled"]["cards"][0]["share"] == 0.5

@@ -1,4 +1,5 @@
-import { createContext, useState } from 'react'
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useApi } from '../lib/hooks'
 import type { CatalogCard } from '../lib/api'
 import { useCatalog } from '../lib/catalog'
 import type { CustomCard, CustomStats } from '../lib/guides'
@@ -13,18 +14,42 @@ const MIN_ADOPT = 0.2
 /** 多数人选的那种定制不到做了定制的人的这个比例时，写「分两派」 */
 const SPLIT = 0.6
 
-/** 页面上下文里的定制统计：攻略页、强度榜单卡页给当前偶像卡的一份，页面里任何地方打开卡牌弹窗（推荐牌组、偶像之路示例牌组……）都用它。
- * label 写数据从哪来（本模式没有定制数据、借用偶像之路时写「偶像之路」） */
-export type CustomSource = { cards: CustomCard[]; label?: string; fallback?: { cards: CustomCard[]; label: string } }
-/** 偶像之路全部偶像卡合起来的统计：当前偶像卡的统计里没有某张技能卡（没人带）时用 */
-export const POOLED_LABEL = '偶像之路全部偶像卡'
-export function findCustom(ctx: CustomSource | null, id: string): { s: CustomCard; label?: string } | null {
-  const own = ctx?.cards.find((x) => x.id === id)
-  if (own) return { s: own, label: ctx?.label }
-  const pooled = ctx?.fallback?.cards.find((x) => x.id === id)
-  return pooled ? { s: pooled, label: ctx?.fallback?.label } : null
+/** 卡牌弹窗的场景：从哪个模式打开（决定定制建议用哪份数据），以及当前是哪张偶像卡（有的话先看这张偶像卡的）。
+ * 默认 H.I.F（角色强度榜、游戏资源一览、首页等）。初没有定制功能，弹窗里不出定制方向。
+ * 数据按场景取：insights-<模式> 里这张偶像卡的 → 同模式全部偶像卡合起来的（pooled）→ 都没有就只列定制方向、不给建议。不跨模式借数据 */
+export type CardMode = 'hif' | 'nia' | 'hajime' | 'idolroad'
+export type CardSceneValue = { mode: CardMode; idol?: string }
+export const CardSceneContext = createContext<CardSceneValue>({ mode: 'hif' })
+export function CardScene({ mode, idol, children }: { mode: CardMode; idol?: string; children: ReactNode }) {
+  const value = useMemo(() => ({ mode, idol }), [mode, idol])
+  return <CardSceneContext.Provider value={value}>{children}</CardSceneContext.Provider>
 }
-export const CustomStatsContext = createContext<CustomSource | null>(null)
+export const MODE_LABEL: Record<CardMode, string> = { hif: 'H.I.F 排行榜', nia: 'N.I.A 排行榜', hajime: '初', idolroad: '偶像之路' }
+export const hasCustomize = (m: CardMode) => m !== 'hajime'
+/** 页面上的模式参数 → 场景；认不出来的按默认 H.I.F */
+export function cardMode(m?: string | null): CardMode {
+  return m === 'nia' || m === 'hajime' || m === 'idolroad' || m === 'hif' ? m : 'hif'
+}
+/** 题的考试编号 → 场景（produce-001/002/003/006 初，004/005 N.I.A，007/008 H.I.F，tower 偶像之路） */
+export function modeOfExam(exam?: string): CardMode {
+  if (exam === 'tower') return 'idolroad'
+  if (exam === 'produce-004' || exam === 'produce-005') return 'nia'
+  if (exam === 'produce-001' || exam === 'produce-002' || exam === 'produce-003' || exam === 'produce-006') return 'hajime'
+  return 'hif'
+}
+type InsightsLike = { idols: Record<string, { custom?: CustomStats }>; pooled?: { n: number; cards: CustomCard[] } }
+/** 按当前场景找这张技能卡的定制统计，label 写数据从哪来（弹窗里写成「<label>里带这张卡的 N 份记录」） */
+export function useSceneCustom(id: string): { scene: CardSceneValue; s?: CustomCard; label?: string } {
+  const scene = useContext(CardSceneContext)
+  const path = hasCustomize(scene.mode) ? `api/guides/insights-${scene.mode}` : null
+  const d = useApi<InsightsLike>(path)
+  const data = path && d.loadedPath === path ? d.data : null
+  const own = scene.idol ? data?.idols[scene.idol]?.custom?.cards.find((x) => x.id === id) : undefined
+  if (own) return { scene, s: own, label: MODE_LABEL[scene.mode] }
+  const pooled = data?.pooled?.cards.find((x) => x.id === id)
+  if (pooled) return { scene, s: pooled, label: `${MODE_LABEL[scene.mode]}全部偶像卡` }
+  return { scene }
+}
 
 /** 「推荐定制」只在数据说得清的时候给：带这张卡的记录够多、多数人做了定制、做了定制的人里多数选同一种 */
 export const RECOMMEND = { minN: 20, minShare: 0.5, minTop: 0.6 }

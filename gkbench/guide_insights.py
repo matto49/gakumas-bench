@@ -146,17 +146,24 @@ def lifts(recs: list[dict]) -> list[dict]:
 
 def build(rank_dir: Path, mode: str, fetched: str | None = None) -> dict:
     idols = {}
+    all_decks = []  # 全部偶像卡的整副牌，算 pooled 定制统计（某张偶像卡没人带某张技能卡时兜底）
     for f in sorted(rank_dir.glob("rec_*.json")):
         recs = json.loads(f.read_text())
         if not recs:
             continue
         ent = {"n": len(recs), "deck": deck_stats(recs), "lift": lifts(recs)}
-        cs = custom_stats([[(c["produce_card_id"], card_customizes(c)) for c in r.get("deck_cards") or []] for r in recs])
+        decks = [[(c["produce_card_id"], card_customizes(c)) for c in r.get("deck_cards") or []] for r in recs]
+        all_decks += decks
+        cs = custom_stats(decks)
         if cs:
             ent["custom"] = cs
         idols[f.stem[len("rec_"):]] = ent
-    return {"format": FORMAT, "mode": mode, "fetch": rank_dir.name, "fetched": fetched,
-            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "idols": idols}
+    out = {"format": FORMAT, "mode": mode, "fetch": rank_dir.name, "fetched": fetched,
+           "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "idols": idols}
+    pooled = custom_stats(all_decks) if all_decks else None
+    if pooled:
+        out["pooled"] = {"n": len(all_decks), "cards": pooled["cards"]}
+    return out
 
 
 def build_idolroad(deck_dir: Path) -> dict:

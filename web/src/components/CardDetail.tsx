@@ -1,8 +1,8 @@
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import type { CatalogCard } from '../lib/api'
 import { diffLines } from '../lib/textdiff'
 import type { CustomCard } from '../lib/guides'
-import { CustomStatsContext, RECOMMEND, customLabel, findCustom, recommendOf } from './CustomStats'
+import { RECOMMEND, customLabel, hasCustomize, recommendOf, useSceneCustom } from './CustomStats'
 import { spriteUrl, useLang, useTerms } from '../lib/catalog'
 import { CATEGORY_JA } from '../lib/game'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -66,7 +66,7 @@ export function CardTags({ id, c }: { id: string; c: CatalogCard }) {
 
 /** 一张卡的详情：先只放未强化和 +（效果一样的档合成一格），++ / +++ 点「展开」再看；比上一档新增或改动的字用绿色标出来（逐字比，见 lib/textdiff）。
  * 下面列这张卡的定制方向（每张卡不一样）。current：牌组里这张卡的强化档（标「这张」）；customizes：这张卡做了的定制 [方向编号, 档]。
- * stats：排行榜上这张卡的定制统计；不给时取页面上下文 CustomStatsContext 里的（攻略页、强度榜单卡页会给）。给了就把「排行榜上的定制选择」放最上面，
+ * stats：这张卡的定制统计；不给时按页面声明的场景（CardScene：模式 + 偶像卡，默认 H.I.F）取对应模式的数据；场景是初时不出定制方向。给了就把「排行榜上的定制选择」放最上面，
  * 顺序固定：强化档效果在上，定制方向在下；有统计时定制方向标题下写一行「几份记录、几成做了定制、数据来源」，每档写选的比例，
  * 数据说得清时标「推荐定制」（规则见 CustomStats.recommendOf）。
  * 嵌在别的弹窗里时用 open 控制开关、不要直接卸载：直接卸载的话外层弹窗不知道里层已经关了，Esc 关不掉外层 */
@@ -89,10 +89,10 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
   const merged = groups.some((g) => g.lvs.length > 1)
   const have = new Map(customizes ?? [])
   const unknown = (customizes ?? []).filter(([k]) => !c.custom?.dirs.some((d) => d.id === k))
-  const ctx = useContext(CustomStatsContext)
-  const found = given ? null : findCustom(ctx, id)
-  const stats = given ?? found?.s
-  const source = found?.label
+  const sceneCustom = useSceneCustom(id)
+  const showCustom = hasCustomize(sceneCustom.scene.mode)
+  const stats = showCustom ? given ?? sceneCustom.s : undefined
+  const source = given ? undefined : sceneCustom.label
   // 先只放未强化和 +；牌组里这张卡是 ++ / +++ 时直接展开
   const more = groups.filter((g) => g.lvs[0] >= 2)
   // 弹窗常驻、只换卡时（示例牌组）展开状态跟着卡走
@@ -156,7 +156,7 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
           </div>
         </DialogHeader>
         {levelsBlock}
-        {c.custom && c.custom.dirs.length > 0 && (
+        {showCustom && c.custom && c.custom.dirs.length > 0 && (
           <section>
             <h3 className="mb-1.5 flex flex-wrap items-baseline gap-x-2 text-[13px] font-bold text-ink">
               定制方向

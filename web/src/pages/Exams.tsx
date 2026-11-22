@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowRight, BookOpen, ChevronRight, Copy, ExternalLink, FolderPlus, Layers, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
+import { CardScene, modeOfExam } from '../components/CustomStats'
 import { DeckView } from '../components/DeckView'
 import { toast } from 'sonner'
 import { api, ApiError, BASE, type Problem, type SetInfo } from '../lib/api'
@@ -386,7 +387,7 @@ function ProblemTable({ rows, canEdit, onDelete, coreSeeds }: { rows: Problem[];
           })}
         </tbody>
       </table>
-      {opened && <DeckView p={opened} onClose={() => setOpen('')} />}
+      {opened && <CardScene mode={modeOfExam(opened.scene?.exam)} idol={opened.scene?.idol?.startsWith('i_card-') ? opened.scene.idol : undefined}><DeckView p={opened} onClose={() => setOpen('')} /></CardScene>}
     </div>
   )
 }
