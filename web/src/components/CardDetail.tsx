@@ -2,7 +2,7 @@ import { useContext, useState } from 'react'
 import type { CatalogCard } from '../lib/api'
 import { diffLines } from '../lib/textdiff'
 import type { CustomCard } from '../lib/guides'
-import { CustomStatsContext, RECOMMEND, customLabel, recommendOf } from './CustomStats'
+import { CustomStatsContext, RECOMMEND, customLabel, findCustom, recommendOf } from './CustomStats'
 import { spriteUrl, useLang, useTerms } from '../lib/catalog'
 import { CATEGORY_JA } from '../lib/game'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -90,8 +90,9 @@ export function CardDetail({ id, c, onClose, open = true, current, customizes, s
   const have = new Map(customizes ?? [])
   const unknown = (customizes ?? []).filter(([k]) => !c.custom?.dirs.some((d) => d.id === k))
   const ctx = useContext(CustomStatsContext)
-  const stats = given ?? ctx?.cards.find((x) => x.id === id)
-  const source = given ? undefined : ctx?.label
+  const found = given ? null : findCustom(ctx, id)
+  const stats = given ?? found?.s
+  const source = found?.label
   // 先只放未强化和 +；牌组里这张卡是 ++ / +++ 时直接展开
   const more = groups.filter((g) => g.lvs[0] >= 2)
   // 弹窗常驻、只换卡时（示例牌组）展开状态跟着卡走

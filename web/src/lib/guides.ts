@@ -168,5 +168,6 @@ export type CustomCard = { id: string; n: number; adopt: number; share: number; 
 /** 一张偶像卡的定制统计（gkbench.guide_insights 的 custom）：per_run 一局做了定制的卡有几张，hist[k] = 定制 k 张的记录数 */
 export type CustomStats = { per_run: { mean: number; median: number; hist: number[] }; cards: CustomCard[] }
 /** 偶像之路的看板数据（api/guides/insights-idolroad）：只有定制统计 */
-export type IdolRoadInsights = { format: string; mode: string; fetch: string; generated_at: string; idols: Record<string, { n: number; custom: CustomStats }> }
+/** pooled：所有偶像卡的记录合在一起的每张技能卡定制统计，这张偶像卡没人带某张技能卡时兜底 */
+export type IdolRoadInsights = { format: string; mode: string; fetch: string; generated_at: string; idols: Record<string, { n: number; custom: CustomStats }>; pooled?: { n: number; cards: CustomCard[] } }
 export type GuideInsights = { format: string; mode: string; fetch: string; fetched?: string | null; generated_at: string; idols: Record<string, GuideInsight> }

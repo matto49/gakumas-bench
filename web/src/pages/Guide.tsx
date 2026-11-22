@@ -17,7 +17,7 @@ import { SupportThumb, TypeChip } from '../components/SupportCard'
 import { SkillCard } from '../components/GameBits'
 import { parseDeckCard } from '../components/DeckView'
 import { GuideDashboard } from '../components/GuideDashboard'
-import { CustomPriority, CustomStatsContext, type CustomSource } from '../components/CustomStats'
+import { CustomPriority, CustomStatsContext, POOLED_LABEL, type CustomSource } from '../components/CustomStats'
 
 /** 偶像卡攻略：每张偶像卡一页，按决策点列出排行榜统计和人写攻略（docs/guides.md）。
  * 数据 api/guides/<模式>（gkbench.guides build 生成）；偶像之路是按层的汇总，点开一层再取这座塔的完整编成（api/guides/idolroad-decks-…） */
@@ -304,7 +304,10 @@ export function GuidePage() {
   const own = mode === 'idolroad' ? roadIns.data?.idols[idol]?.custom : insights.data?.idols[idol]?.custom
   const borrowed = own ? undefined : mode === 'idolroad' ? undefined : roadIns.data?.idols[idol]?.custom
   const custom = own ?? borrowed
-  const customCtx = useMemo<CustomSource | null>(() => (custom ? { cards: custom.cards, label: borrowed ? '偶像之路' : undefined } : null), [custom, borrowed])
+  const pooled = roadIns.data?.pooled
+  const customCtx = useMemo<CustomSource | null>(() => (custom || pooled?.cards.length
+    ? { cards: custom?.cards ?? [], label: borrowed ? '偶像之路' : undefined, fallback: pooled ? { cards: pooled.cards, label: POOLED_LABEL } : undefined }
+    : null), [custom, borrowed, pooled])
   const sup = useApi<SupportCatalog>('api/supports')
   const [openCard, setOpenCard] = useState<string | null>(null)
   const [openItem, setOpenItem] = useState<string | null>(null)

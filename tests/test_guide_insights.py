@@ -51,3 +51,14 @@ def test_custom_stats():
     assert {"c": [], "share": 0.2} in a["combos"]
     assert a["tiers"] == {"dA*2": 0.6, "dB*1": 0.2}
     assert cs["per_run"]["median"] == 1 and cs["per_run"]["hist"][1] == 10 + CUSTOM_MIN_N - 1 - 2
+
+
+def test_build_idolroad_pooled(tmp_path):
+    import json
+    from gkbench.guide_insights import CUSTOM_MIN_N, build_idolroad
+    # 偶像卡 A 的记录都带 x（定制），偶像卡 B 的记录都带 y（定制）；pooled 里 x、y 都有
+    layers = {"1": [{"idol": "A", "deck": ["p_card-x+1/c1*1"]}] * CUSTOM_MIN_N + [{"idol": "B", "deck": ["p_card-y/c2*1"]}] * CUSTOM_MIN_N}
+    (tmp_path / "idolroad-decks-s1-t1.json").write_text(json.dumps({"season": "s1", "layers": layers}))
+    d = build_idolroad(tmp_path)
+    assert set(d["idols"]) == {"A", "B"}
+    assert {c["id"] for c in d["pooled"]["cards"]} == {"p_card-x", "p_card-y"} and d["pooled"]["n"] == 2 * CUSTOM_MIN_N

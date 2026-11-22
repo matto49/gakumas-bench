@@ -160,7 +160,8 @@ def build(rank_dir: Path, mode: str, fetched: str | None = None) -> dict:
 
 
 def build_idolroad(deck_dir: Path) -> dict:
-    """偶像之路：idolroad-decks-<赛季>-<塔>.json（各层完整编成）按偶像卡合在一起，只算定制统计"""
+    """偶像之路：idolroad-decks-<赛季>-<塔>.json（各层完整编成）按偶像卡合在一起，只算定制统计。
+    另出 pooled：所有偶像卡的记录合在一起的每张技能卡定制统计，给「这张偶像卡没人带这张技能卡」时兜底（定制怎么选主要看卡本身）"""
     by: dict[str, list] = defaultdict(list)
     seasons = set()
     for f in sorted(deck_dir.glob("idolroad-decks-*.json")):
@@ -171,12 +172,14 @@ def build_idolroad(deck_dir: Path) -> dict:
                 if e.get("idol") and e.get("deck"):
                     by[e["idol"]].append([parse_compact(s) for s in e["deck"] if isinstance(s, str)])
     idols = {}
+    pooled = custom_stats([d for decks in by.values() for d in decks])
     for idol, decks in sorted(by.items()):
         cs = custom_stats(decks)
         if cs and cs["cards"]:
             idols[idol] = {"n": len(decks), "custom": cs}
     return {"format": FORMAT, "mode": "idolroad", "fetch": ",".join(sorted(s for s in seasons if s)), "fetched": None,
-            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "idols": idols}
+            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "idols": idols,
+            "pooled": {"n": sum(len(v) for v in by.values()), "cards": pooled["cards"] if pooled else []}}
 
 
 def main(argv: list[str] | None = None) -> None:

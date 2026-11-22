@@ -149,7 +149,7 @@
     python -m gkbench.guide_insights <gakumas-bench-data>/private/ranking-decoded/<抓取> <hajime|nia|hif> insights-<模式>.json --fetched <抓取日期>
     rsync -a insights-*.json ycy:/srv/gkbench-data/static/guides/
 
-偶像之路的定制统计（单卡攻略页偶像之路一栏的「定制优先级」、卡牌弹窗的「排行榜上的定制选择」）从各塔的完整编成算，换了偶像之路数据就重算：
+偶像之路的定制统计（单卡攻略页偶像之路一栏的「定制优先级」、卡牌弹窗定制方向的「选 X%」和「推荐定制」）从各塔的完整编成算，换了偶像之路数据就重算（另出 pooled：全部偶像卡合起来的每张技能卡统计，某张偶像卡没人带这张技能卡时兜底）：
 
     python -m gkbench.guide_insights <放 idolroad-decks-*.json 的目录> idolroad insights-idolroad.json
     rsync -a insights-idolroad.json ycy:/srv/gkbench-data/static/guides/

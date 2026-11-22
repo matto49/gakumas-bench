@@ -7,7 +7,7 @@ import { cx, ErrorState, Help, IdolThumb, Skeleton, Tip } from '../components/ui
 import { CardDetail, CardImage, Meta, RarityTag } from '../components/CardDetail'
 import { ItemDetail } from '../components/ItemDetail'
 import { useDetailPopup } from '../components/DetailPopups'
-import { CustomPriority, CustomStatsContext } from '../components/CustomStats'
+import { CustomPriority, CustomStatsContext, POOLED_LABEL } from '../components/CustomStats'
 import { useApi } from '../lib/hooks'
 import type { GuideInsights, IdolRoadInsights } from '../lib/guides'
 import { Bi, SourceLine, TierBadge, TierMissing, useTierBoard, useTierNames } from './Tiers'
@@ -193,7 +193,7 @@ export function TierCardPage() {
   const customFrom = own ? undefined : '偶像之路'
 
   return (
-    <CustomStatsContext.Provider value={custom ? { cards: custom.cards, label: customFrom } : null}>
+    <CustomStatsContext.Provider value={{ cards: custom?.cards ?? [], label: customFrom, fallback: roadIns.data?.pooled ? { cards: roadIns.data.pooled.cards, label: POOLED_LABEL } : undefined }}>
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
         <Link to={`/tiers/${board.id}`} className="inline-flex items-center gap-1 text-brand-ink hover:underline"><ChevronLeft className="size-4" />{board.title}</Link>

@@ -15,7 +15,15 @@ const SPLIT = 0.6
 
 /** 页面上下文里的定制统计：攻略页、强度榜单卡页给当前偶像卡的一份，页面里任何地方打开卡牌弹窗（推荐牌组、偶像之路示例牌组……）都用它。
  * label 写数据从哪来（本模式没有定制数据、借用偶像之路时写「偶像之路」） */
-export type CustomSource = { cards: CustomCard[]; label?: string }
+export type CustomSource = { cards: CustomCard[]; label?: string; fallback?: { cards: CustomCard[]; label: string } }
+/** 偶像之路全部偶像卡合起来的统计：当前偶像卡的统计里没有某张技能卡（没人带）时用 */
+export const POOLED_LABEL = '偶像之路全部偶像卡'
+export function findCustom(ctx: CustomSource | null, id: string): { s: CustomCard; label?: string } | null {
+  const own = ctx?.cards.find((x) => x.id === id)
+  if (own) return { s: own, label: ctx?.label }
+  const pooled = ctx?.fallback?.cards.find((x) => x.id === id)
+  return pooled ? { s: pooled, label: ctx?.fallback?.label } : null
+}
 export const CustomStatsContext = createContext<CustomSource | null>(null)
 
 /** 「推荐定制」只在数据说得清的时候给：带这张卡的记录够多、多数人做了定制、做了定制的人里多数选同一种 */
