@@ -144,6 +144,7 @@ export function Layout() {
           <span>
             中文卡名和效果：<a href="https://github.com/imas-tools/gakumas-master-translation" className="hover:text-brand-ink">学マス汉化插件的翻译数据</a>
           </span>
+          <span>友链：<a href="https://idol-master.top/" target="_blank" rel="noopener" className="hover:text-brand-ink">IMSWeb 偶像大师交流站</a></span>
           <span>卡面、图标等游戏素材归各自权利人所有，这里只作研究用。</span>
         </div>
       </footer>
