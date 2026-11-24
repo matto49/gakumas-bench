@@ -54,6 +54,19 @@ func TestTierComments(t *testing.T) {
 		t.Fatalf("删除权限标错 %+v", got)
 	}
 	bobID, aliceID := got.Comments[0].ID, got.Comments[1].ID
+	if w := do("PATCH", base+"/"+bobID, `{"text":"改别人的"}`, "alice"); w.Code != 403 {
+		t.Fatalf("改了别人的评论 %d", w.Code)
+	}
+	if w := do("PATCH", base+"/"+aliceID, `{"text":"  "}`, "alice"); w.Code != 400 {
+		t.Fatalf("改成空 %d", w.Code)
+	}
+	if w := do("PATCH", base+"/"+aliceID, `{"text":"改过的评论"}`, "alice"); w.Code != 200 || !strings.Contains(w.Body.String(), `"edited"`) {
+		t.Fatalf("改不了自己的 %d %s", w.Code, w.Body.String())
+	}
+	_ = json.Unmarshal(do("GET", base, "", "alice").Body.Bytes(), &got)
+	if got.Comments[1].Text != "改过的评论" {
+		t.Fatalf("改完没生效 %+v", got.Comments)
+	}
 	if w := do("DELETE", base+"/"+bobID, "", "alice"); w.Code != 403 {
 		t.Fatalf("删了别人的评论 %d", w.Code)
 	}

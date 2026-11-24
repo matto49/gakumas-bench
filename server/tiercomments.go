@@ -26,6 +26,7 @@ type TierComment struct {
 	User    string `json:"user"`
 	Text    string `json:"text"`
 	Created string `json:"created"`
+	Edited  string `json:"edited,omitempty"`
 }
 
 // lastTierComment：每个用户上次发评论的时间（只在内存里，重启清零，够防刷屏）
@@ -188,6 +189,59 @@ func (a *App) handleTierCommentDelete(static string) userHandler {
 			return
 		}
 		writeJSONResp(w, 200, map[string]any{"deleted": cid})
+	}
+}
+
+// PATCH /api/tiers/:id/comments/:card/:cid {"text": "…"}：只能改自己的；改了记 edited
+func (a *App) handleTierCommentEdit(static string) userHandler {
+	return func(w http.ResponseWriter, r *http.Request, u string) {
+		board, card, cid := r.PathValue("id"), r.PathValue("card"), r.PathValue("cid")
+		if tierBoardCards(static, board) == nil {
+			fail(w, 404, "没有这张榜")
+			return
+		}
+		var b struct {
+			Text string `json:"text"`
+		}
+		if json.NewDecoder(http.MaxBytesReader(w, r.Body, 8192)).Decode(&b) != nil {
+			fail(w, 400, "请求体不是 JSON")
+			return
+		}
+		text := cleanComment(b.Text)
+		if text == "" {
+			fail(w, 400, "评论是空的；不想要了就删掉")
+			return
+		}
+		if len([]rune(text)) > tierCommentMax {
+			fail(w, 400, "评论最多 500 字")
+			return
+		}
+		code, msg := 404, "没有这条评论"
+		var out TierComment
+		err := a.store.updateTierComments(board, func(m map[string][]TierComment) error {
+			for i, c := range m[card] {
+				if c.ID != cid {
+					continue
+				}
+				if c.User != u {
+					code, msg = 403, "只能改自己的评论"
+					return nil
+				}
+				m[card][i].Text, m[card][i].Edited = text, now()
+				out, code = m[card][i], 200
+				return nil
+			}
+			return nil
+		})
+		if err != nil {
+			fail(w, 500, "保存失败："+err.Error())
+			return
+		}
+		if code != 200 {
+			fail(w, code, msg)
+			return
+		}
+		writeJSONResp(w, 200, out)
 	}
 }
 

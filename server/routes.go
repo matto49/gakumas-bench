@@ -153,6 +153,7 @@ func (app *App) routes(static, web string) http.Handler {
 	open.GET("/tiers/:id/comments/:card", h(app.handleTierComments(static)))
 	auth.POST("/tiers/:id/comments/:card", h(app.handleTierCommentPost(static)))
 	auth.DELETE("/tiers/:id/comments/:card/:cid", h(app.handleTierCommentDelete(static)))
+	auth.PATCH("/tiers/:id/comments/:card/:cid", h(app.handleTierCommentEdit(static)))
 
 	// 登录
 	open.GET("/auth", h(app.handleAuthInfo))

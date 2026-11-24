@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Loader2, MessageSquare, Trash2, UserRound } from 'lucide-react'
+import { Loader2, MessageSquare, Pencil, Trash2, UserRound } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { invalidateApi } from '../lib/query'
@@ -37,8 +37,10 @@ export function TierVotePanel({ board, card, dataTier }: { board: string; card: 
   const me = useApi<{ user: string }>('api/me')
   const [busy, setBusy] = useState<Tier | '' | null>(null)
   const [err, setErr] = useState('')
-  const [compose, setCompose] = useState(false) // 刚点了档位：下面展开评论框
-  const [posted, setPosted] = useState(false)
+  // 评论框：new 写新的（没写过评论时，点完档位自动展开）；edit 改自己那条
+  const [editing, setEditing] = useState<'new' | 'edit' | null>(null)
+  const comments = useApi<{ comments: TierComment[] }>(me.data ? `api/tiers/${board}/comments/${card}` : null)
+  const myComment = comments.data?.comments.find((x) => x.user === me.data?.user) // 列表新的在前：自己最近那条
   const s = votes.data?.cards[card]
   const mine = votes.data?.mine[card]
   const loggedOut = me.error instanceof ApiError && me.error.status === 401
@@ -49,8 +51,7 @@ export function TierVotePanel({ board, card, dataTier }: { board: string; card: 
     try {
       await api(`api/tiers/${board}/votes/${card}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier: t }) })
       await invalidateApi(`api/tiers/${board}/votes`)
-      setCompose(t !== '')
-      setPosted(false)
+      setEditing(t !== '' && !myComment ? 'new' : null)
     } catch (e) {
       setErr((e as Error).message)
     } finally {
@@ -104,20 +105,54 @@ export function TierVotePanel({ board, card, dataTier }: { board: string; card: 
         {err && <p className="mt-1.5 text-[12px] text-critical">{err}</p>}
       </div>
     </div>
-    {compose && mine && <CommentComposer board={board} card={card} tier={mine} onDone={() => { setCompose(false); setPosted(true) }} onCancel={() => setCompose(false)} />}
-    {posted && !compose && (
-      <p className="mt-3 border-t border-line pt-3 text-[12.5px] text-ink-3">
-        评论已发表，<a href="#tier-comments" className="font-semibold text-brand-ink hover:underline">在页面最下面</a>。
-      </p>
+    {mine && me.data && (
+      editing
+        ? <CommentComposer board={board} card={card} tier={mine} edit={editing === 'edit' ? myComment : undefined} onDone={() => setEditing(null)} onCancel={() => setEditing(null)} />
+        : <MyReview board={board} card={card} tier={mine} comment={myComment} onWrite={() => setEditing(myComment ? 'edit' : 'new')} />
     )}
     </section>
   )
 }
 
+/** 评过级的人在评级块下面看到自己的评价：档位 + 自己最近那条评论（改、删），没写过就给「写一句为什么」 */
+function MyReview({ board, card, tier, comment, onWrite }: { board: string; card: string; tier: Tier; comment?: TierComment; onWrite: () => void }) {
+  const remove = async () => {
+    if (!comment || !window.confirm('删掉这条评论？评级会保留。')) return
+    try {
+      await api(`api/tiers/${board}/comments/${card}/${comment.id}`, { method: 'DELETE' })
+      await Promise.all([invalidateApi(`api/tiers/${board}/comments/${card}`), invalidateApi(`api/tiers/${board}/votes`)])
+    } catch (e) {
+      window.alert((e as Error).message)
+    }
+  }
+  return (
+    <div className="mt-4 flex gap-3 border-t border-line pt-4">
+      <span className={cx('disp grid size-9 shrink-0 place-items-center rounded-lg text-[20px] leading-none', TIER_STYLE[tier])}>{tier}</span>
+      <div className="min-w-0 flex-1">
+        <p className="flex flex-wrap items-center gap-x-3 text-[12px] text-ink-3">
+          <span className="font-semibold text-ink">你的评价</span>
+          {comment && <span className="num">{when(comment.edited ?? comment.created)}{comment.edited && '（改过）'}</span>}
+          <span className="ml-auto flex gap-3">
+            <button type="button" onClick={onWrite} className="inline-flex cursor-pointer items-center gap-0.5 font-semibold text-brand-ink hover:underline">
+              <Pencil size={12} aria-hidden />{comment ? '修改' : '写一句为什么'}
+            </button>
+            {comment && (
+              <button type="button" onClick={remove} className="inline-flex cursor-pointer items-center gap-0.5 hover:text-critical"><Trash2 size={12} aria-hidden />删除</button>
+            )}
+          </span>
+        </p>
+        {comment
+          ? <p className="mt-0.5 text-[13.5px] leading-relaxed break-words whitespace-pre-line text-ink">{comment.text}</p>
+          : <p className="mt-0.5 text-[13px] text-ink-3">只评了级，还没写为什么。写了会显示在页面最下面的评论区。</p>}
+      </div>
+    </div>
+  )
+}
+
 /** 点了档位之后展开的评论框：说说为什么评这一档，可以不写 */
-function CommentComposer({ board, card, tier, onDone, onCancel }: { board: string; card: string; tier: Tier; onDone: () => void; onCancel: () => void }) {
+function CommentComposer({ board, card, tier, edit, onDone, onCancel }: { board: string; card: string; tier: Tier; edit?: TierComment; onDone: () => void; onCancel: () => void }) {
   const path = `api/tiers/${board}/comments/${card}`
-  const [text, setText] = useState('')
+  const [text, setText] = useState(edit?.text ?? '')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const n = [...text.trim()].length
@@ -126,7 +161,7 @@ function CommentComposer({ board, card, tier, onDone, onCancel }: { board: strin
     setBusy(true)
     setErr('')
     try {
-      await api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
+      await api(edit ? `${path}/${edit.id}` : path, { method: edit ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
       await Promise.all([invalidateApi(path), invalidateApi(`api/tiers/${board}/votes`)])
       onDone()
     } catch (e) {
@@ -138,16 +173,16 @@ function CommentComposer({ board, card, tier, onDone, onCancel }: { board: strin
   return (
     <form onSubmit={post} className="mt-4 border-t border-line pt-4">
       <p className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-ink">
-        你评了<span className={cx('disp inline-grid size-[20px] place-items-center rounded-[5px] text-[13px] leading-none', TIER_STYLE[tier])}>{tier}</span>，说说为什么？<span className="font-normal text-ink-3">（可以不写）</span>
+        {edit ? '修改你的评价' : '你评了'}<span className={cx('disp inline-grid size-[20px] place-items-center rounded-[5px] text-[13px] leading-none', TIER_STYLE[tier])}>{tier}</span>{edit ? '' : <>，说说为什么？<span className="font-normal text-ink-3">（可以不写）</span></>}
       </p>
       <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} maxLength={500} autoFocus
         placeholder="强在哪、什么编成好用、什么情况下会翻车" className="min-h-[3.5rem] text-[13.5px]" />
       <div className="mt-1.5 flex items-center justify-end gap-3">
         {err && <span className="mr-auto text-[12px] text-critical">{err}</span>}
         <span className={cx('num text-[11.5px]', n > 500 ? 'text-critical' : 'text-ink-3')}>{n} / 500</span>
-        <Button type="button" variant="outline" size="sm" onClick={onCancel}>先不写</Button>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>{edit ? '取消' : '先不写'}</Button>
         <Button type="submit" size="sm" disabled={busy || n === 0 || n > 500} className="disabled:bg-surface-3 disabled:text-ink-3 disabled:opacity-100">
-          {busy && <Loader2 size={14} className="animate-spin" aria-hidden />}发表评论
+          {busy && <Loader2 size={14} className="animate-spin" aria-hidden />}{edit ? '保存' : '发表评论'}
         </Button>
       </div>
     </form>
@@ -185,7 +220,7 @@ export function TierCommentList({ board, card }: { board: string; card: string }
               <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">
                 <span className="font-semibold text-ink">{c.name || c.user}</span>
                 {c.tier && <span className={cx('disp inline-grid size-[17px] place-items-center rounded-[4px] text-[11.5px] leading-none', TIER_STYLE[c.tier])} title={`评了 ${c.tier}`}>{c.tier}</span>}
-                <span className="num">{when(c.created)}</span>
+                <span className="num">{when(c.created)}{c.edited && '（改过）'}</span>
                 {c.can_delete && (
                   <button type="button" onClick={() => remove(c.id)} className="ml-auto inline-flex cursor-pointer items-center gap-0.5 text-ink-3 opacity-0 transition-opacity group-hover:opacity-100 hover:text-critical focus-visible:opacity-100 max-md:opacity-100" aria-label="删除这条评论">
                     <Trash2 size={13} aria-hidden />删除
