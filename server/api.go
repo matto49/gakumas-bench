@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -29,6 +31,15 @@ type App struct {
 	assistMu   sync.Mutex
 	assists    map[string]*AssistSession // 出牌助手的会话（assist.go）
 	assistPick func() assistCaller       // 测试里换成假的引擎子进程；nil 时用 pool
+
+	contest         ContestConf // 竞技场模拟包（contest.go）
+	contestMu       sync.Mutex
+	contestJobs     map[string]*contestJob
+	contestQueue    []*contestJob
+	contestRunning  *contestJob
+	contestCmd      func(ctx context.Context, dir string) *exec.Cmd // 测试里换成假的；nil 时跑真的包
+	contestTimeout  time.Duration                                   // 0：120 秒
+	contestQueueMax int                                             // 0：20
 
 	engineInfo any
 	github     githubConf

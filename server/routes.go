@@ -159,6 +159,12 @@ func (app *App) routes(static, web string) http.Handler {
 	api.POST("/cli/login/token", plain(app.handleCLILoginToken))
 	api.POST("/logout", plain(app.handleLogout))
 
+	// 竞技场：不用登录（contest.go）
+	api.GET("/contest/seasons", plain(app.handleContestSeasons))
+	api.POST("/contest/sims", plain(app.handleContestSubmit))
+	api.GET("/contest/sims/:id", plain(app.handleContestGet))
+	api.DELETE("/contest/sims/:id", plain(app.handleContestCancel))
+
 	// 出牌助手：不用登录，按 IP 限流（assist.go）
 	as := api.Group("/assist/sessions")
 	as.POST("", plain(assistLimitMW(app.handleAssistOpen)))

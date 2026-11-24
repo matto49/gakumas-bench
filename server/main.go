@@ -134,6 +134,12 @@ func main() {
 		log.Fatalf("引擎子进程起不来：%v", err)
 	}
 	app.engineInfo = rep["engine"]
+	app.contest = ContestConf{Root: os.Getenv("GKBENCH_CONTEST_ROOT"), Python: env("GKBENCH_CONTEST_PYTHON", "python3")}
+	if app.contest.Root == "" {
+		app.contest.Python = ""
+	}
+	app.contestRecover() // 上次没跑完的竞技场模拟标失败，清掉 7 天前的
+	go app.contestGCLoop(context.Background())
 	log.Printf("引擎 %v", app.engineInfo)
 
 	// 路由在 routes.go（Gin）

@@ -10,7 +10,7 @@ const ATTR_COLOR: Record<number, string> = { 1: 'var(--color-vo)', 2: 'var(--col
 const ATTR_TEXT: Record<number, string> = { 1: 'Vo', 2: 'Da', 3: 'Vi' }
 
 /** 容器的实际宽度：图按真实像素画，字号不会跟着缩放 */
-function useWidth<T extends HTMLElement>(fallback = 720) {
+export function useWidth<T extends HTMLElement>(fallback = 720) {
   const ref = useRef<T>(null)
   const [w, setW] = useState(fallback)
   useEffect(() => {
@@ -23,7 +23,7 @@ function useWidth<T extends HTMLElement>(fallback = 720) {
   return [ref, w] as const
 }
 
-function niceTicks(max: number, n = 4) {
+export function niceTicks(max: number, n = 4) {
   if (max <= 0) return [0]
   const raw = max / n
   const mag = 10 ** Math.floor(Math.log10(raw))

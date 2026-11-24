@@ -316,7 +316,7 @@ function Bring({ onDraft, onResume }: { onDraft: (d: Draft) => void; onResume: (
 }
 
 /** 一张卡的定制：每个方向选几档，合计不超过这张卡的上限 */
-function CustomizeDialog({ card, onChange, onClose }: { card: DeckCard; onChange: (c: DeckCard) => void; onClose: () => void }) {
+export function CustomizeDialog({ card, onChange, onClose }: { card: DeckCard; onChange: (c: DeckCard) => void; onClose: () => void }) {
   const cat = useCatalog()
   const c = cat?.cards[card.id]
   if (!c?.custom) return null
@@ -365,7 +365,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   )
 }
 
-function NumInput({ label, value, onChange, step = 1 }: { label: string; value: number; onChange: (v: number) => void; step?: number }) {
+export function NumInput({ label, value, onChange, step = 1 }: { label: string; value: number; onChange: (v: number) => void; step?: number }) {
   return (
     <label className="block">
       <span className="mb-0.5 block text-[11.5px] text-ink-3">{label}</span>

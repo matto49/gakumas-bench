@@ -12,6 +12,7 @@ const nav = [
   { to: '/usage', label: '配置强度榜' },
   { to: '/guide', label: '偶像卡攻略' },
   { to: '/assist', label: '出牌助手' },
+  { to: '/contest', label: '竞技场' },
   // 算法排行和試験集合并成一项（2026-11-20）：这几条路径下都算在「算法排行」里，页内再用 BenchTabs 切换
   { to: '/sets', label: '算法排行', also: ['/exams', '/runs', '/compare'] },
   { to: '/gallery', label: '图鉴' },
