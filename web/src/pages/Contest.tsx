@@ -7,6 +7,7 @@ import { int } from '../lib/format'
 import { Button } from '@/components/ui/button'
 import { ContestTabs, PlanText, StageBar, StageItems } from '../components/contest/Common'
 import { Editor } from '../components/contest/Editor'
+import { HelperTabs } from '../components/HelperTabs'
 import { Result } from '../components/contest/Result'
 import { Compare } from '../components/contest/Compare'
 import { toast } from 'sonner'
@@ -55,6 +56,7 @@ export function ContestPage() {
   const seasons = useContestSeasons()
   return (
     <div>
+      <HelperTabs />
       <PageHeader title="竞技场" sub={SUB} />
       <ContestTabs />
       <SeasonsGate seasons={seasons}>{(d) => <Simulator seasons={d} />}</SeasonsGate>
@@ -164,6 +166,7 @@ export function ContestStagesPage() {
   const seasons = useContestSeasons()
   return (
     <div>
+      <HelperTabs />
       <PageHeader title="竞技场" sub="每个赛季每个舞台的计划、回合数、审查基准和舞台自带的 P 道具。点一行，在模拟器里用这个舞台。" />
       <ContestTabs />
       <SeasonsGate seasons={seasons}>
@@ -203,6 +206,7 @@ export function ContestComparePage() {
   const seasons = useContestSeasons()
   return (
     <div>
+      <HelperTabs />
       <PageHeader title="竞技场" sub="这台设备上跑过的模拟和保存的编成。同一舞台的记录放在一起比，点「载入」回到模拟器。" />
       <ContestTabs />
       <SeasonsGate seasons={seasons}>{(d) => <Compare seasons={d} />}</SeasonsGate>

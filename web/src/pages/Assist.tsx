@@ -7,6 +7,7 @@ import {
   type AssistView, type Draft, draftFromLoadout, loadoutFromDraft,
 } from '../lib/assist'
 import { PageHeader } from '../components/ui'
+import { HelperTabs } from '../components/HelperTabs'
 import { Editor } from '../components/assist/Editor'
 import { Play } from '../components/assist/Play'
 
@@ -87,6 +88,7 @@ export function Assist() {
 
   return (
     <div className="pb-6">
+      <HelperTabs />
       <PageHeader title="出牌助手" sub={live ? undefined : '配好编成，一边在游戏里打 H.I.F 审查一边看 AI 建议怎么出。建议来自 GKMS 引擎（rev383）+ UINet Ver2.1，不看种子、不偷看牌堆顺序。'} />
       {live ? (
         <Play view={live.view} busy={busy} onExit={exit}

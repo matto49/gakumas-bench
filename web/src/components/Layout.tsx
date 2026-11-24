@@ -11,12 +11,12 @@ const nav = [
   { to: '/tiers', label: '角色强度榜' },
   { to: '/usage', label: '配置强度榜' },
   { to: '/guide', label: '偶像卡攻略' },
-  { to: '/assist', label: '出牌助手' },
-  { to: '/contest', label: '竞技场' },
   // 算法排行和試験集合并成一项（2026-11-20）：这几条路径下都算在「算法排行」里，页内再用 BenchTabs 切换
   { to: '/sets', label: '算法排行', also: ['/exams', '/runs', '/compare'] },
   { to: '/gallery', label: '图鉴' },
   { to: '/cards', label: '游戏资源一览' },
+  // 出牌助手和竞技场并成「游戏小助手」（2026-11-24），放最右；页内用 HelperTabs 切换
+  { to: '/assist', label: '游戏小助手', also: ['/contest'] },
   // 「对比」不放导航：从复盘页的「和别的算法对比」进（/compare 路由还在）
 ]
 
