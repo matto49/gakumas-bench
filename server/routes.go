@@ -149,6 +149,10 @@ func (app *App) routes(static, web string) http.Handler {
 	// 强度榜的玩家评级（tiervotes.go）：汇总谁都能看，投票要登录
 	open.GET("/tiers/:id/votes", h(app.handleTierVotes(static)))
 	auth.PUT("/tiers/:id/votes/:card", h(app.handleTierVote(static)))
+	// 玩家评论（tiercomments.go）：谁都能看，发和删要登录
+	open.GET("/tiers/:id/comments/:card", h(app.handleTierComments(static)))
+	auth.POST("/tiers/:id/comments/:card", h(app.handleTierCommentPost(static)))
+	auth.DELETE("/tiers/:id/comments/:card/:cid", h(app.handleTierCommentDelete(static)))
 
 	// 登录
 	open.GET("/auth", h(app.handleAuthInfo))

@@ -116,7 +116,7 @@ func (a *App) handleTierVotes(static string) userHandler {
 				}
 			}
 		}
-		writeJSONResp(w, 200, map[string]any{"cards": summarizeTierVotes(votes), "mine": mine})
+		writeJSONResp(w, 200, map[string]any{"cards": summarizeTierVotes(votes), "mine": mine, "comments": a.store.tierCommentCounts(board)})
 	}
 }
 

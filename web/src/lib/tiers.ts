@@ -148,7 +148,9 @@ export function splitIdol(full: string) {
 
 /** 玩家评级（server/tiervotes.go）：GET api/tiers/<榜>/votes。每人每卡一票 S–D，平均分 S=5…D=1 */
 export type TierVoteSummary = { n: number; mean: number; dist: Partial<Record<Tier, number>> }
-export type TierVotes = { cards: Record<string, TierVoteSummary>; mine: Record<string, Tier> }
+export type TierVotes = { cards: Record<string, TierVoteSummary>; mine: Record<string, Tier>; comments?: Record<string, number> }
+/** 玩家评论（server/tiercomments.go）：GET api/tiers/<榜>/comments/<卡>，新的在前 */
+export type TierComment = { id: string; user: string; name?: string; avatar?: string; text: string; created: string; tier?: Tier; can_delete?: boolean }
 /** 票数到这个数才给出「玩家评级」的档位，之前只写票数 */
 export const VOTE_MIN = 5
 /** 平均分折回档位：≥4.5 S、≥3.5 A、≥2.5 B、≥1.5 C，其余 D */

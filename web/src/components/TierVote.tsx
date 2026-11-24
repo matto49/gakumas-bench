@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+import { Loader2, MessageSquare, Trash2, UserRound } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { invalidateApi } from '../lib/query'
-import { TIER_STYLE, VOTE_MIN, voteTier, type Tier, type TierVotes, type TierVoteSummary } from '../lib/tiers'
+import { TIER_STYLE, VOTE_MIN, voteTier, type Tier, type TierComment, type TierVotes, type TierVoteSummary } from '../lib/tiers'
+import { when } from '../lib/format'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { cx, Help } from './ui'
 
-/** 强度榜的玩家评级：单卡页的一块（汇总 + 自己投），和总榜卡片上的小标。数据 api/tiers/<榜>/votes（server/tiervotes.go） */
+/** 强度榜的玩家评级和评论：单卡页的一块（评级汇总 + 自己投，下面接评论），和总榜卡片上的小标。
+ * 数据 api/tiers/<榜>/votes（server/tiervotes.go）、api/tiers/<榜>/comments/<卡>（server/tiercomments.go） */
 
 const TIERS: Tier[] = ['S', 'A', 'B', 'C', 'D']
 
@@ -15,16 +19,14 @@ export function useTierVotes(board: string | undefined) {
   return useApi<TierVotes>(board ? `api/tiers/${board}/votes` : null)
 }
 
-/** 总榜卡片上的小标：票够了写「玩家 A」，不够写票数；没人投不显示 */
-export function VoteChip({ s, className }: { s?: TierVoteSummary; className?: string }) {
-  if (!s?.n) return null
-  if (s.n < VOTE_MIN) return <span className={cx('text-[11px] text-ink-3', className)}>玩家 {s.n} 票</span>
-  const t = voteTier(s.mean)
+/** 总榜卡片上的小标：票够了写「玩家 A」，不够写票数，有评论再加评论数；都没有不显示 */
+export function VoteChip({ s, comments = 0, className }: { s?: TierVoteSummary; comments?: number; className?: string }) {
+  if (!s?.n && !comments) return null
+  const t = s && s.n >= VOTE_MIN ? voteTier(s.mean) : null
   return (
-    <span className={cx('inline-flex items-center gap-1 text-[11px] text-ink-3', className)} title={`玩家评级 ${t}（平均 ${s.mean.toFixed(2)}，${s.n} 票）`}>
-      玩家
-      <span className={cx('disp inline-grid size-[18px] place-items-center rounded-[4px] text-[12px] leading-none', TIER_STYLE[t])}>{t}</span>
-      <span className="num">{s.n} 票</span>
+    <span className={cx('inline-flex items-center gap-1 text-[11px] text-ink-3', className)} title={t ? `玩家评级 ${t}（平均 ${s!.mean.toFixed(2)}，${s!.n} 票）` : undefined}>
+      {s?.n ? <>玩家{t && <span className={cx('disp inline-grid size-[18px] place-items-center rounded-[4px] text-[12px] leading-none', TIER_STYLE[t])}>{t}</span>}<span className="num">{s.n} 票</span></> : null}
+      {comments > 0 && <span className="inline-flex items-center gap-0.5"><MessageSquare size={11} aria-hidden /><span className="num">{comments}</span></span>}
     </span>
   )
 }
@@ -53,7 +55,8 @@ export function TierVotePanel({ board, card, dataTier }: { board: string; card: 
   }
   const pt = s && s.n >= VOTE_MIN ? voteTier(s.mean) : null
   return (
-    <section className="grid gap-4 rounded-xl border border-line bg-surface p-4 md:grid-cols-[auto_1fr_auto] md:items-center">
+    <section className="rounded-xl border border-line bg-surface p-4">
+    <div className="grid gap-4 md:grid-cols-[auto_1fr_auto] md:items-center">
       <div className="flex items-center gap-3">
         {pt
           ? <span className={cx('disp grid size-16 shrink-0 place-items-center rounded-2xl text-[40px] leading-none', TIER_STYLE[pt])}>{pt}</span>
@@ -96,6 +99,93 @@ export function TierVotePanel({ board, card, dataTier }: { board: string; card: 
         )}
         {err && <p className="mt-1.5 text-[12px] text-critical">{err}</p>}
       </div>
+    </div>
+    <TierComments board={board} card={card} loggedOut={loggedOut} canPost={!!me.data} />
     </section>
+  )
+}
+
+/** 评论：输入框在上，新的在前，默认显示 5 条 */
+function TierComments({ board, card, loggedOut, canPost }: { board: string; card: string; loggedOut: boolean; canPost: boolean }) {
+  const path = `api/tiers/${board}/comments/${card}`
+  const list = useApi<{ comments: TierComment[] }>(path)
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [all, setAll] = useState(false)
+  const items = list.data?.comments ?? []
+  const n = [...text.trim()].length
+  const refresh = () => Promise.all([invalidateApi(path), invalidateApi(`api/tiers/${board}/votes`)])
+  const post = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setErr('')
+    try {
+      await api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
+      setText('')
+      await refresh()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const remove = async (id: string) => {
+    if (!window.confirm('删掉这条评论？')) return
+    try {
+      await api(`${path}/${id}`, { method: 'DELETE' })
+      await refresh()
+    } catch (e) {
+      window.alert((e as Error).message)
+    }
+  }
+  return (
+    <div className="mt-4 border-t border-line pt-4">
+      <h3 className="mb-2 flex items-center gap-1.5 text-[14px] font-bold text-ink">
+        <MessageSquare size={15} className="text-ink-3" aria-hidden />玩家评论{items.length > 0 && <span className="num text-[12.5px] font-normal text-ink-3">{items.length}</span>}
+      </h3>
+      {loggedOut ? (
+        <p className="mb-3 text-[13px] text-ink-3"><Link to="/me" className="font-semibold text-brand-ink hover:underline">登录</Link>后可以写评论：这张卡强在哪、什么编成好用、什么情况下会翻车。</p>
+      ) : (
+        <form onSubmit={post} className="mb-3">
+          <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} maxLength={500} disabled={!canPost}
+            placeholder="说说这张卡：强在哪、什么编成好用、什么情况下会翻车（评过级的话，评论旁边会带上你评的档）" className="min-h-[3.5rem] text-[13.5px]" />
+          <div className="mt-1.5 flex items-center justify-end gap-3">
+            {err && <span className="mr-auto text-[12px] text-critical">{err}</span>}
+            <span className={cx('num text-[11.5px]', n > 500 ? 'text-critical' : 'text-ink-3')}>{n} / 500</span>
+            <Button type="submit" size="sm" disabled={busy || !canPost || n === 0 || n > 500} className="disabled:bg-surface-3 disabled:text-ink-3 disabled:opacity-100">
+              {busy && <Loader2 size={14} className="animate-spin" aria-hidden />}发表
+            </Button>
+          </div>
+        </form>
+      )}
+      {list.data && items.length === 0 && <p className="text-[13px] text-ink-3">还没有评论。</p>}
+      <ul className="space-y-3">
+        {items.slice(0, all ? items.length : 5).map((c) => (
+          <li key={c.id} className="group flex gap-2.5">
+            {c.avatar ? <img src={c.avatar} alt="" width={28} height={28} className="mt-0.5 size-7 shrink-0 rounded-full bg-surface-2" />
+              : <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-surface-2 text-ink-3"><UserRound size={14} aria-hidden /></span>}
+            <div className="min-w-0 flex-1">
+              <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">
+                <span className="font-semibold text-ink">{c.name || c.user}</span>
+                {c.tier && <span className={cx('disp inline-grid size-[17px] place-items-center rounded-[4px] text-[11.5px] leading-none', TIER_STYLE[c.tier])} title={`评了 ${c.tier}`}>{c.tier}</span>}
+                <span className="num">{when(c.created)}</span>
+                {c.can_delete && (
+                  <button type="button" onClick={() => remove(c.id)} className="ml-auto inline-flex cursor-pointer items-center gap-0.5 text-ink-3 opacity-0 transition-opacity group-hover:opacity-100 hover:text-critical focus-visible:opacity-100 max-md:opacity-100" aria-label="删除这条评论">
+                    <Trash2 size={13} aria-hidden />删除
+                  </button>
+                )}
+              </p>
+              <p className="mt-0.5 text-[13.5px] leading-relaxed break-words whitespace-pre-line text-ink">{c.text}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {items.length > 5 && (
+        <button type="button" onClick={() => setAll(!all)} className="mt-2 h-9 w-full cursor-pointer rounded-lg text-[13px] text-brand-ink hover:bg-brand-tint">
+          {all ? '收起' : `展开全部 ${items.length} 条`}
+        </button>
+      )}
+    </div>
   )
 }
