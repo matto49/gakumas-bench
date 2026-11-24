@@ -7,7 +7,7 @@ import { cx, ErrorState, Help, IdolThumb, Skeleton, Tip } from '../components/ui
 import { CardDetail, CardImage, Meta, RarityTag } from '../components/CardDetail'
 import { ItemDetail } from '../components/ItemDetail'
 import { useDetailPopup } from '../components/DetailPopups'
-import { TierVotePanel } from '../components/TierVote'
+import { TierCommentList, TierVotePanel } from '../components/TierVote'
 import { CardScene, CustomPriority } from '../components/CustomStats'
 import { useApi } from '../lib/hooks'
 import type { GuideInsights } from '../lib/guides'
@@ -438,6 +438,8 @@ export function TierCardPage() {
           <div className="mt-4 border-t border-line pt-3"><SourceLine board={board} /></div>
         </Panel>
       </div>
+
+      <TierCommentList board={board.id} card={c.id} />
 
       {open && cat?.cards[open] && <CardDetail id={open} c={cat.cards[open]} onClose={() => setOpen(null)} />}
       {item && cat && <ItemDetail id={item} cat={cat} onClose={() => setItem(null)} />}

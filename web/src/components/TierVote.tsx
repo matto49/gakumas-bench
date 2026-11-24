@@ -37,6 +37,8 @@ export function TierVotePanel({ board, card, dataTier }: { board: string; card: 
   const me = useApi<{ user: string }>('api/me')
   const [busy, setBusy] = useState<Tier | '' | null>(null)
   const [err, setErr] = useState('')
+  const [compose, setCompose] = useState(false) // 刚点了档位：下面展开评论框
+  const [posted, setPosted] = useState(false)
   const s = votes.data?.cards[card]
   const mine = votes.data?.mine[card]
   const loggedOut = me.error instanceof ApiError && me.error.status === 401
@@ -47,6 +49,8 @@ export function TierVotePanel({ board, card, dataTier }: { board: string; card: 
     try {
       await api(`api/tiers/${board}/votes/${card}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier: t }) })
       await invalidateApi(`api/tiers/${board}/votes`)
+      setCompose(t !== '')
+      setPosted(false)
     } catch (e) {
       setErr((e as Error).message)
     } finally {
@@ -100,65 +104,77 @@ export function TierVotePanel({ board, card, dataTier }: { board: string; card: 
         {err && <p className="mt-1.5 text-[12px] text-critical">{err}</p>}
       </div>
     </div>
-    <TierComments board={board} card={card} loggedOut={loggedOut} canPost={!!me.data} />
+    {compose && mine && <CommentComposer board={board} card={card} tier={mine} onDone={() => { setCompose(false); setPosted(true) }} onCancel={() => setCompose(false)} />}
+    {posted && !compose && (
+      <p className="mt-3 border-t border-line pt-3 text-[12.5px] text-ink-3">
+        评论已发表，<a href="#tier-comments" className="font-semibold text-brand-ink hover:underline">在页面最下面</a>。
+      </p>
+    )}
     </section>
   )
 }
 
-/** 评论：输入框在上，新的在前，默认显示 5 条 */
-function TierComments({ board, card, loggedOut, canPost }: { board: string; card: string; loggedOut: boolean; canPost: boolean }) {
+/** 点了档位之后展开的评论框：说说为什么评这一档，可以不写 */
+function CommentComposer({ board, card, tier, onDone, onCancel }: { board: string; card: string; tier: Tier; onDone: () => void; onCancel: () => void }) {
   const path = `api/tiers/${board}/comments/${card}`
-  const list = useApi<{ comments: TierComment[] }>(path)
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  const [all, setAll] = useState(false)
-  const items = list.data?.comments ?? []
   const n = [...text.trim()].length
-  const refresh = () => Promise.all([invalidateApi(path), invalidateApi(`api/tiers/${board}/votes`)])
   const post = async (e: React.FormEvent) => {
     e.preventDefault()
     setBusy(true)
     setErr('')
     try {
       await api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
-      setText('')
-      await refresh()
+      await Promise.all([invalidateApi(path), invalidateApi(`api/tiers/${board}/votes`)])
+      onDone()
     } catch (e) {
       setErr((e as Error).message)
     } finally {
       setBusy(false)
     }
   }
+  return (
+    <form onSubmit={post} className="mt-4 border-t border-line pt-4">
+      <p className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+        你评了<span className={cx('disp inline-grid size-[20px] place-items-center rounded-[5px] text-[13px] leading-none', TIER_STYLE[tier])}>{tier}</span>，说说为什么？<span className="font-normal text-ink-3">（可以不写）</span>
+      </p>
+      <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} maxLength={500} autoFocus
+        placeholder="强在哪、什么编成好用、什么情况下会翻车" className="min-h-[3.5rem] text-[13.5px]" />
+      <div className="mt-1.5 flex items-center justify-end gap-3">
+        {err && <span className="mr-auto text-[12px] text-critical">{err}</span>}
+        <span className={cx('num text-[11.5px]', n > 500 ? 'text-critical' : 'text-ink-3')}>{n} / 500</span>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>先不写</Button>
+        <Button type="submit" size="sm" disabled={busy || n === 0 || n > 500} className="disabled:bg-surface-3 disabled:text-ink-3 disabled:opacity-100">
+          {busy && <Loader2 size={14} className="animate-spin" aria-hidden />}发表评论
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+/** 单卡页最下面的评论列表：新的在前，默认 5 条；写评论在页面顶部评级之后 */
+export function TierCommentList({ board, card }: { board: string; card: string }) {
+  const path = `api/tiers/${board}/comments/${card}`
+  const list = useApi<{ comments: TierComment[] }>(path)
+  const [all, setAll] = useState(false)
+  const items = list.data?.comments ?? []
   const remove = async (id: string) => {
     if (!window.confirm('删掉这条评论？')) return
     try {
       await api(`${path}/${id}`, { method: 'DELETE' })
-      await refresh()
+      await Promise.all([invalidateApi(path), invalidateApi(`api/tiers/${board}/votes`)])
     } catch (e) {
       window.alert((e as Error).message)
     }
   }
   return (
-    <div className="mt-4 border-t border-line pt-4">
-      <h3 className="mb-2 flex items-center gap-1.5 text-[14px] font-bold text-ink">
-        <MessageSquare size={15} className="text-ink-3" aria-hidden />玩家评论{items.length > 0 && <span className="num text-[12.5px] font-normal text-ink-3">{items.length}</span>}
-      </h3>
-      {loggedOut ? (
-        <p className="mb-3 text-[13px] text-ink-3"><Link to="/me" className="font-semibold text-brand-ink hover:underline">登录</Link>后可以写评论：这张卡强在哪、什么编成好用、什么情况下会翻车。</p>
-      ) : (
-        <form onSubmit={post} className="mb-3">
-          <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} maxLength={500} disabled={!canPost}
-            placeholder="说说这张卡：强在哪、什么编成好用、什么情况下会翻车（评过级的话，评论旁边会带上你评的档）" className="min-h-[3.5rem] text-[13.5px]" />
-          <div className="mt-1.5 flex items-center justify-end gap-3">
-            {err && <span className="mr-auto text-[12px] text-critical">{err}</span>}
-            <span className={cx('num text-[11.5px]', n > 500 ? 'text-critical' : 'text-ink-3')}>{n} / 500</span>
-            <Button type="submit" size="sm" disabled={busy || !canPost || n === 0 || n > 500} className="disabled:bg-surface-3 disabled:text-ink-3 disabled:opacity-100">
-              {busy && <Loader2 size={14} className="animate-spin" aria-hidden />}发表
-            </Button>
-          </div>
-        </form>
-      )}
+    <section id="tier-comments" className="scroll-mt-20 rounded-xl border border-line bg-surface p-4">
+      <h2 className="mb-3 flex items-center gap-1.5 text-[15px] font-bold text-ink">
+        <MessageSquare size={16} className="text-ink-3" aria-hidden />玩家评论{items.length > 0 && <span className="num text-[12.5px] font-normal text-ink-3">{items.length}</span>}
+        <span className="ml-auto text-[12px] font-normal text-ink-3">在页面顶部评级后可以写一句</span>
+      </h2>
       {list.data && items.length === 0 && <p className="text-[13px] text-ink-3">还没有评论。</p>}
       <ul className="space-y-3">
         {items.slice(0, all ? items.length : 5).map((c) => (
@@ -186,6 +202,6 @@ function TierComments({ board, card, loggedOut, canPost }: { board: string; card
           {all ? '收起' : `展开全部 ${items.length} 条`}
         </button>
       )}
-    </div>
+    </section>
   )
 }
