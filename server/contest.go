@@ -183,7 +183,21 @@ func (a *App) defaultContestCmd(ctx context.Context, dir string) *exec.Cmd {
 		filepath.Join(dir, "job.json"), filepath.Join(dir, "result.json"),
 		"--workers", "2", "--progress", filepath.Join(dir, "progress.jsonl"))
 	c.Dir = a.contest.Root
+	c.Env = contestEnv()
 	return c
+}
+
+// contestEnv 模拟子进程只拿基础环境：服务自己的 GKMS* 变量（考试引擎的 GKMSCLIGPU_LIB 会让模拟包加载错的原生库）
+// 和 GKBENCH_* 里的密钥都不给第三方代码
+func contestEnv() []string {
+	keep := map[string]bool{"PATH": true, "HOME": true, "LANG": true, "LC_ALL": true, "LC_CTYPE": true, "TMPDIR": true, "TZ": true, "USER": true}
+	out := []string{}
+	for _, kv := range os.Environ() {
+		if k, _, ok := strings.Cut(kv, "="); ok && keep[k] {
+			out = append(out, kv)
+		}
+	}
+	return out
 }
 
 var contestIDRe = regexp.MustCompile(`^[0-9a-f]{16,64}$`)

@@ -368,3 +368,27 @@ func TestContestGCDropsOldFinishedJobs(t *testing.T) {
 		t.Fatal("recent job dropped")
 	}
 }
+
+func TestContestCmdDropsEngineEnv(t *testing.T) {
+	t.Setenv("GKMSCLIGPU_LIB", "/opt/gkbench/GKMSProject/GakumasCLI/native/build/libgkmscore.so")
+	t.Setenv("GKMS_ROOT", "/opt/gkbench/GKMSProject")
+	t.Setenv("GKMS_UINET_REPO", "/opt/gkbench/GKMSUINet")
+	t.Setenv("GKBENCH_GITHUB_CLIENT_SECRET", "s3cret")
+	app, _, _ := fakeContest(t, okWorker)
+	cmd := app.defaultContestCmd(context.Background(), t.TempDir())
+	if cmd.Env == nil {
+		t.Fatal("contest subprocess inherits the whole server env (考试引擎的 GKMSCLIGPU_LIB 会让模拟包加载错的原生库)")
+	}
+	for _, kv := range cmd.Env {
+		if strings.HasPrefix(kv, "GKMS") || strings.HasPrefix(kv, "GKBENCH_") {
+			t.Fatalf("server env leaked into contest subprocess: %s", kv)
+		}
+	}
+	hasPath := false
+	for _, kv := range cmd.Env {
+		hasPath = hasPath || strings.HasPrefix(kv, "PATH=")
+	}
+	if !hasPath {
+		t.Fatal("PATH dropped")
+	}
+}
