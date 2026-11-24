@@ -140,6 +140,8 @@ func (app *App) routes(static, web string) http.Handler {
 	api.GET("/supports/meta", func(c *gin.Context) { serveIfExists(c, filepath.Join(static, "supports.meta.json")) })
 	// 配置频率：python -m gkbench.usage 生成 usage/<模式>.json（排行榜前 100 名里各卡出现的比例）
 	api.GET("/usage/:mode", staticJSON(static, "usage", "mode"))
+	// 偶像卡攻略：python -m gkbench.guides build 生成 guides/<模式>.json、<模式>-<日期>-<N>.json（不可变）和 manifest.json
+	api.GET("/guides/:name", staticJSON(static, "guides", "name"))
 	// 首页小文件：home 由 gkbench.homedata 生成（生日、新卡）；now（卡池、活动）和 updates（站内更新）手写
 	api.GET("/site/:name", staticJSON(static, "site", "name"))
 	// 角色强度榜：python -m gkbench.tierboard 导入（index.json 是目录，<id>.json 是一张榜）
@@ -156,6 +158,15 @@ func (app *App) routes(static, web string) http.Handler {
 	auth.POST("/cli/login/:code/approve", h(app.handleCLILoginApprove))
 	api.POST("/cli/login/token", plain(app.handleCLILoginToken))
 	api.POST("/logout", plain(app.handleLogout))
+
+	// 出牌助手：不用登录，按 IP 限流（assist.go）
+	as := api.Group("/assist/sessions")
+	as.POST("", plain(assistLimitMW(app.handleAssistOpen)))
+	as.POST("/:id/hand", plain(assistLimitMW(app.assistCall("assist_hand", withBody))))
+	as.POST("/:id/numbers", plain(assistLimitMW(app.assistCall("assist_numbers", withBody))))
+	as.POST("/:id/step", plain(assistLimitMW(app.assistCall("assist_step", withBody))))
+	as.POST("/:id/undo", plain(assistLimitMW(app.assistCall("assist_undo", nil))))
+	as.DELETE("/:id", plain(assistLimitMW(app.handleAssistClose)))
 
 	// 要令牌
 	auth.GET("/me", h(app.handleMe))

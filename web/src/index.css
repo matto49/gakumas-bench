@@ -27,6 +27,9 @@
   --color-brand-ink: oklch(0.53 0.165 40);
   --color-brand-soft: oklch(0.955 0.038 62);
   --color-brand-tint: oklch(0.972 0.01 62);
+  /* 强化档比上一档新增 / 改动的字（卡牌详情） */
+  --color-up: oklch(0.45 0.13 152);
+  --color-up-soft: oklch(0.94 0.06 152);
 
   --color-vo: oklch(0.67 0.2 358);
   --color-da: oklch(0.6 0.165 252);
@@ -222,25 +225,60 @@ body {
 @keyframes boot-pulse {
   50% { filter: brightness(1.12); transform: skewX(-16deg) translateY(-6px); }
 }
-.boot-sub,
-.boot-title {
-  display: block;
-  transform: translateX(-110%);
-  animation: boot-slide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* 字标字体：Noto Sans SC Black（900）只截「初星攻略站」五个字，1.5 KB；别处的中文仍用系统字体 */
+@font-face {
+  font-family: "GKB Wordmark";
+  src: url("./assets/fonts/wordmark-black.woff2") format("woff2");
+  font-weight: 900;
+  font-display: block;
 }
 .boot-sub {
+  display: block;
   font-size: 15px;
-  letter-spacing: 0.16em;
+  font-weight: 700;
+  letter-spacing: 0.22em;
   color: var(--color-ink-3);
-  animation-delay: 0.42s;
+  transform: translateX(-110%);
+  animation: boot-slide 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
 }
-.boot-title {
-  font-size: 44px;
+@keyframes boot-slide {
+  to { transform: translateX(0); }
+}
+/* 站名字标（登录页等）：同一套 Black 字体，逐字的颜色写在 <b> 上 */
+.wordmark {
+  display: flex;
+  font-family: "GKB Wordmark", var(--font-sans);
   font-weight: 900;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
   color: var(--color-ink);
-  animation-delay: 0.32s;
+}
+.wordmark b { font-weight: inherit; }
+.boot-title {
+  display: flex;
+  margin-top: 2px;
+  font-family: "GKB Wordmark", var(--font-sans);
+  font-size: 48px;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: 0.01em;
+  color: var(--color-ink);
+}
+/* 每个字从下面弹上来、略带回弹，一个接一个 */
+.boot-title b {
+  display: block;
+  font-weight: inherit;
+  opacity: 0;
+  transform: translateY(70%) scale(0.86);
+  animation: boot-char 0.48s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.boot-title b:nth-child(1) { animation-delay: 0.34s; }
+.boot-title b:nth-child(2) { animation-delay: 0.4s; }
+.boot-title b:nth-child(3) { animation-delay: 0.46s; }
+.boot-title b:nth-child(4) { animation-delay: 0.52s; }
+.boot-title b:nth-child(5) { animation-delay: 0.58s; }
+@keyframes boot-char {
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 @media (min-width: 640px) {
   .boot-bars { height: 120px; gap: 12px; }
@@ -248,5 +286,6 @@ body {
   .boot-bars i:nth-child(1) { height: 96px; }
   .boot-bars i:nth-child(2) { height: 120px; }
   .boot-bars i:nth-child(3) { height: 84px; }
-  .boot-title { font-size: 60px; }
+  .boot-title { font-size: 68px; }
+  .boot-sub { font-size: 17px; }
 }

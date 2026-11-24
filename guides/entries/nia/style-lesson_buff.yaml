@@ -1,0 +1,190 @@
+# N.I.A · 集中流派层（11-20 按好印象样板铺开；scripts 在 gakumas-bench-data/guide-sources/gen_styles_20261120.py）
+
+- id: nia.style-lesson_buff.card_pick.stack
+  kind: written
+  scope:
+    mode: nia
+    style: lesson_buff
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-01-men-2_037
+      role: loop
+      weight: 90
+      note: 集中，不耗体力也不占使用数
+    - id: p_card-01-act-2_001
+      role: loop
+      weight: 90
+      note: 好調，不耗体力也不占使用数
+    - id: p_card-01-men-3_034
+      role: buff
+      weight: 80
+    - id: p_card-01-men-2_035
+      role: buff
+      weight: 70
+      note: P 等级低时的主力
+    - id: p_card-01-men-2_038
+      role: buff
+      weight: 70
+    why: 集中流派和好調同属センス，靠叠 buff 出分，区别是主力 buff 是「集中」：集中每 +1，之后每张卡的涨分都 +1。前半场用存在感、天賦の才等把集中叠高，シュプレヒコール的好調也能一起叠。
+  evidence:
+  - kind: guide
+    ref: game8 センスのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/609699
+    date: '2026-11-20'
+  - kind: ranking
+    mode: nia
+    n: 2100
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-lesson_buff.card_pick.cash
+  kind: written
+  scope:
+    mode: nia
+    style: lesson_buff
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-01-men-3_006
+      role: double
+      weight: 90
+      note: 下一张卡效果发动两次
+    - id: p_card-01-act-3_049
+      role: finisher
+      weight: 85
+    - id: p_card-01-act-3_185
+      role: finisher
+      weight: 75
+    - id: p_card-01-act-3_010
+      role: buff
+      weight: 75
+    why: 集中叠高以后，用国民的アイドル让下一张强力主动卡发动两次；集中越高，主动卡每段涨分越多。
+  evidence:
+  - kind: guide
+    ref: game8 センスのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/609699
+    date: '2026-11-20'
+  - kind: ranking
+    mode: nia
+    n: 2100
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-lesson_buff.card_pick.loop
+  kind: written
+  scope:
+    mode: nia
+    style: lesson_buff
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-01-men-2_037
+      role: loop
+      keep: 1
+    - id: p_card-01-act-2_001
+      role: loop
+      keep: 1
+    - id: p_card-01-act-3_185
+      role: loop
+      keep: 1
+    why: N.I.A MASTER 的决赛靠最后几回合反复打同几张卡：不带「レッスン中1回」的卡只留循环件，其余都拿用一次就除外的卡。センス的循环一般是脚光发动后，用存在感和シュプレヒコール反复打。循环件最好用回忆带进来。
+    unless:
+      when:
+        deck_count:
+          ids:
+          - p_card-01-men-2_037
+          - p_card-01-act-2_001
+          - p_card-01-act-3_185
+          gte: 3
+      text: 循环件已经齐了，同名卡不用再拿
+  evidence:
+  - kind: guide
+    ref: game8 NIAマスター攻略
+    url: https://game8.jp/gakuen-idolmaster/688368
+    date: '2026-11-17'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-lesson_buff.card_remove.basics
+  kind: written
+  scope:
+    mode: nia
+    style: lesson_buff
+  decision: card_remove
+  content:
+    avoid:
+    - class:basic
+    - id: p_card-01-act-0_006
+      note: 初始牌组里的非循环件
+    - class:other_buff
+    prefer:
+    - id: p_card-01-men-2_037
+      role: loop
+    - id: p_card-01-act-2_001
+      role: loop
+    - id: p_card-01-act-3_185
+      role: loop
+    why: 「○○の基本」用了不除外、效果又弱，会混进循环，决赛前全部删掉（排行榜上只剩 1%–3%）。基本卡用挑战 P 道具删，相談留给基本卡以外的非循环件；循环件不删。
+  evidence:
+  - kind: guide
+    ref: game8 NIAマスター攻略
+    url: https://game8.jp/gakuen-idolmaster/688368
+    date: '2026-11-17'
+  - kind: ranking
+    mode: nia
+    n: 2100
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-lesson_buff.formation.memory.core
+  kind: written
+  scope:
+    mode: nia
+    style: lesson_buff
+  decision: formation.memory
+  content:
+    prefer:
+    - id: p_card-01-act-2_001
+      weight: 90
+    - id: p_card-01-men-3_006
+      weight: 85
+    - id: p_card-01-men-2_037
+      weight: 80
+    - id: p_card-01-act-3_049
+      weight: 75
+    why: 回忆带循环件和核心卡，培育中就不用碰运气。排行榜上 21 张集中偶像卡平均下来，回忆里最常带的是 シュプレヒコール 73%、国民的アイドル 63%、存在感 57%、至高のエンタメ 53%。
+  evidence:
+  - kind: ranking
+    mode: nia
+    n: 2100
+    fetched: '2026-11-18'
+  - kind: guide
+    ref: game8 NIAマスター攻略
+    url: https://game8.jp/gakuen-idolmaster/688368
+    date: '2026-11-17'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-lesson_buff.card_upgrade.core
+  kind: written
+  scope:
+    mode: nia
+    style: lesson_buff
+  decision: card_upgrade
+  content:
+    prefer:
+    - id: p_card-01-men-2_035
+      upgrade: 1
+    - id: p_card-01-act-3_010
+      upgrade: 1
+    - id: p_card-01-men-3_036
+      upgrade: 1
+    - id: p_card-01-men-3_035
+      upgrade: 1
+    why: 强化先给反复要打、每回合都用得到的卡。这几张是排行榜上这个流派强化比例最高的。
+  evidence:
+  - kind: ranking
+    mode: nia
+    n: 2100
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench

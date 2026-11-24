@@ -1,0 +1,191 @@
+# N.I.A · やる気流派层（11-20 按好印象样板铺开；scripts 在 gakumas-bench-data/guide-sources/gen_styles_20261120.py）
+
+- id: nia.style-aggressive.card_pick.stack
+  kind: written
+  scope:
+    mode: nia
+    style: aggressive
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-02-men-2_056
+      role: motivation
+      weight: 90
+    - id: p_card-02-men-2_008
+      role: motivation
+      weight: 85
+    - id: p_card-02-men-2_100
+      role: motivation
+      weight: 85
+    - id: p_card-02-men-2_057
+      role: loop
+      weight: 85
+    - id: p_card-02-men-2_111
+      role: motivation
+      weight: 80
+    - id: p_card-02-men-2_004
+      role: motivation
+      weight: 75
+    - id: p_card-02-men-2_052
+      role: genki
+      weight: 60
+    why: やる気流派前中段把「やる気」和「元気」攒起来：やる気越高，之后每张卡给的元気越多。带使用数 +1 的ゆめみごこち、成長痛效率最高；止められない想い、イメトレ、気まぐれハート是排行榜上几乎人人都带的。
+  evidence:
+  - kind: guide
+    ref: game8 ロジックのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/609830
+    date: '2026-11-20'
+  - kind: ranking
+    mode: nia
+    n: 2200
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-aggressive.card_pick.cash
+  kind: written
+  scope:
+    mode: nia
+    style: aggressive
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-02-act-3_039
+      role: finisher
+      weight: 90
+      note: 最后一回合用
+    - id: p_card-02-act-1_037
+      role: sustained
+      weight: 85
+    - id: p_card-02-act-3_045
+      role: finisher
+      weight: 80
+    - id: p_card-02-act-2_062
+      role: loop
+      weight: 75
+    - id: p_card-02-act-2_047
+      role: finisher
+      weight: 55
+      note: P 等级低时的替代
+    why: 后半场用按元気出分的主动卡收分。届いて！这类消耗元気的卡留到最后一回合再打，打早了会把后面的卡能吃到的元気用掉。
+  evidence:
+  - kind: guide
+    ref: game8 ロジックのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/609830
+    date: '2026-11-20'
+  - kind: ranking
+    mode: nia
+    n: 2200
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-aggressive.card_pick.loop
+  kind: written
+  scope:
+    mode: nia
+    style: aggressive
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-02-men-2_057
+      role: loop
+      keep: 1
+    - id: p_card-02-act-2_062
+      role: loop
+      keep: 1
+    why: N.I.A MASTER 的决赛靠最后几回合反复打同几张卡：不带「レッスン中1回」的卡只留循环件，其余都拿用一次就除外的卡。やる気的出分卡和 buff 卡作用不同，形不成完全的循环，ゆめみごこち + きらきら紙吹雪 是 game8 给的例子。循环件最好用回忆带进来。
+    unless:
+      when:
+        deck_count:
+          ids:
+          - p_card-02-men-2_057
+          - p_card-02-act-2_062
+          gte: 2
+      text: 循环件已经齐了，同名卡不用再拿
+  evidence:
+  - kind: guide
+    ref: game8 NIAマスター攻略
+    url: https://game8.jp/gakuen-idolmaster/688368
+    date: '2026-11-17'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-aggressive.card_remove.basics
+  kind: written
+  scope:
+    mode: nia
+    style: aggressive
+  decision: card_remove
+  content:
+    avoid:
+    - class:basic
+    - id: p_card-02-act-0_010
+      note: 初始牌组里的非循环件
+    - class:other_buff
+    prefer:
+    - id: p_card-02-men-2_057
+      role: loop
+    - id: p_card-02-act-2_062
+      role: loop
+    why: 「○○の基本」用了不除外、效果又弱，会混进循环，决赛前全部删掉（排行榜上只剩 1%–3%）。基本卡用挑战 P 道具删，相談留给基本卡以外的非循环件；循环件不删。
+  evidence:
+  - kind: guide
+    ref: game8 NIAマスター攻略
+    url: https://game8.jp/gakuen-idolmaster/688368
+    date: '2026-11-17'
+  - kind: ranking
+    mode: nia
+    n: 2200
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-aggressive.formation.memory.core
+  kind: written
+  scope:
+    mode: nia
+    style: aggressive
+  decision: formation.memory
+  content:
+    prefer:
+    - id: p_card-02-act-1_037
+      weight: 90
+    - id: p_card-02-men-3_002
+      weight: 85
+    - id: p_card-02-act-3_039
+      weight: 80
+    - id: p_card-02-act-3_186
+      weight: 75
+    why: 回忆带循环件和核心卡，培育中就不用碰运气。排行榜上 22 张やる気偶像卡平均下来，回忆里最常带的是 私がスター 67%、デイドリーミング 55%、届いて！ 36%、ゆめみごこち 36%。
+  evidence:
+  - kind: ranking
+    mode: nia
+    n: 2200
+    fetched: '2026-11-18'
+  - kind: guide
+    ref: game8 NIAマスター攻略
+    url: https://game8.jp/gakuen-idolmaster/688368
+    date: '2026-11-17'
+  updated: '2026-11-20'
+  by: bench
+- id: nia.style-aggressive.card_upgrade.core
+  kind: written
+  scope:
+    mode: nia
+    style: aggressive
+  decision: card_upgrade
+  content:
+    prefer:
+    - id: p_card-02-men-2_008
+      upgrade: 1
+    - id: p_card-02-men-2_056
+      upgrade: 1
+    - id: p_card-02-men-2_100
+      upgrade: 1
+    - id: p_card-02-act-3_045
+      upgrade: 1
+    why: 强化先给反复要打、每回合都用得到的卡。这几张是排行榜上这个流派强化比例最高的。
+  evidence:
+  - kind: ranking
+    mode: nia
+    n: 2200
+    fetched: '2026-11-18'
+  updated: '2026-11-20'
+  by: bench

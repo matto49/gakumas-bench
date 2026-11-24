@@ -305,13 +305,14 @@ export function ModeEntries({ sets, board }: { sets: SetInfo[] | null; board: Ti
 }
 
 const TOOLS = [
+  { to: '/assist', title: '出牌助手', body: '配好 H.I.F 编成，边打边看 AI 建议怎么出；也能自己练一场' },
   { to: '/sets', title: '出牌算法排行', body: '各种出牌算法打同一批实机开局的考试，比分数和每步用时' },
   { to: '/exams', title: '考试题库', body: '收集来的考试开局，每一局都能逐步回放' },
 ] as const
 
 export function ToolTiles() {
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
+    <ul className="grid gap-3 sm:grid-cols-3">
       {TOOLS.map((d) => (
         <li key={d.to}>
           <Link to={d.to} className="group block h-full rounded-xl border border-line bg-surface p-3.5 hover:border-line-strong">

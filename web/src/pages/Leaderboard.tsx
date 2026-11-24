@@ -12,6 +12,7 @@ import { OLD_SETS, setBlurbOf, setTitleOf, sortSets } from '../lib/sets'
 import { Select } from '../components/Select'
 import { Badge } from '@/components/ui/badge'
 import { useRowLink, Code, cx, Empty, SectionTitle, ErrorState, Grade, Help, IdolThumb, ModeBadge, PageHeader, RankNum, RatioText, TableSkeleton, Tip } from '../components/ui'
+import { BenchTabs } from '../components/BenchTabs'
 
 type SortKey = 'oracle' | 'base' | 'mean' | 'p50' | 'n' | 'label'
 
@@ -161,6 +162,7 @@ export function Leaderboard() {
 
   return (
     <div>
+      <BenchTabs />
       <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="题集">
         {sortSets(sets.data ?? []).filter((s) => s.status !== 'community' || s.set === set).map((s) => (
           <Link

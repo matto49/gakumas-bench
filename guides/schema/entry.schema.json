@@ -1,0 +1,334 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://gakumas.wiki/guides/entry.schema.json",
+ "title": "gkbench 偶像卡攻略条目（schema 1）",
+ "description": "docs/guides.md 的机器版。人写条目文件是这种条目的列表。",
+ "type": "object",
+ "required": [
+  "id",
+  "kind",
+  "scope",
+  "decision",
+  "content",
+  "evidence"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "description": "全局唯一、稳定：<文件路径去掉 guides/entries/ 和扩展名，/ 换成 .>.<decision>.<短名>"
+  },
+  "kind": {
+   "enum": [
+    "written",
+    "stat"
+   ]
+  },
+  "scope": {
+   "$ref": "#/$defs/scope"
+  },
+  "decision": {
+   "$ref": "#/$defs/decision"
+  },
+  "content": {
+   "type": "object",
+   "properties": {
+    "prefer": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/item"
+     },
+     "description": "推荐，有序。注意 card_remove 里 prefer = 保护不删的卡"
+    },
+    "avoid": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/item"
+     },
+     "description": "不推荐 / 冲突。注意 card_remove 里 avoid = 先删的卡（语义和其它决策点相反）"
+    },
+    "targets": {
+     "type": "object",
+     "description": "只有 params_target：{vo, da, vi} 或 {ratio: [vo, da, vi]}"
+    },
+    "why": {
+     "type": "string"
+    },
+    "fallback": {
+     "type": "string"
+    },
+    "unless": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "when": {
+       "$ref": "#/$defs/predicate"
+      },
+      "text": {
+       "type": "string"
+      }
+     },
+     "description": "when 成立就跳过这条；只有 text 或 when 判不了时条目照用，text 带进理由"
+    }
+   }
+  },
+  "evidence": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "$ref": "#/$defs/evidence"
+   }
+  },
+  "updated": {
+   "type": "string"
+  },
+  "by": {
+   "type": "string"
+  }
+ },
+ "$defs": {
+  "decision": {
+   "enum": [
+    "formation.main_attr",
+    "formation.support",
+    "formation.memory",
+    "formation.pitem",
+    "action",
+    "card_pick",
+    "card_remove",
+    "card_upgrade",
+    "drink",
+    "params_target",
+    "exam_style"
+   ],
+   "description": "card_remove：avoid = 先删的、prefer = 保护不删的"
+  },
+  "item": {
+   "description": "字符串（只写 ID）或对象。ID：技能卡 p_card-（不带强化）、支援卡 s_card-、P 道具 pitem_、饮料 pdrink_、偶像卡 i_card-（不带 skin）；行动、属性 vo/da/vi、卡类 class:basic / trouble / off_plan / other_buff / genki_cash",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "object",
+     "required": [
+      "id"
+     ],
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "type": "string"
+      },
+      "role": {
+       "type": "string",
+       "description": "作用标签（docs/guides.md 第 3 节），好印象新加 impression、impression_cash"
+      },
+      "weight": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 100,
+       "description": "必拿 100、S 90、A 75、B 60"
+      },
+      "keep": {
+       "type": "integer",
+       "minimum": 0,
+       "description": "同名最多留几张"
+      },
+      "min_limit": {
+       "type": "integer",
+       "minimum": 0,
+       "maximum": 4,
+       "description": "支援卡最低凸数，4 = 满凸"
+      },
+      "min_level": {
+       "type": "integer",
+       "minimum": 1
+      },
+      "custom": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "定制键"
+      },
+      "levels": {
+       "type": "integer",
+       "minimum": 1,
+       "description": "定制目标级数"
+      },
+      "full": {
+       "type": "boolean",
+       "description": "是否必须做满"
+      },
+      "upgrade": {
+       "type": "integer",
+       "minimum": 0,
+       "maximum": 1
+      },
+      "attr": {
+       "enum": [
+        "vo",
+        "da",
+        "vi"
+       ]
+      },
+      "note": {
+       "type": "string"
+      },
+      "stat": {
+       "type": "object",
+       "description": "统计数字，只有统计条目有"
+      }
+     }
+    }
+   ]
+  },
+  "scope": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "mode": {
+     "enum": [
+      "hajime",
+      "nia",
+      "hif",
+      "idolroad"
+     ]
+    },
+    "difficulty": {
+     "enum": [
+      "legend",
+      "master",
+      "pro",
+      "regular"
+     ]
+    },
+    "plan": {
+     "enum": [
+      "sense",
+      "logic",
+      "anomaly"
+     ]
+    },
+    "style": {
+     "enum": [
+      "review",
+      "aggressive",
+      "parameter_buff",
+      "lesson_buff",
+      "concentration",
+      "full_power"
+     ],
+     "description": "和 IdolCard.examEffectType 一对一"
+    },
+    "idol_card": {
+     "type": "string",
+     "pattern": "^i_card-"
+    },
+    "layer": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 27
+    },
+    "pool": {
+     "type": "object",
+     "properties": {
+      "requires": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/item"
+       }
+      }
+     }
+    }
+   }
+  },
+  "evidence": {
+   "type": "object",
+   "required": [
+    "kind"
+   ],
+   "properties": {
+    "kind": {
+     "enum": [
+      "guide",
+      "decision",
+      "ranking",
+      "live"
+     ],
+     "description": "依据级别 guide = decision > ranking > live"
+    },
+    "ref": {
+     "type": "string"
+    },
+    "url": {
+     "type": "string"
+    },
+    "date": {
+     "type": "string"
+    },
+    "mode": {
+     "enum": [
+      "hajime",
+      "nia",
+      "hif",
+      "idolroad"
+     ]
+    },
+    "n": {
+     "type": "integer"
+    },
+    "share": {
+     "type": "number"
+    },
+    "fetched": {
+     "type": "string"
+    },
+    "low_sample": {
+     "type": "boolean"
+    },
+    "season": {
+     "type": "string"
+    },
+    "layer": {
+     "type": "integer"
+    },
+    "result": {
+     "type": "string"
+    }
+   }
+  },
+  "predicate": {
+   "type": "object",
+   "minProperties": 1,
+   "maxProperties": 1,
+   "properties": {
+    "all": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/predicate"
+     }
+    },
+    "any": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/predicate"
+     }
+    },
+    "not": {
+     "$ref": "#/$defs/predicate"
+    },
+    "deck_count": {},
+    "deck_has_all": {},
+    "deck_has_any": {},
+    "deck_size_gte": {},
+    "deck_size_lte": {},
+    "has_pitem": {},
+    "next_exam": {},
+    "p_point_lt": {},
+    "stamina_lt": {},
+    "week_gte": {}
+   },
+   "additionalProperties": false
+  }
+ }
+}

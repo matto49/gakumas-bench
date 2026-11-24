@@ -1,0 +1,63 @@
+# N.I.A · 偶像卡层 i_card-amao-3-000（Mac 账号 2 有这张卡）
+
+- id: nia.idol.i_card-amao-3-000.formation.main_attr.vo
+  kind: written
+  scope:
+    mode: nia
+    idol_card: i_card-amao-3-000
+  decision: formation.main_attr
+  content:
+    prefer:
+    - vo
+    why: N.I.A MASTER 排行榜上，这张卡终局 98% 是 Vo 最高。支援卡按这个主属性编。
+  evidence:
+  - kind: ranking
+    mode: nia
+    n: 100
+    fetched: '2026-11-18'
+    share: 0.98
+  updated: '2026-11-20'
+  by: bench
+- id: nia.idol.i_card-amao-3-000.card_upgrade.signature
+  kind: written
+  scope:
+    mode: nia
+    idol_card: i_card-amao-3-000
+  decision: card_upgrade
+  content:
+    prefer:
+    - id: p_card-01-ido-3_016
+      upgrade: 1
+      role: idol
+      note: 盛装の華形：好調状态下涨分更多；可定制成「好調效果两倍、集中效果三倍」或「使用数 +1」
+    why: 固有卡排行榜上 97% 强化过。定制方向攻略没给结论，先只强化。
+  evidence:
+  - kind: guide
+    ref: game8 Fluorite
+    url: https://game8.jp/gakuen-idolmaster/609651
+    date: '2026-11-20'
+  - kind: ranking
+    mode: nia
+    n: 100
+    fetched: '2026-11-18'
+    share: 0.97
+  updated: '2026-11-20'
+  by: bench
+- id: nia.idol.i_card-amao-3-000.exam_style.signature
+  kind: written
+  scope:
+    mode: nia
+    idol_card: i_card-amao-3-000
+  decision: exam_style
+  content:
+    prefer:
+    - id: p_card-01-ido-3_016
+      role: idol
+    why: 固有道具内なる光の耳飾り：回合开始时处于好調就给集中 +2、元気 +1（每节课两次）。所以开局先进好調，好調不要断，这两次集中才能拿满。
+  evidence:
+  - kind: guide
+    ref: game8 Fluorite
+    url: https://game8.jp/gakuen-idolmaster/609651
+    date: '2026-11-20'
+  updated: '2026-11-20'
+  by: bench

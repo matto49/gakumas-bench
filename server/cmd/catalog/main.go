@@ -229,9 +229,21 @@ func (t growTables) level(r row) string {
 	return label + "：" + body
 }
 
+// CardLevel：一档强化的名字、效果文字和体力消耗。体力消耗（stamina：先扣元气；force_stamina：直接扣体力）不在效果文字里，
+// 不少卡强化只改它（如「鮮やかに咲く花」+ 把体力消耗 5 改成 2），单独写出来。主数据里没有这个字段 = 0 或这张卡用别的消耗（集中消費等，写在效果文字里）
 type CardLevel struct {
-	Name string `json:"name"`
-	Text string `json:"text"`
+	Name         string `json:"name"`
+	Text         string `json:"text"`
+	Stamina      *int   `json:"stamina,omitempty"`
+	ForceStamina *int   `json:"force_stamina,omitempty"`
+}
+
+func optInt(r row, k string) *int {
+	if v, ok := r[k].(float64); ok {
+		n := int(v)
+		return &n
+	}
+	return nil
 }
 
 type Thing struct {
@@ -413,7 +425,7 @@ func buildDoc(rd func(string) []row, tx texts, sprite func(string) string) (map[
 		if c.Asset == "" {
 			c.Asset = sprite(str(r, "assetId"))
 		}
-		c.Up[u] = CardLevel{Name: str(r, "name"), Text: describe(r)}
+		c.Up[u] = CardLevel{Name: str(r, "name"), Text: describe(r), Stamina: optInt(r, "stamina"), ForceStamina: optInt(r, "forceStamina")}
 		if v, ok := r["unlockProducerLevel"].(float64); ok && u == 0 {
 			c.Unlock = int(v)
 		}

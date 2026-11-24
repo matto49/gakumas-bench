@@ -1,0 +1,45 @@
+# N.I.A · 偶像卡层：【世界一可愛い私】藤田ことね（ロジック · 好印象）。Mac 账号 2 有这张卡。
+
+- id: nia.idol.i_card-fktn-3-000.formation.main_attr.da
+  kind: written
+  scope: {mode: nia, idol_card: i_card-fktn-3-000}
+  decision: formation.main_attr
+  content:
+    prefer: [da]
+    why: N.I.A MASTER 排行榜上，这张卡终局 98% 是 Da 最高，Vi 第二。支援卡按主 Da 编。
+  evidence:
+    - {kind: ranking, mode: nia, n: 100, fetched: 2026-11-18, share: 0.98}
+  updated: 2026-11-20
+  by: bench
+
+- id: nia.idol.i_card-fktn-3-000.card_upgrade.signature
+  kind: written
+  scope: {mode: nia, idol_card: i_card-fktn-3-000}
+  decision: card_upgrade
+  content:
+    prefer:
+      - {id: p_card-02-ido-3_015, upgrade: 1, role: idol, note: 强化后好印象 +7 → +9}
+    why: >-
+      固有卡よそ見はダメ♪是开局攒好印象的主力，排行榜上 99% 强化过。
+      它能定制成「好印象强化 +50%（5 回合）」或「使用数 +1」，攻略和排行榜都没给出哪个更好，先只强化。
+  evidence:
+    - {kind: guide, ref: game8 世界一可愛い私, url: "https://game8.jp/gakuen-idolmaster/609650", date: 2026-11-20}
+    - {kind: ranking, mode: nia, n: 100, fetched: 2026-11-18, share: 0.99}
+  updated: 2026-11-20
+  by: bench
+
+- id: nia.idol.i_card-fktn-3-000.exam_style.piggy-bank
+  kind: written
+  scope: {mode: nia, idol_card: i_card-fktn-3-000}
+  decision: exam_style
+  content:
+    prefer:
+      - {id: p_card-02-ido-3_015, role: idol, note: 早打，把好印象拉到 6 以上}
+    why: >-
+      固有道具ピッグドリーム貯金箱：打完一张卡时好印象 ≥6，就再给好印象 +3 和使用数 +1（每节课一次）。
+      所以考试开局先打よそ見はダメ♪（好印象 +7）把好印象拉过 6，后面那张卡就能多打一张。
+      评价里也有人提到：好印象卡没凑齐、P 等级不高时这张卡很难出分。
+  evidence:
+    - {kind: guide, ref: game8 世界一可愛い私, url: "https://game8.jp/gakuen-idolmaster/609650", date: 2026-11-20}
+  updated: 2026-11-20
+  by: bench

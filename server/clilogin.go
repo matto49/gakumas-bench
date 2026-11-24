@@ -87,7 +87,7 @@ func (a *App) handleCLILoginStart(w http.ResponseWriter, r *http.Request) {
 		l.Code = cliCode()
 	}
 	cliLogins[l.Code] = l
-	base := strings.TrimRight(env("GKBENCH_PUBLIC_URL", "https://hiro.matto.top/gkbench"), "/")
+	base := strings.TrimRight(env("GKBENCH_PUBLIC_URL", "https://gakumas.wiki"), "/")
 	writeJSONResp(w, 200, map[string]any{"code": l.Code, "device": l.Device, "url": base + "/cli-login?code=" + l.Code,
 		"expires_in": int(cliLoginTTL.Seconds()), "interval": 2})
 }

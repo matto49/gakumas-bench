@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, CircleAlert, Copy, KeyRound, Loader2, LogOut, Trash2 } from 'lucide-react'
+import { CheckCircle2, ChevronDown, CircleAlert, Copy, KeyRound, Loader2, LogOut, Trash2 } from 'lucide-react'
 import { runDisplay, type RunDisplayCatalog } from '../lib/runDisplay'
 import { api, ApiError, BASE, type Job } from '../lib/api'
 import { useApi } from '../lib/hooks'
@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { useRowLink, btn, Code, CodeBlock, cx, Empty, ErrorState, ModeBadge, PageHeader, SectionTitle, TableSkeleton } from '../components/ui'
+import { HomeBackdrop } from '../components/HomeBackdrop'
+import { useRowLink, Code, GithubMark, CodeBlock, cx, Empty, ErrorState, ModeBadge, PageHeader, SectionTitle, TableSkeleton } from '../components/ui'
 
 type MyRun = { run: string; by?: string; label: string; set: string; kind?: string; mode?: string; uploaded?: string; finished?: string; started?: string; episodes?: number; verified?: { accepted: number; rejected?: number }; privileged?: boolean }
 
@@ -28,43 +29,97 @@ export function Me() {
   return <Dashboard me={me.data!} />
 }
 
-const GithubMark = () => (
-  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden fill="currentColor">
-    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-  </svg>
-)
+/** 登录以后能做的事（登录页左栏），每条前面一道 Vo / Da / Vi 色的小斜杠 */
+const PERKS: [string, string][] = [
+  ['bg-vo', '把实战开局传到自己的試験集合，服务器核对后入库'],
+  ['bg-da', '交出牌算法的成绩，在算法排行上署名'],
+  ['bg-vi', '生成命令行令牌，本地跑分、托管评测'],
+]
 
-/** 登录表单。next：GitHub 登录回来后落到哪一页（站内路径） */
-export function Login({ onDone, next = '/me' }: { onDone: () => void; next?: string }) {
+/** 站名字标：三道斜杠 + 「初星攻略站」（字体和配色同进站动画，见 index.css 的 .wordmark） */
+function Wordmark({ small }: { small?: boolean }) {
+  return (
+    <div className={cx('flex items-center', small ? 'gap-2.5' : 'gap-3.5')} aria-label="初星攻略站">
+      <span className={cx('flex items-end', small ? 'h-7 gap-[3px]' : 'h-10 gap-1')} aria-hidden>
+        <i className={cx('block -skew-x-[16deg] rounded-[3px] bg-vo', small ? 'h-[22px] w-[6px]' : 'h-8 w-2')} />
+        <i className={cx('block -skew-x-[16deg] rounded-[3px] bg-da', small ? 'h-7 w-[6px]' : 'h-10 w-2')} />
+        <i className={cx('block -skew-x-[16deg] rounded-[3px] bg-vi', small ? 'h-5 w-[6px]' : 'h-7 w-2')} />
+      </span>
+      <span className={cx('wordmark', small ? 'text-[24px]' : 'text-[34px]')} aria-hidden>
+        <b className="text-vo">初</b><b className="text-da">星</b><b className="text-vi">攻</b><b>略</b><b>站</b>
+      </span>
+    </div>
+  )
+}
+
+/** 登录。单独打开（/me 没登录）时是暖白网点底上的一张卡：左边站名和登录后能做什么，右边表单；
+ * embedded（命令行授权页里嵌着用）只出表单。next：GitHub 登录回来后落到哪一页（站内路径） */
+export function Login({ onDone, next = '/me', embedded }: { onDone: () => void; next?: string; embedded?: boolean }) {
   const auth = useApi<{ github: boolean }>('api/auth')
   const [err, setErr] = useState(() => new URLSearchParams(location.search).get('login_error') ?? '')
-  return (
-    <div className="max-w-[440px] py-6">
-      <PageHeader title="登录" sub="看排行和复盘不用登录。交成绩、托管跑要登录。" />
-      {err && <p className="mb-4 rounded-lg bg-surface-2 px-3 py-2 text-critical">{err}</p>}
+  const form = (
+    <div>
+      {err && (
+        <p className="mb-4 flex items-start gap-2 rounded-lg bg-[color-mix(in_oklch,var(--color-critical)_8%,var(--color-surface))] px-3 py-2.5 text-[13px] text-critical">
+          <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden />{err}
+        </p>
+      )}
       {auth.data?.github !== false && (
         <>
-          <a href={`${BASE}api/auth/github?next=${encodeURIComponent(next)}`} className={cx(btn.primary, 'h-10 w-full')}>
+          <a
+            href={`${BASE}api/auth/github?next=${encodeURIComponent(next)}`}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink text-[14.5px] font-semibold text-surface shadow-[0_2px_0_oklch(0.08_0.005_60)] transition-colors hover:bg-[oklch(0.3_0.005_60)] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:translate-y-px"
+          >
             <GithubMark /> 用 GitHub 登录
           </a>
-          <p className="mt-2 text-[12.5px] text-ink-3">推荐。第一次登录自动建账号，用户名取 GitHub 名，只读公开信息。</p>
+          <p className="mt-2 text-center text-[12.5px] text-ink-3">推荐：第一次登录自动建账号，只读公开信息</p>
           <div className="my-6 flex items-center gap-3 text-[12px] text-ink-3">
-            <span className="h-px flex-1 bg-line" />或者用用户名<span className="h-px flex-1 bg-line" />
+            <span className="h-px flex-1 bg-line" />或者用户名和密码<span className="h-px flex-1 bg-line" />
           </div>
         </>
       )}
       <Tabs defaultValue="login">
-        <TabsList className="mb-4 w-full">
+        <TabsList className="mb-5 w-full">
           <TabsTrigger value="login">登录</TabsTrigger>
           <TabsTrigger value="register">注册</TabsTrigger>
         </TabsList>
         <TabsContent value="login"><PasswordAuth mode="login" onDone={onDone} onError={setErr} /></TabsContent>
         <TabsContent value="register"><PasswordAuth mode="register" onDone={onDone} onError={setErr} /></TabsContent>
       </Tabs>
-      <details className="mt-6">
-        <summary className="cursor-pointer text-[13px] text-ink-2 hover:text-brand-ink">已经有命令行令牌？粘贴登录</summary>
+      <details className="group mt-6 border-t border-line pt-4">
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[13px] text-ink-2 hover:text-brand-ink [&::-webkit-details-marker]:hidden">
+          <KeyRound size={14} className="text-ink-3" aria-hidden />已经有命令行令牌？粘贴登录
+          <ChevronDown size={14} className="ml-auto text-ink-3 transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
         <TokenLogin onDone={onDone} />
       </details>
+    </div>
+  )
+  if (embedded) return <div className="max-w-[420px] py-2">{form}</div>
+
+  return (
+    <div className="relative isolate -mt-7 -mb-16 flex min-h-[calc(100dvh-3.25rem)] items-start justify-center py-6 md:items-center md:py-16">
+      <HomeBackdrop />
+      <div className="grid w-full max-w-[880px] overflow-hidden rounded-2xl bg-surface shadow-[0_1px_0_rgba(0,0,0,.04),0_24px_50px_-24px_rgba(20,16,30,.35)] md:grid-cols-[1fr_1.08fr]">
+        <section className="flex flex-col border-b border-line bg-surface-2 px-6 py-7 md:border-r md:border-b-0 md:px-9 md:py-10">
+          <p className="disp text-[13px] font-semibold tracking-[0.2em] text-ink-3">HATSUBOSHI GUIDE</p>
+          <div className="mt-2 md:mt-3"><span className="md:hidden"><Wordmark small /></span><span className="hidden md:block"><Wordmark /></span></div>
+          <h1 className="mt-5 text-[20px] font-bold tracking-tight text-ink md:mt-8">登录</h1>
+          <p className="mt-1 text-[13.5px] leading-relaxed text-ink-2">
+            看强度榜、资料、算法排行都不用登录。<span className="hidden md:inline">登录以后可以：</span>
+            <span className="md:hidden">登录以后可以传考试开局、交算法成绩、生成命令行令牌。</span>
+          </p>
+          <ul className="mt-4 hidden space-y-3 md:block">
+            {PERKS.map(([c, t]) => (
+              <li key={t} className="flex items-start gap-3 text-[13.5px] leading-snug text-ink">
+                <span className={cx('mt-[3px] h-3.5 w-1 shrink-0 -skew-x-[16deg] rounded-[1px]', c)} aria-hidden />{t}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-auto hidden pt-10 text-[12px] text-ink-3 md:block">用 GitHub 登录不申请任何权限，只记 GitHub 用户名、昵称和头像。</p>
+        </section>
+        <section className="px-6 py-7 md:px-9 md:py-10">{form}</section>
+      </div>
     </div>
   )
 }
@@ -72,7 +127,7 @@ export function Login({ onDone, next = '/me' }: { onDone: () => void; next?: str
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[13px] font-medium text-ink">{label}</span>
+      <span className="mb-1.5 block text-[13px] font-medium text-ink">{label}</span>
       {children}
       {hint && <span className="mt-1 block text-[12px] text-ink-3">{hint}</span>}
     </label>
@@ -103,7 +158,7 @@ function PasswordAuth({ mode, onDone, onError }: { mode: 'login' | 'register'; o
     }
   }
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={submit} className="space-y-4">
       <Field label="用户名" hint={reg ? '3–24 位，小写字母、数字、_ 和 -。会显示在排行上。' : undefined}>
         <Input value={user} onChange={(e) => setUser(e.target.value)} autoComplete="username" className="h-10" required />
       </Field>
@@ -116,7 +171,7 @@ function PasswordAuth({ mode, onDone, onError }: { mode: 'login' | 'register'; o
         </Field>
       )}
       {msg && <p className="text-[13px] text-critical">{msg}</p>}
-      <Button type="submit" className="h-10 w-full" disabled={busy || !user.trim() || !pw}>
+      <Button type="submit" className="mt-1 h-11 w-full text-[14.5px] disabled:bg-surface-3 disabled:text-ink-3 disabled:opacity-100" disabled={busy || !user.trim() || !pw}>
         {busy && <Loader2 size={15} className="animate-spin" aria-hidden />}{reg ? '注册并登录' : '登录'}
       </Button>
       {reg && <p className="text-[12px] text-ink-3">没有邮箱，忘了密码找不回。想省心就用上面的 GitHub 登录。</p>}
@@ -362,7 +417,7 @@ function CliTokens() {
       )}
       <CodeBlock>{`pip install "gkbench @ git+https://github.com/matto49/gakumas-bench"
 python -m gkbench eval --set hif --algo my_algo.py:MyAlgo --parallel 3`}</CodeBlock>
-      <p className="mt-2 text-[12.5px] text-ink-3">服务器默认 https://hiro.matto.top/gkbench，用 <Code>GKBENCH_SERVER</Code> 改。</p>
+      <p className="mt-2 text-[12.5px] text-ink-3">服务器默认 https://gakumas.wiki，用 <Code>GKBENCH_SERVER</Code> 改。</p>
     </section>
   )
 }

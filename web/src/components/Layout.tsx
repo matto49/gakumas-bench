@@ -3,15 +3,17 @@ import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import { UserRound } from 'lucide-react'
 import { useApi } from '../lib/hooks'
 import { useLang } from '../lib/catalog'
-import { cx } from './ui'
+import { cx, GithubMark } from './ui'
 import { BootSplash } from './BootSplash'
 
 const nav = [
   { to: '/', label: '首页', end: true, wide: true }, // 小屏上藏起来，点 logo 回首页
   { to: '/tiers', label: '角色强度榜' },
   { to: '/usage', label: '配置强度榜' },
-  { to: '/exams', label: '試験集合' },
-  { to: '/sets', label: '算法排行' },
+  { to: '/guide', label: '偶像卡攻略' },
+  { to: '/assist', label: '出牌助手' },
+  // 算法排行和試験集合并成一项（2026-11-20）：这几条路径下都算在「算法排行」里，页内再用 BenchTabs 切换
+  { to: '/sets', label: '算法排行', also: ['/exams', '/runs', '/compare'] },
   { to: '/gallery', label: '图鉴' },
   { to: '/cards', label: '游戏资源一览' },
   // 「对比」不放导航：从复盘页的「和别的算法对比」进（/compare 路由还在）
@@ -88,6 +90,7 @@ export function Layout() {
     return () => window.removeEventListener('gkb-auth', f)
   }, [me.reload])
   const { home, onArt } = useOnArt()
+  const { pathname } = useLocation()
   return (
     <div className="flex min-h-dvh flex-col overflow-x-clip">
       <BootSplash />
@@ -106,13 +109,23 @@ export function Layout() {
             </Link>
             <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1">
               {nav.map((n) => (
-                <NavLink key={n.to} to={n.to} end={n.end} className={(s) => cx(pill(onArt)(s), 'wide' in n && 'max-sm:hidden')}>
+                <NavLink key={n.to} to={n.to} end={n.end} className={(s) => cx(pill(onArt)({ isActive: s.isActive || !!n.also?.some((p) => pathname.startsWith(p)) }), 'wide' in n && 'max-sm:hidden')}>
                   {n.label}
                 </NavLink>
               ))}
             </nav>
             <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
               <LangSwitch onArt={onArt} />
+              <a
+                href="https://github.com/matto49/gakumas-bench"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="源代码（GitHub）"
+                title="源代码（GitHub）"
+                className={cx(pill(onArt)({ isActive: false }), 'inline-flex items-center px-2 sm:px-2')}
+              >
+                <GithubMark size={17} />
+              </a>
               <NavLink to="/me" aria-label={me.data?.user ?? '登录'} className={(s) => cx(pill(onArt)(s), 'inline-flex items-center gap-1.5')}>
                 {me.data?.avatar ? <img src={me.data.avatar} alt="" width={18} height={18} className="size-[18px] rounded-full" /> : <UserRound size={14} aria-hidden />}
                 <span className="hidden sm:inline">{me.data?.user ?? '登录'}</span>
@@ -132,6 +145,7 @@ export function Layout() {
           <span>
             中文卡名和效果：<a href="https://github.com/imas-tools/gakumas-master-translation" className="hover:text-brand-ink">学マス汉化插件的翻译数据</a>
           </span>
+          <span>友链：<a href="https://idol-master.top/" target="_blank" rel="noopener" className="hover:text-brand-ink">IMSWeb 偶像大师交流站</a></span>
           <span>卡面、图标等游戏素材归各自权利人所有，这里只作研究用。</span>
         </div>
       </footer>

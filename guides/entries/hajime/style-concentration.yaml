@@ -1,0 +1,150 @@
+# 初 · 強気流派层（11-20 按好印象样板铺开；scripts 在 gakumas-bench-data/guide-sources/gen_styles_20261120.py）
+
+- id: hajime.style-concentration.card_pick.stack
+  kind: written
+  scope:
+    mode: hajime
+    style: concentration
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-03-men-2_112
+      role: stance
+      weight: 85
+    - id: p_card-03-men-2_074
+      role: stance
+      weight: 85
+    - id: p_card-03-men-1_050
+      role: loop
+      weight: 90
+    - id: p_card-03-men-2_066
+      role: stance
+      weight: 65
+      note: P 等级低时的替代
+    - id: p_card-03-men-3_058
+      role: grow
+      weight: 80
+      note: 成长：强化手里的主动卡
+    - id: p_card-03-men-3_061
+      role: grow
+      weight: 75
+    - id: p_card-03-men-2_076
+      role: grow
+      weight: 65
+    why: 強気流派先进「温存」再转「強気」：温存解除时给「熱意」和使用数 +1，那一回合能连打几张。考试前几回合用フルスロットル、タフネス、巻き返し这类卡进温存；手里有成长卡（アイドルになります、一心不乱）时顺手把主动卡强化。
+  evidence:
+  - kind: guide
+    ref: game8 アノマリーのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/654063
+    date: '2026-11-20'
+  - kind: ranking
+    mode: hajime
+    n: 1700
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-concentration.card_pick.cash
+  kind: written
+  scope:
+    mode: hajime
+    style: concentration
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-03-act-2_102
+      role: finisher
+      weight: 85
+    - id: p_card-03-act-3_188
+      role: finisher
+      weight: 85
+    - id: p_card-03-act-3_056
+      role: finisher
+      weight: 75
+    - id: p_card-03-act-3_055
+      role: finisher
+      weight: 75
+    - id: p_card-03-act-3_054
+      role: finisher
+      weight: 70
+    why: 转入強気的回合用強気主动卡（オーバードライブ、エンターテイナー等）一口气出分。属性低的回合温存，属性高的回合转強気，两步反复。
+  evidence:
+  - kind: guide
+    ref: game8 アノマリーのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/654063
+    date: '2026-11-20'
+  - kind: ranking
+    mode: hajime
+    n: 1700
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-concentration.card_remove.basics
+  kind: written
+  scope:
+    mode: hajime
+    style: concentration
+  decision: card_remove
+  content:
+    avoid:
+    - class:basic
+    - class:other_buff
+    why: 相談里花 P 点删掉没用的卡，强卡更常进手牌。初的排行榜里基本卡大多留着，删得最多的是ウォームアップの基本、魅せ方の基本（排行榜留存 83%）；同プラン里主打另一种 buff 的卡对这个流派没用。
+  evidence:
+  - kind: guide
+    ref: game8 難易度プロの攻略
+    url: https://game8.jp/gakuen-idolmaster/610357
+    date: '2026-11-17'
+  - kind: ranking
+    mode: hajime
+    n: 1700
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-concentration.formation.memory.core
+  kind: written
+  scope:
+    mode: hajime
+    style: concentration
+  decision: formation.memory
+  content:
+    prefer:
+    - id: p_card-03-men-1_050
+      weight: 90
+    - id: p_card-03-act-3_065
+      weight: 85
+    - id: p_card-03-act-3_188
+      weight: 80
+    - id: p_card-03-men-3_058
+      weight: 75
+    why: 回忆带循环件和核心卡，培育中就不用碰运气。排行榜上 17 张強気偶像卡平均下来，回忆里最常带的是 巻き返し 70%、全身全霊 51%、エンターテイナー 50%、アイドルになります 45%。
+  evidence:
+  - kind: ranking
+    mode: hajime
+    n: 1700
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-concentration.card_upgrade.core
+  kind: written
+  scope:
+    mode: hajime
+    style: concentration
+  decision: card_upgrade
+  content:
+    prefer:
+    - id: p_card-03-men-2_074
+      upgrade: 1
+    - id: p_card-03-men-1_050
+      upgrade: 1
+    - id: p_card-03-men-2_080
+      upgrade: 1
+    - id: p_card-03-men-2_066
+      upgrade: 1
+    why: 强化先给反复要打、每回合都用得到的卡。这几张是排行榜上这个流派强化比例最高的。
+  evidence:
+  - kind: ranking
+    mode: hajime
+    n: 1700
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench

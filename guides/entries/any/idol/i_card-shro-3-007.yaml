@@ -1,0 +1,203 @@
+# 不分模式 · 偶像卡层：【Campus mode!!】篠澤広（ロジック · やる気）。数字小广的手写知识，3940a9 11-20 迁成条目。
+# 数字小广里只有开了 HIRO_GUIDES_HIRO（默认关）广才会用到；网页照常显示。
+
+- id: any.idol.i_card-shro-3-007.card_pick.yaruki-cards
+  kind: written
+  scope:
+    idol_card: i_card-shro-3-007
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-02-act-3_186
+      weight: 100
+      role: delayed
+      keep: 2
+      note: せのびの魔法：倒数第4–5回合用特製ハツボシエキス复制；定制优先元气；第二张也要（R2 +4.3 万 ± 1.6 万，决策-17 §3；不清零元気，两张能叠）
+    - id: p_card-02-act-3_039
+      weight: 100
+      role: finisher
+      note: 届いて！：最后一回合打；定制优先火力，不必复制
+    - id: p_card-02-act-1_037
+      weight: 100
+      role: sustained
+      note: デイドリーミング：本战持续得分核心（决策-07；夺冠局两层覆盖第 9–12 回合）；倒数第4回合用最强，与せのび 抢时机时优先せのび
+    - id: p_card-02-act-2_062
+      weight: 90
+      role: loop
+      keep: 1
+      note: きらきら紙吹雪：末段连打+抽牌，帮最后一回合抽到届いて！
+    - id: p_card-02-men-3_002
+      weight: 90
+      role: extend
+      note: 私がスター：追加 1 回合；道中容易拿到
+    - id: p_card-00-men-3_003
+      weight: 90
+      role: compress
+      note: アイドル魂：防ハツボシエキス 的体力消耗增加；共通卡，不易拿到
+    - id: p_card-00-men-3_005
+      weight: 90
+      role: compress
+      note: 仕切り直し：抽牌+使用数，压缩牌组；共通卡，不易拿到
+    - id: p_card-00-men-2_012
+      weight: 90
+      role: compress
+      note: アイドル宣言：抽牌+使用数，压缩牌组；共通卡，不易拿到
+    - id: p_card-02-men-2_004
+      weight: 75
+      role: motivation
+      note: ワクワクが止まらない：开局入手定制非常强
+    - id: p_card-02-men-2_111
+      weight: 75
+      role: motivation
+      keep: 1
+      note: 成長痛：强但会生成眠気；末段循环里最多容忍 1 张眠気
+    - id: p_card-02-act-3_045
+      weight: 75
+      role: cash
+      note: あのときの約束：普通地强
+    - id: p_card-00-men-3_012
+      weight: 60
+      role: genki
+      note: テレビ出演：定制「使用数+1」后才强
+    - id: p_card-00-men-3_011
+      weight: 60
+      role: genki
+      note: 叶えたい夢：能攒元气
+    - id: p_card-02-men-2_057
+      role: loop
+      keep: 1
+      note: ゆめみごこち：末段循环，攒やる気 [game8]
+    - id: p_card-02-act-2_049
+      role: loop
+      note: みんな大好き：PLv 低、火力牌少时的末段循环卡 [game8]
+    - id: p_card-02-men-2_056
+      role: hp
+      note: 止められない想い：广专属高相性：扣体力且不占行动 [seesaa]
+    - id: p_card-02-men-2_052
+      role: hp
+      note: ひなたぼっこ：体力消耗大 [もりし]；广可用来强行压到半血 [seesaa]
+    - id: p_card-02-men-1_031
+      role: item
+      keep: 2
+      note: えいえいおー：广固有 P 道具的触发牌（エウレカ 靠它压血），第二张更稳；换卡 / 删卡保留 2 张（main8-r1 被换掉）；定制优先やる気+ [seesaa]
+    - id: p_card-02-act-1_071
+      role: cash
+      note: がむしゃら：不清零元气的兑现牌（第 2 局选拔② 末回合兑现）；第 4 局本战被 KAA 盲换掉，换卡保护名单要有它
+    - id: p_card-02-ido-3_105
+      role: idol
+      note: エウレカ！：Campus 広 固有卡：半血时按元气 40% 得分；删卡 / 换卡永远不动（决策-08）
+    - id: p_card-00-sup-3_093
+      role: compress
+      note: 紅葉ランニング：压缩效率高，やる気 推荐获得 [wiki]
+    avoid:
+    - id: p_card-00-men-2_014
+      role: conflict
+      note: ハイテンション：打出后 2 回合元気增加无效，与やる気 路线冲突（第 5 局本战多次当废牌，模拟器也因它无法预演）
+    - id: p_card-02-men-1_035
+      role: conflict
+      note: 幸せのおまじない（好印象）
+    - id: p_card-02-men-3_004
+      role: conflict
+      note: 星屑センセーション（好印象）
+    - id: p_card-02-act-3_050
+      role: conflict
+      note: 輝くキミへ（好印象）
+    - id: p_card-02-men-1_032
+      role: conflict
+      note: 思い出し笑い（好印象；第六局牌组里有 3 种强化度，协调 4a 判为冲突）
+    - id: p_card-02-men-1_009
+      role: conflict
+      note: 励まし（好印象 + やる気少量；第六局 LLM 判「好印象路线，不要」）
+    - id: p_card-02-men-2_060
+      role: conflict
+      note: オトメゴコロ（やる気消費3 换好印象；用户 q11 批注：不应该拿）
+    - id: p_card-02-men-3_040
+      role: conflict
+      note: 夢色リップ：好印象 15 以上时好印象 1.1 倍
+    why: やる気 Campus 広 的卡评级：必拿 / S / A 优先；可复用的只留循环和道具触发的核心卡（keep 张）；好印象系、元気增加无效的卡不拿
+  evidence:
+  - kind: decision
+    ref: 决策-17
+  - kind: decision
+    ref: 广手写知识（hiro.state.knowledge）
+  - kind: decision
+    ref: 决策-07
+  - kind: guide
+    ref: game8
+  - kind: guide
+    ref: seesaa
+  - kind: guide
+    ref: もりし
+  - kind: decision
+    ref: 决策-08
+  - kind: guide
+    ref: wiki
+  - kind: decision
+    ref: 协调 4a 判为冲突
+  updated: '2026-11-20'
+  by: 3940a9
+- id: any.idol.i_card-shro-3-007.card_upgrade.customize
+  kind: written
+  scope:
+    idol_card: i_card-shro-3-007
+  decision: card_upgrade
+  content:
+    prefer:
+    - id: p_card-02-men-1_031
+      custom:
+      - aggressive_add
+      levels: 3
+      full: true
+      note: えいえいおー：定制 やる気+，做满 3 级（只有满级才值：+19.3k）[seesaa][决策-11]
+    - id: p_card-02-act-3_039
+      custom:
+      - lesson_depend_block_add
+      levels: 1
+      full: false
+      note: 届いて！：火力定制（元気%）优先 [もりし][seesaa]
+    - id: p_card-02-act-2_062
+      custom:
+      - lesson_depend_block_add
+      levels: 2
+      full: false
+      note: きらきら紙吹雪：パラメータ+ 定制（110% → 130% → 170%）[もりし]
+    - id: p_card-02-act-1_037
+      custom:
+      - p_card-02-act-1_037-enc
+      levels: 2
+      full: false
+      note: デイドリーミング：持续效果定制（60% → 80%）；本战持续核心 [もりし]
+    - id: p_card-02-act-3_186
+      custom:
+      - exam_block
+      levels: 1
+      full: false
+      note: せのびの魔法：元気定制优先 [もりし]
+    - id: p_card-02-men-2_004
+      custom:
+      - initial_add
+      levels: 1
+      full: false
+      note: ワクワクが止まらない：开局入手定制非常强 [もりし][seesaa]
+    - id: p_card-00-men-3_012
+      custom:
+      - playable_value_add
+      levels: 1
+      full: false
+      note: テレビ出演：定制「使用数+1」后才强 [もりし]
+    - id: p_card-00-men-3_003
+      custom:
+      - cost_reduce
+      levels: 1
+      full: false
+      note: アイドル魂：降费定制，省体力 [もりし]
+    why: 定制按顺序做；えいえいおー 的 やる気+ 只有做满 3 级才值
+  evidence:
+  - kind: guide
+    ref: seesaa
+  - kind: decision
+    ref: 决策-11
+  - kind: guide
+    ref: もりし
+  updated: '2026-11-20'
+  by: 3940a9

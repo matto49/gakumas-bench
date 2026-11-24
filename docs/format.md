@@ -61,12 +61,12 @@
 
 编号去哪查：
 
-- 卡、饮料、P 道具、偶像、定制 P 道具效果、回忆：`GET https://hiro.matto.top/gkbench/api/catalog`（JSON，按编号给名字和效果文字；`cards.<编号>.custom.dirs[].id` 是这张卡能选的定制编号，`levels` 是各档效果；卡和饮料的 `unlock` 是解锁 P 等级，没有这一项就是不靠等级解锁），网页版是「游戏资源一览」。
-- 现成的题：`GET https://hiro.matto.top/gkbench/api/sets/<集合>/problems`，每项的 `archive.loadout` 就是一份开局配置，可以照着改。支援卡的编号和千分比目录里没有，从这里抄。
+- 卡、饮料、P 道具、偶像、定制 P 道具效果、回忆：`GET https://gakumas.wiki/api/catalog`（JSON，按编号给名字和效果文字；`cards.<编号>.custom.dirs[].id` 是这张卡能选的定制编号，`levels` 是各档效果；卡和饮料的 `unlock` 是解锁 P 等级，没有这一项就是不靠等级解锁），网页版是「游戏资源一览」。
+- 现成的题：`GET https://gakumas.wiki/api/sets/<集合>/problems`，每项的 `archive.loadout` 就是一份开局配置，可以照着改。支援卡的编号和千分比目录里没有，从这里抄。
 
 **2. 上传。** 用命令行工具 `gkbench`（一个可执行文件，源码在 `server/cmd/gkbench`），编号由服务器按内容算：
 
-    curl -fsSL https://hiro.matto.top/gkbench/install.sh | sh     # 装到 ~/.local/bin；Windows：irm https://hiro.matto.top/gkbench/install.ps1 | iex
+    curl -fsSL https://gakumas.wiki/install.sh | sh     # 装到 ~/.local/bin；Windows：irm https://gakumas.wiki/install.ps1 | iex
     gkbench login                                                 # 打开浏览器，在网页上点「授权」，令牌存到 ~/.config/gkbench/token
     gkbench upload exam.json --set <集合> --name 题名              # 逐道列出收下的和没收的原因
 
@@ -79,7 +79,7 @@
 
     curl -H "Authorization: Bearer $(cat ~/.config/gkbench/token)" \
          -F name=题名 -F files=@exam.json \
-         "https://hiro.matto.top/gkbench/api/sets/<集合>/problems?wait=1"
+         "https://gakumas.wiki/api/sets/<集合>/problems?wait=1"
 
 - 令牌：curl 用不了浏览器的登录状态，认的是令牌。用 `gkbench login` 拿，或者在网页「我的」页生成后存到 `~/.config/gkbench/token`。
 - `<集合>` 填集合的编号（集合页网址的最后一段）。

@@ -94,3 +94,22 @@ func TestRoutesParamsHeadAndAliases(t *testing.T) {
 		t.Errorf("别名和本名要回一样的：%d %s / %s", a.Code, a.Body.String(), b.Body.String())
 	}
 }
+
+func TestRoutesGuides(t *testing.T) {
+	_, h, data := routesApp(t)
+	dir := filepath.Join(data, "static", "guides")
+	_ = os.MkdirAll(dir, 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(`{"schema":1}`), 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "hajime-20261120-1.json"), []byte(`{"mode":"hajime"}`), 0o644)
+	for p, want := range map[string]string{"/api/guides/manifest": `"schema"`, "/api/guides/hajime-20261120-1": `"hajime"`} {
+		if w := serve(h, "GET", p); w.Code != 200 || !strings.Contains(w.Body.String(), want) {
+			t.Errorf("%s：%d %s", p, w.Code, w.Body.String())
+		}
+	}
+	if w := serve(h, "GET", "/api/guides/nia"); w.Code != 404 {
+		t.Errorf("没有的包 404：%d", w.Code)
+	}
+	if w := serve(h, "GET", "/guide/i_card-shro-3-007"); w.Code != 200 || !strings.Contains(w.Body.String(), "spa") {
+		t.Errorf("攻略页走网页：%d", w.Code)
+	}
+}

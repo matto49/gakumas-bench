@@ -1,13 +1,13 @@
 #!/bin/sh
 # gkbench 命令行工具的安装脚本（macOS / Linux）。
 #
-#   curl -fsSL https://hiro.matto.top/gkbench/install.sh | sh
+#   curl -fsSL https://gakumas.wiki/install.sh | sh
 #
 # 把对应平台的可执行文件下载到 ~/.local/bin/gkbench（GKBENCH_INSTALL_DIR 可以换目录），核对 SHA-256。
 # 不改 shell 配置；目录不在 PATH 里时会告诉你要加哪一行。再跑一遍就是升级。
 set -eu
 
-BASE="${GKBENCH_SERVER:-https://hiro.matto.top/gkbench}"
+BASE="${GKBENCH_SERVER:-https://gakumas.wiki}"
 DIR="${GKBENCH_INSTALL_DIR:-$HOME/.local/bin}"
 
 case "$(uname -s)" in

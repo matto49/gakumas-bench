@@ -7,6 +7,9 @@ import { cx, ErrorState, Help, IdolThumb, Skeleton, Tip } from '../components/ui
 import { CardDetail, CardImage, Meta, RarityTag } from '../components/CardDetail'
 import { ItemDetail } from '../components/ItemDetail'
 import { useDetailPopup } from '../components/DetailPopups'
+import { CardScene, CustomPriority } from '../components/CustomStats'
+import { useApi } from '../lib/hooks'
+import type { GuideInsights } from '../lib/guides'
 import { Bi, SourceLine, TierBadge, TierMissing, useTierBoard, useTierNames } from './Tiers'
 
 /** 强度榜的单卡页：一张偶像卡在这张榜里的六维、推荐牌组、常用搭配、分数分布和实际成绩。版式参考原视频的单卡页 */
@@ -162,6 +165,7 @@ export function TierCardPage() {
   const [open, setOpen] = useState<string | null>(null)
   const [item, setItem] = useState<string | null>(null)
   const detail = useDetailPopup()
+  const insights = useApi<GuideInsights>('api/guides/insights-hif')
   if (error) return <ErrorState error={error} onRetry={reload} />
   if (!board) return <div className="space-y-3"><Skeleton className="h-24" /><Skeleton className="h-64" /></div>
   const c = board.cards.find((x) => x.id === cardId)
@@ -182,8 +186,12 @@ export function TierCardPage() {
   const potSum = Object.values(pot).reduce((a, b) => a + b, 0)
   const idx = board.cards.indexOf(c)
   const prev = board.cards[idx - 1], next = board.cards[idx + 1]
+  // 定制统计来自 H.I.F 排行榜记录（攻略看板同一份数据）；记录里没带定制时没有，这块不显示
+  const own = insights.data?.idols[c.id]?.custom
+  const custom = own
 
   return (
+    <CardScene mode="hif" idol={c.id}>
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
         <Link to={`/tiers/${board.id}`} className="inline-flex items-center gap-1 text-brand-ink hover:underline"><ChevronLeft className="size-4" />{board.title}</Link>
@@ -271,6 +279,7 @@ export function TierCardPage() {
               </div>
             </div>
           )}
+          {custom && <CustomPriority cs={custom} onOpen={setOpen} />}
         </Panel>
 
         <Panel title="技能卡权重" sub={`V 模型 · 词表 ${c.model.vocabulary} 种卡`} help="权重：这张卡在牌组里时，本戦总分的相对变化。采用：收集记录里带这张卡的比例">
@@ -431,5 +440,6 @@ export function TierCardPage() {
       {item && cat && <ItemDetail id={item} cat={cat} onClose={() => setItem(null)} />}
       {detail.popup}
     </div>
+    </CardScene>
   )
 }

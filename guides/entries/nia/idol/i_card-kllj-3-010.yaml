@@ -1,0 +1,63 @@
+# N.I.A · 偶像卡层 i_card-kllj-3-010（Mac 账号 2 有这张卡）
+
+- id: nia.idol.i_card-kllj-3-010.formation.main_attr.vi
+  kind: written
+  scope:
+    mode: nia
+    idol_card: i_card-kllj-3-010
+  decision: formation.main_attr
+  content:
+    prefer:
+    - vi
+    why: N.I.A MASTER 排行榜上，这张卡终局 95% 是 Vi 最高。支援卡按这个主属性编。
+  evidence:
+  - kind: ranking
+    mode: nia
+    n: 100
+    fetched: '2026-11-18'
+    share: 0.95
+  updated: '2026-11-20'
+  by: bench
+- id: nia.idol.i_card-kllj-3-010.card_upgrade.signature
+  kind: written
+  scope:
+    mode: nia
+    idol_card: i_card-kllj-3-010
+  decision: card_upgrade
+  content:
+    prefer:
+    - id: p_card-03-ido-3_123
+      upgrade: 1
+      role: idol
+      note: 放課後おしゃべり：全力值 +2，下一回合按这节课攒的全力值的 300% 加涨分
+    why: 固有卡排行榜上 100% 强化过。定制方向攻略没给结论，先只强化。
+  evidence:
+  - kind: guide
+    ref: game8 桜フォトグラフ
+    url: https://game8.jp/gakuen-idolmaster/680262
+    date: '2026-11-20'
+  - kind: ranking
+    mode: nia
+    n: 100
+    fetched: '2026-11-18'
+    share: 1.0
+  updated: '2026-11-20'
+  by: bench
+- id: nia.idol.i_card-kllj-3-010.exam_style.signature
+  kind: written
+  scope:
+    mode: nia
+    idol_card: i_card-kllj-3-010
+  decision: exam_style
+  content:
+    prefer:
+    - id: p_card-03-ido-3_123
+      role: idol
+    why: 固有卡放課後おしゃべり给全力值 +2，下一回合按这节课累计攒下的全力值大幅加涨分，所以攒够全力值、要进全力的前一回合再打，效果最大。固有道具積み重ねた努力在回合开始时累计全力值 ≥5 就给元気 +6（每节课两次），前几回合先攒全力值把它触发。
+  evidence:
+  - kind: guide
+    ref: game8 桜フォトグラフ
+    url: https://game8.jp/gakuen-idolmaster/680262
+    date: '2026-11-20'
+  updated: '2026-11-20'
+  by: bench

@@ -1,0 +1,115 @@
+# N.I.A · 好印象（ロジック）流派层。样板：协调 c8df260 11-20 派。
+# N.I.A MASTER 的打法（game8）：牌组里不带「レッスン中1回」的卡只留 3 张循环件，其余都拿用一次就除外的卡，基本卡全删。
+
+- id: nia.style-review.card_pick.loop
+  kind: written
+  scope: {mode: nia, style: review}
+  decision: card_pick
+  content:
+    prefer:
+      - {id: p_card-02-act-2_049, role: loop, keep: 1, weight: 90, note: 使用数 +1，按好印象出分}
+      - {id: p_card-02-men-2_060, role: loop, keep: 1, weight: 85, note: 使用数 +1，加好印象}
+      - {id: p_card-02-act-2_046, role: loop, keep: 1, weight: 80, note: 出分}
+    why: >-
+      N.I.A MASTER 的决赛靠最后几回合反复打同 3 张卡出分：两张带「使用数 +1」的卡加一张出分卡。
+      好印象的这 3 张是みんな大好き、オトメゴコロ、ラブリーウインク。循环件最好用回忆带进来，培育中见到也拿。
+    unless:
+      when: {deck_count: {ids: [p_card-02-act-2_049, p_card-02-men-2_060, p_card-02-act-2_046], gte: 3}}
+      text: 3 张循环件已经齐了，同名卡不用再拿第二张
+  evidence:
+    - {kind: guide, ref: game8 NIAマスター攻略, url: "https://game8.jp/gakuen-idolmaster/688368", date: 2026-11-17}
+    - {kind: ranking, mode: nia, n: 2300, fetched: 2026-11-18, share: 0.61}
+  updated: 2026-11-20
+  by: bench
+
+- id: nia.style-review.card_pick.once-per-lesson
+  kind: written
+  scope: {mode: nia, style: review}
+  decision: card_pick
+  content:
+    prefer:
+      - {id: p_card-02-men-2_056, role: impression, weight: 90}
+      - {id: p_card-02-men-2_101, role: impression, weight: 85}
+      - {id: p_card-02-men-2_058, role: impression, weight: 85}
+      - {id: p_card-02-men-3_042, role: impression, weight: 80}
+      - {id: p_card-02-men-3_004, role: impression, weight: 80}
+      - {id: p_card-02-men-3_043, role: motivation, weight: 70}
+      - {id: p_card-02-men-3_041, role: motivation, weight: 70}
+      - {id: p_card-02-men-2_054, role: motivation, weight: 65}
+      - {id: p_card-02-act-3_052, role: impression_cash, weight: 75, note: 收尾}
+    avoid:
+      - {id: p_card-02-act-0_009, note: 不带「レッスン中1回」，会混进循环}
+    why: >-
+      循环件以外的卡，优先拿卡面写着「レッスン中1回」的：用一次就除外，决赛最后几回合不会混进循环。
+      这些卡负责前半场攒好印象和やる気（好印象的几张强卡要消耗やる気）。
+      N.I.A MASTER 排行榜上好印象偶像卡最常拿的也是这一批。
+  evidence:
+    - {kind: guide, ref: game8 NIAマスター攻略, url: "https://game8.jp/gakuen-idolmaster/688368", date: 2026-11-17}
+    - {kind: guide, ref: game8 ロジックのプロデュース方法, url: "https://game8.jp/gakuen-idolmaster/609830", date: 2026-11-20}
+    - {kind: ranking, mode: nia, n: 2300, fetched: 2026-11-18, share: 0.86}
+  updated: 2026-11-20
+  by: bench
+
+- id: nia.style-review.card_remove.basics
+  kind: written
+  scope: {mode: nia, style: review}
+  decision: card_remove
+  content:
+    avoid:
+      - class:basic
+      - {id: p_card-02-act-0_009, note: 初始牌组里的非循环件}
+      - class:genki_cash
+      - class:other_buff
+    prefer:
+      - {id: p_card-02-act-2_049, role: loop}
+      - {id: p_card-02-men-2_060, role: loop}
+      - {id: p_card-02-act-2_046, role: loop}
+    why: >-
+      「○○の基本」这类卡用了不除外、效果又弱，会混进循环，决赛前要全部删掉。
+      N.I.A MASTER 排行榜上好印象偶像卡的基本卡只剩 1%–3%。基本卡用挑战 P 道具删，相談的删卡留给基本卡以外的非循环件；
+      3 张循环件不删。靠元気出分的卡和主打やる気的卡对好印象没用，排在基本卡后面删。
+  evidence:
+    - {kind: guide, ref: game8 NIAマスター攻略, url: "https://game8.jp/gakuen-idolmaster/688368", date: 2026-11-17}
+    - {kind: ranking, mode: nia, n: 2300, fetched: 2026-11-18}
+  updated: 2026-11-20
+  by: bench
+
+- id: nia.style-review.card_upgrade.core
+  kind: written
+  scope: {mode: nia, style: review}
+  decision: card_upgrade
+  content:
+    prefer:
+      - {id: p_card-02-act-2_049, custom: [p_card_custom-070-g_effect-lesson_depend_exam_review_add-800], levels: 1, note: 定制按好印象出分 +80%}
+      - {id: p_card-02-act-2_046, custom: [p_card_custom-040_070-g_effect-lesson_depend_exam_review_add-350-g_effect-lesson_depend_exam_review_add-1150], levels: 2, full: true, note: 定制按好印象出分，做满}
+      - {id: p_card-02-men-2_060, custom: [p_card_custom-070-g_effect-review_add-2], levels: 1, note: 定制好印象 +2}
+      - {id: p_card-02-men-2_111, upgrade: 1, note: 一定要强化}
+    why: >-
+      决赛反复打的是 3 张循环件，强化和定制都先给它们：两张出分卡定制按好印象出分的方向，
+      オトメゴコロ定制多给好印象。ラブリーウインク的出分定制分两级，第二级才拉开差距。
+  evidence:
+    - {kind: guide, ref: game8 HIF編ロジック（好印象）の育成攻略, url: "https://game8.jp/gakuen-idolmaster/784692", date: 2026-11-20}
+    - {kind: guide, ref: いおん10}
+    - {kind: ranking, mode: nia, n: 2300, fetched: 2026-11-18}
+  updated: 2026-11-20
+  by: bench
+
+- id: nia.style-review.formation.memory.core
+  kind: written
+  scope: {mode: nia, style: review}
+  decision: formation.memory
+  content:
+    prefer:
+      - {id: p_card-02-act-3_050, upgrade: 1, weight: 95}
+      - {id: p_card-02-men-3_002, weight: 85}
+      - {id: p_card-02-act-2_049, weight: 80, note: 循环件，用回忆带进来最稳}
+      - {id: p_card-02-act-3_052, weight: 70}
+      - {id: p_card-00-men-3_005, weight: 70}
+    why: >-
+      N.I.A 的循环件建议用回忆带进来，培育中再补「レッスン中1回」的卡。
+      N.I.A MASTER 排行榜上 23 张好印象偶像卡平均下来，回忆里带輝くキミへ的占 79%、私がスター 68%、みんな大好き 41%。
+  evidence:
+    - {kind: guide, ref: game8 NIAマスター攻略, url: "https://game8.jp/gakuen-idolmaster/688368", date: 2026-11-17}
+    - {kind: ranking, mode: nia, n: 2300, fetched: 2026-11-18}
+  updated: 2026-11-20
+  by: bench

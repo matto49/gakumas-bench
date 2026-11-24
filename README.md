@@ -2,7 +2,7 @@
 
 学园偶像大师（学マス）玩家做的中文攻略站：角色强度榜、配置统计、游戏资料图鉴，以及一套考试出牌算法的公开评测。
 
-**网站：<https://hiro.matto.top/gkbench/>**　·　介绍视频：[为了成为学马高手，我们制作了「初星攻略站」](https://www.bilibili.com/video/BV1qmst63EU6/)
+**网站：<https://gakumas.wiki/>**　·　介绍视频：[为了成为学马高手，我们制作了「初星攻略站」](https://www.bilibili.com/video/BV1qmst63EU6/)
 
 ![首页](docs/img/home.jpg)
 
@@ -14,6 +14,7 @@
 | **配置强度榜** | H.I.F、N.I.A、初三个模式的排行榜上，每张偶像卡前 100 名的编成里，各支援卡、技能卡、P 道具和回忆带入的卡出现的比例；可以按流派、偶像、偶像卡筛 |
 | **游戏资源一览** | 技能卡、饮料、P 道具、偶像卡、支援卡、回忆能力，数据直接取自游戏；支援卡能看每个突破档的数值和事件；卡名和效果可以在日文、中文之间切换 |
 | **图鉴** | 立绘、偶像卡卡面、支援卡卡面、衣装、发型 |
+| **出牌助手** | 配好 H.I.F 编成（可从题库、本机保存或编成码带入，兼容 GKMS「导出 GKMSUINet」的对局码），一边在游戏里打一边看 AI 建议：每回合把抽到的牌点进来，给出每个出法的概率和预计最终得分；也能让引擎自己抽牌练一场。建议来自 GKMS rev383 引擎 + UINet Ver2.1，不看种子 |
 | **試験集合 / 算法排行** | 收集来的实战考试开局，让各种出牌算法用同样的牌序打，比分数和每步耗时（见下） |
 
 <table><tr>
@@ -58,7 +59,7 @@
 
 试験集合可以自己建，题目自己传。按 [docs/format.md](docs/format.md) 的「写一道题」写一份开局配置（字段表、完整例子都在那一章，可以直接交给 AI 照着写），然后用命令行工具上传：
 
-    curl -fsSL https://hiro.matto.top/gkbench/install.sh | sh
+    curl -fsSL https://gakumas.wiki/install.sh | sh
     gkbench login
     gkbench upload exam.json --set <集合>
 
@@ -101,15 +102,16 @@
 - 测试集的固定种子题不导出，对局的逐步记录不公开（会暴露抽牌顺序）。
 - 上传的成绩一律记为 `self`：服务器核对过分数，但证明不了算法没偷看种子；可信度最高的是 `hosted`。
 - 仓库里不放读存档、解密、还原种子的代码；题目从存档转出来的那一步在仓库外做。
-- GKMS 代码不进本仓库，按路径引用（私有、无许可证，和作者共建）。
+- GKMS 代码不进本仓库，按路径引用（和作者共建）。
 
 ## 许可
 
-本仓库的代码（`gkbench/`、`server/`、`web/`、`tools/` 等）以 [MIT](LICENSE) 发布，可以直接引用、改写，也可以把这里的算法接进别的项目。
+本仓库的代码（`gkbench/`、`server/`、`web/`、`tools/` 等）以 [GNU AGPL-3.0-or-later](LICENSE) 发布（2026-11-20 起；之前的版本是 MIT）。可以引用、改写、接进别的项目；改过的版本分发出去，或者放到网上给别人用，要同样以 AGPL 公开源码。
 
 不在本许可内的东西：
-- GKMS（yuzeis/GKMSProject）是私有项目、没有许可证，本仓库只按路径引用它的引擎，不包含它的代码；
+- GKMS（yuzeis/GKMSProject，仓库不公开）：rev383（Ver3.17.9）及以前是 AGPL-3.0-only，rev384 起保留所有权利。本仓库只按路径引用它的引擎、不包含它的代码，线上服务器用的是 AGPL 版本、没有修改；
   `gkbench/algos/native/official_ai_ext.cpp` 编译时要 `#include` GKMS 的核心，所以只能在装了 GKMS 的机器上编。
 - UINet 的模型和代码在 [yuzeis/GKMSUINet](https://github.com/yuzeis/GKMSUINet)（MIT），按它自己的许可。
+- `submissions/` 下别人提交的算法按各自作者的许可。
 - `gkbench/algos/hiro.py` 运行时引用 [hiro-gakumas-hero](https://github.com/matto49/hiro-gakumas-hero)（GPL-3.0-or-later），不包含它的代码。
 - 卡面、图标等游戏素材和主数据的权利属于游戏的权利人，这里只作研究用途。本站由玩家个人制作，和游戏开发商、运营方没有关系。

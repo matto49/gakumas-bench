@@ -61,7 +61,7 @@
 
     .venv/bin/python -m pytest -q tests
 
-账号：网页上「用 GitHub 登录」（推荐，第一次登录自动建账号，用户名取 GitHub 名，只读公开信息），或者用用户名 + 密码注册（没有邮箱，忘了密码找不回；GitHub 账号也能在「我的」页补设密码）。命令行用的令牌在「我的」页自己生成、吊销，存到 `~/.config/gkbench/token`（600）；服务器地址 `GKBENCH_SERVER`，默认 `https://hiro.matto.top/gkbench`。
+账号：网页上「用 GitHub 登录」（推荐，第一次登录自动建账号，用户名取 GitHub 名，只读公开信息），或者用用户名 + 密码注册（没有邮箱，忘了密码找不回；GitHub 账号也能在「我的」页补设密码）。命令行用的令牌在「我的」页自己生成、吊销，存到 `~/.config/gkbench/token`（600）；服务器地址 `GKBENCH_SERVER`，默认 `https://gakumas.wiki`。
 
 ## 服务器接口
 
@@ -133,6 +133,7 @@
     # 汉化数据用学マス汉化插件那份：git clone https://github.com/imas-tools/gakumas-master-translation，-zh 指它的 data/
     # （插件 gakumas-local/local-files/masterTrans 是同一种格式）。做法照插件：按表的 primaryKeys 找到同一行，只换文字，
     # 汉化留空或对不上的保留日文；生成时会打印每张表命中多少行（cmd/catalog/zh.go）。上线时两份 json 一起放 $GKBENCH_DATA/static/。
+    # 每档强化带体力消耗（up[档].stamina，先扣元气；force_stamina 直接扣体力，效果文字里本来就写「体力消費N」），不少卡强化只改体力消耗。
     # 目录里每张卡带它自己的定制方向（custom：各方向各档的 P 点和效果）；主数据没有定制的说明文字，
     # 数值类的按效果类型拼（cmd/catalog 的 growValueText），加 / 换效果的用那条效果自己的说明。
 
@@ -140,6 +141,22 @@
 
     # 旧数据（v1）转换
     .venv/bin/python -m gkbench.migrate [--dry-run]
+
+### 偶像卡攻略看板数据
+
+单卡攻略页顶上的看板（推荐牌组、技能卡分差）读 `api/guides/insights-<模式>`，不在攻略包里（攻略包是给数字小广的契约，不含整副牌组和分差）。每次换了排行榜抓取、重打攻略包时一起重算，抓取目录和攻略包 `sources.ranking[0].fetch` 一致：
+
+    python -m gkbench.guide_insights <gakumas-bench-data>/private/ranking-decoded/<抓取> <hajime|nia|hif> insights-<模式>.json --fetched <抓取日期>
+    rsync -a insights-*.json ycy:/srv/gkbench-data/static/guides/
+
+偶像之路的定制统计（单卡攻略页偶像之路一栏的「定制优先级」、卡牌弹窗定制方向的「选 X%」和「推荐定制」）从各塔的完整编成算，换了偶像之路数据就重算（另出 pooled：全部偶像卡合起来的每张技能卡统计，某张偶像卡没人带这张技能卡时兜底）：
+
+    python -m gkbench.guide_insights <放 idolroad-decks-*.json 的目录> idolroad insights-idolroad.json
+    rsync -a insights-idolroad.json ycy:/srv/gkbench-data/static/guides/
+
+H.I.F / N.I.A / 初的 `insights-<模式>.json` 里，排行榜记录的 `deck_cards[].customizes` 有值时也会带上 `custom`（强度榜单卡页、攻略看板的推荐牌组下面就会出现定制优先级）；现在的 `rec_*.json` 解码时没带定制，要先改 `ranking_decode.py`。
+
+口径写在 `gkbench/guide_insights.py` 开头：分差 = 带这张卡的平均分 − 不带的平均分（占平均分的比例），附标准误，只算带的比例在 10%–90% 的卡；网页上两倍标准误以内的不列。是排行榜上的相关，不是因果。
 
 ## 历史运行的展示名与说明
 
@@ -154,4 +171,6 @@
 
 ## 线上部署
 
-线上部署（ycy）：`GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gkbench-server ./server`，放 `/opt/gkbench/bin/`；`web/dist` 用 `tools/deploy-web.sh [提交]` 部署到 `/opt/gkbench/web/dist`（干净 worktree 构建，保留旧版本的 hash 分片，免得部署前打开的页面切路由时 404）；Python 部分放 `/opt/gkbench/app`（自带 `.venv`）；systemd `gkbench.service`（`Environment=` 里带空格的值要加引号），nginx 站点 `/etc/nginx/sites-available/hiro`（`hiro.matto.top`，certbot 证书）把 `/gkbench/` 转到 127.0.0.1:19150，根路径跳 `/gkbench/`。旧地址 `api.matto.top/gkbench/` 的网页 308 跳到新域名，`/gkbench/api/` 暂时继续转发，给还没换默认地址的老客户端用。
+线上部署（ycy）：`GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gkbench-server ./server`，放 `/opt/gkbench/bin/`；`web/dist` 用 `tools/deploy-web.sh [提交]` 部署到 `/opt/gkbench/web/dist`（干净 worktree 构建，保留旧版本的 hash 分片，免得部署前打开的页面切路由时 404）；Python 部分放 `/opt/gkbench/app`（自带 `.venv`）；systemd `gkbench.service`（`Environment=` 里带空格的值要加引号），nginx 站点 `/etc/nginx/sites-available/gakumas-wiki`（`gakumas.wiki`，certbot 证书）整站转到 127.0.0.1:19150，`www.gakumas.wiki` 301 到不带 www 的地址；systemd 里 `GKBENCH_PUBLIC_URL=https://gakumas.wiki`（GitHub 登录回调、命令行登录链接都用它，GitHub OAuth App 的回调地址要跟着改）。旧地址（2026-11-20 迁走）：`hiro.matto.top/gkbench/` 和更早的 `api.matto.top/gkbench/` 的网页 301 跳到 `gakumas.wiki` 同一路径；`/gkbench/api/`、`/gkbench/install.sh`、`/gkbench/install.ps1`、`/gkbench/cli/` 继续转发，给还没换默认地址的老客户端（命令行、`gkbench.client`、数字小广下载攻略包）用。
+
+服务器上的 GKMS 和 UINet：`GKMS_ROOT=/opt/gkbench/GKMSProject`（2026-11-23 起 rev383 `a9ba6865`，考试规则 67；提交号写在目录里的 `GKMS_COMMIT`），只放 `GakumasCLI`、`GKMSUINet` 两个目录，用 `git archive <提交> GakumasCLI GKMSUINet` 打包传上去，原生核心在服务器上 `sh GakumasCLI/native/build.sh` 编，产物移到 `GakumasCLI/native/build/libgkmscore.so`。升级时旧目录改名 `GKMSProject.bak-<日期>-rules<旧规则号>` 留着，回滚就改回来重启。出牌助手和内置 UINet 算法用的 UINet 是公开仓库 GKMSUINet（MIT）的 Ver2.1-Kummertranen `1fc5037`，放在 `/opt/gkbench/GKMSUINet`（`UINET_COMMIT` 记提交），systemd 里 `GKMS_UINET_REPO=/opt/gkbench/GKMSUINet`；numpy、onnxruntime 已在 `/opt/gkbench/app/.venv`。传大文件用 `git archive -o 文件` 再 scp，管道直连 `ssh … tar -x` 曾卡住不结束。Python 部分（`/opt/gkbench/app/gkbench`）用 `rsync -rc --exclude __pycache__` 更新，先 `cp -a` 备份成 `gkbench.bak-<提交>-pre`。

@@ -1,0 +1,154 @@
+# 初 · 全力流派层（11-20 按好印象样板铺开；scripts 在 gakumas-bench-data/guide-sources/gen_styles_20261120.py）
+
+- id: hajime.style-full_power.card_pick.stack
+  kind: written
+  scope:
+    mode: hajime
+    style: full_power
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-03-act-1_042
+      role: loop
+      weight: 95
+      note: 攒全力值和全力回合出分两头都管，还能用好几次
+    - id: p_card-03-men-2_103
+      role: stance
+      weight: 85
+    - id: p_card-03-men-3_063
+      role: stance
+      weight: 85
+    - id: p_card-03-act-1_073
+      role: stance
+      weight: 75
+    - id: p_card-03-men-2_075
+      role: stance
+      weight: 65
+      note: P 等级低时的替代
+    - id: p_card-03-men-2_066
+      role: stance
+      weight: 65
+    why: 全力流派要先攒「全力值」：攒到 10 以上，下一回合开始就进入「全力」，涨分大幅提高、还能多打一张卡。攒全力值的回合和全力出分的回合分开打；攒的时候顺便进温存，进入全力时能打的卡更多。積み重ね既能攒全力值、又能在全力回合出分，还能用好几次，P 等级高低都值得拿。
+  evidence:
+  - kind: guide
+    ref: game8 アノマリーのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/654063
+    date: '2026-11-20'
+  - kind: ranking
+    mode: hajime
+    n: 1700
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-full_power.card_pick.cash
+  kind: written
+  scope:
+    mode: hajime
+    style: full_power
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-03-act-3_189
+      role: finisher
+      weight: 90
+    - id: p_card-03-act-2_071
+      role: finisher
+      weight: 85
+    - id: p_card-03-act-3_053
+      role: finisher
+      weight: 80
+    - id: p_card-03-act-2_082
+      role: finisher
+      weight: 65
+    - id: p_card-03-men-3_060
+      role: hold
+      weight: 75
+      note: 把卡存进「保留」，全力时直接进手牌
+    - id: p_card-03-men-2_064
+      role: hold
+      weight: 70
+    - id: p_card-03-men-2_079
+      role: hold
+      weight: 65
+    why: 全力回合用出分卡把分收进来（羽ばたけ！、トレーニングの成果等）。用完会进「保留」的卡、能把别的卡存进保留的卡（本領発揮、潜在能力）很有用：保留的卡在进入全力时直接进手牌，全力回合一定摸得到出分卡。
+  evidence:
+  - kind: guide
+    ref: game8 アノマリーのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/654063
+    date: '2026-11-20'
+  - kind: ranking
+    mode: hajime
+    n: 1700
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-full_power.card_remove.basics
+  kind: written
+  scope:
+    mode: hajime
+    style: full_power
+  decision: card_remove
+  content:
+    avoid:
+    - class:basic
+    - class:other_buff
+    why: 相談里花 P 点删掉没用的卡，强卡更常进手牌。初的排行榜里基本卡大多留着，删得最多的是スピーチの基本（排行榜留存 76%）；同プラン里主打另一种 buff 的卡对这个流派没用。
+  evidence:
+  - kind: guide
+    ref: game8 難易度プロの攻略
+    url: https://game8.jp/gakuen-idolmaster/610357
+    date: '2026-11-17'
+  - kind: ranking
+    mode: hajime
+    n: 1700
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-full_power.formation.memory.core
+  kind: written
+  scope:
+    mode: hajime
+    style: full_power
+  decision: formation.memory
+  content:
+    prefer:
+    - id: p_card-03-act-1_042
+      weight: 90
+    - id: p_card-03-men-3_058
+      weight: 85
+    - id: p_card-03-act-3_053
+      weight: 80
+    - id: p_card-03-act-3_189
+      weight: 75
+    why: 回忆带循环件和核心卡，培育中就不用碰运气。排行榜上 17 张全力偶像卡平均下来，回忆里最常带的是 積み重ね 67%、羽ばたけ！ 48%、全身全霊 47%、アイドルになります 46%。
+  evidence:
+  - kind: ranking
+    mode: hajime
+    n: 1700
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-full_power.card_upgrade.core
+  kind: written
+  scope:
+    mode: hajime
+    style: full_power
+  decision: card_upgrade
+  content:
+    prefer:
+    - id: p_card-03-men-2_103
+      upgrade: 1
+    - id: p_card-03-men-2_066
+      upgrade: 1
+    - id: p_card-03-men-2_078
+      upgrade: 1
+    - id: p_card-03-men-3_062
+      upgrade: 1
+    why: 强化先给反复要打、每回合都用得到的卡。这几张是排行榜上这个流派强化比例最高的。
+  evidence:
+  - kind: ranking
+    mode: hajime
+    n: 1700
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench

@@ -1,0 +1,143 @@
+# 初 · 集中流派层（11-20 按好印象样板铺开；scripts 在 gakumas-bench-data/guide-sources/gen_styles_20261120.py）
+
+- id: hajime.style-lesson_buff.card_pick.stack
+  kind: written
+  scope:
+    mode: hajime
+    style: lesson_buff
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-01-men-2_037
+      role: loop
+      weight: 90
+      note: 集中，不耗体力也不占使用数
+    - id: p_card-01-act-2_001
+      role: loop
+      weight: 90
+      note: 好調，不耗体力也不占使用数
+    - id: p_card-01-men-3_034
+      role: buff
+      weight: 80
+    - id: p_card-01-men-2_035
+      role: buff
+      weight: 70
+      note: P 等级低时的主力
+    - id: p_card-01-men-2_038
+      role: buff
+      weight: 70
+    why: 集中流派和好調同属センス，靠叠 buff 出分，区别是主力 buff 是「集中」：集中每 +1，之后每张卡的涨分都 +1。前半场用存在感、天賦の才等把集中叠高，シュプレヒコール的好調也能一起叠。
+  evidence:
+  - kind: guide
+    ref: game8 センスのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/609699
+    date: '2026-11-20'
+  - kind: ranking
+    mode: hajime
+    n: 2200
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-lesson_buff.card_pick.cash
+  kind: written
+  scope:
+    mode: hajime
+    style: lesson_buff
+  decision: card_pick
+  content:
+    prefer:
+    - id: p_card-01-men-3_006
+      role: double
+      weight: 90
+      note: 下一张卡效果发动两次
+    - id: p_card-01-act-3_049
+      role: finisher
+      weight: 85
+    - id: p_card-01-act-3_185
+      role: finisher
+      weight: 75
+    - id: p_card-01-act-3_010
+      role: buff
+      weight: 75
+    why: 集中叠高以后，用国民的アイドル让下一张强力主动卡发动两次；集中越高，主动卡每段涨分越多。
+  evidence:
+  - kind: guide
+    ref: game8 センスのプロデュース方法
+    url: https://game8.jp/gakuen-idolmaster/609699
+    date: '2026-11-20'
+  - kind: ranking
+    mode: hajime
+    n: 2200
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-lesson_buff.card_remove.basics
+  kind: written
+  scope:
+    mode: hajime
+    style: lesson_buff
+  decision: card_remove
+  content:
+    avoid:
+    - class:basic
+    - class:other_buff
+    why: 相談里花 P 点删掉没用的卡，强卡更常进手牌。初的排行榜里基本卡大多留着，删得最多的是パフォーマンスの基本（排行榜留存 80%）；同プラン里主打另一种 buff 的卡对这个流派没用。
+  evidence:
+  - kind: guide
+    ref: game8 難易度プロの攻略
+    url: https://game8.jp/gakuen-idolmaster/610357
+    date: '2026-11-17'
+  - kind: ranking
+    mode: hajime
+    n: 2200
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-lesson_buff.formation.memory.core
+  kind: written
+  scope:
+    mode: hajime
+    style: lesson_buff
+  decision: formation.memory
+  content:
+    prefer:
+    - id: p_card-01-act-2_001
+      weight: 90
+    - id: p_card-01-men-3_006
+      weight: 85
+    - id: p_card-01-men-2_037
+      weight: 80
+    - id: p_card-01-act-3_049
+      weight: 75
+    why: 回忆带循环件和核心卡，培育中就不用碰运气。排行榜上 22 张集中偶像卡平均下来，回忆里最常带的是 シュプレヒコール 84%、国民的アイドル 62%、存在感 60%。
+  evidence:
+  - kind: ranking
+    mode: hajime
+    n: 2200
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
+- id: hajime.style-lesson_buff.card_upgrade.core
+  kind: written
+  scope:
+    mode: hajime
+    style: lesson_buff
+  decision: card_upgrade
+  content:
+    prefer:
+    - id: p_card-01-men-2_035
+      upgrade: 1
+    - id: p_card-01-men-3_034
+      upgrade: 1
+    - id: p_card-01-act-2_061
+      upgrade: 1
+    - id: p_card-01-men-1_034
+      upgrade: 1
+    why: 强化先给反复要打、每回合都用得到的卡。这几张是排行榜上这个流派强化比例最高的。
+  evidence:
+  - kind: ranking
+    mode: hajime
+    n: 2200
+    fetched: '2026-11-19'
+  updated: '2026-11-20'
+  by: bench
