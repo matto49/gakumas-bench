@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ChevronRight, Link2 } from 'lucide-react'
 import { runDisplay, type RunDisplayCatalog } from '../lib/runDisplay'
 import { type RunInfo } from '../lib/api'
 import { fetchApi } from '../lib/query'
@@ -120,9 +121,23 @@ export function RunPage() {
         </div>
       </dl>
 
-      {display?.aliasOf && <Link className="mb-3 inline-block text-brand-ink underline" to={`/runs/${encodeURIComponent(display.aliasOf)}`}>查看同题集的对应策略 / Canonical run on this set</Link>}
+      {display?.aliasOf && (
+        <p className="mb-3 flex flex-wrap items-center gap-1.5 text-[13px] text-ink-2">
+          <Link2 size={14} aria-hidden className="text-ink-3" />
+          考试部分和「{display.aliasShort}」是同一套出牌，成绩一样。
+          <Link to={`/runs/${encodeURIComponent(display.aliasOf)}`} className="text-brand-ink hover:underline">看那次运行</Link>
+        </p>
+      )}
       <AlgoAbout about={display?.about ?? r.about} />
-      {display && r.about && <details className="mb-6"><summary>原始提交说明 / Original submission notes</summary><AlgoAbout about={r.about} /></details>}
+      {display && r.about && (
+        <details className="group mb-6 rounded-lg border border-line bg-surface-2 text-[12.5px] text-ink-2">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-3 py-2 font-medium text-ink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+            <ChevronRight size={14} aria-hidden className="text-ink-3 motion-safe:transition-transform group-open:rotate-90" />
+            提交人原来写的说明
+          </summary>
+          <div className="px-3 pb-1"><AlgoAbout about={r.about} /></div>
+        </details>
+      )}
 
       <section className="mb-6 rounded-xl border border-line bg-surface px-4 pt-3 pb-2">
         <div className="flex flex-wrap items-baseline justify-between gap-2">

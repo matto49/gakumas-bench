@@ -286,7 +286,7 @@ function Dashboard({ me }: { me: MeInfo }) {
                     {[...runs.data].reverse().map((r) => (
                       <tr key={r.run} {...rowLink(`/runs/${r.run}`)} className="cursor-pointer border-b border-line last:border-0 hover:bg-brand-tint">
                         <td className="px-3 py-2">
-                          <Link to={`/runs/${r.run}`} className="font-semibold text-ink hover:text-brand-ink">{runDisplay(catalog, r)?.name ?? r.label}</Link>
+                          <Link to={`/runs/${r.run}`} title={runDisplay(catalog, r)?.name} className="font-semibold text-ink hover:text-brand-ink">{runDisplay(catalog, r)?.short ?? r.label}</Link>
                           <div className="font-mono text-[11px] text-ink-3">{r.run}</div>
                         </td>
                         <td className="px-3 py-2 text-ink-2">{setTitle(r.set)}</td>

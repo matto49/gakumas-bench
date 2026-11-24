@@ -1,7 +1,7 @@
-import { runDisplay, type RunDisplayCatalog } from '../lib/runDisplay'
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowDown, ArrowRight, ArrowUp, ChevronRight, ChevronsUpDown, Pencil } from 'lucide-react'
+import { runDisplay, type RunDisplayCatalog } from '../lib/runDisplay'
 import { useApi } from '../lib/hooks'
 import { invalidateApi } from '../lib/query'
 import { api, type Row, type SetInfo } from '../lib/api'
@@ -100,12 +100,20 @@ export function Leaderboard() {
     rs.sort((a, b) => {
       if (a.privileged !== b.privileged) return a.privileged ? 1 : -1
       if (partial(a) !== partial(b)) return partial(a) ? 1 : -1 // 没跑全核心题的排在跑全的后面，不排名次
-      const va = key === 'label' ? a.display?.name ?? a.label : sortValue(a, key)
-      const vb = key === 'label' ? b.display?.name ?? b.label : sortValue(b, key)
+      const va = key === 'label' ? a.display?.short ?? a.label : sortValue(a, key)
+      const vb = key === 'label' ? b.display?.short ?? b.label : sortValue(b, key)
       if (typeof va === 'string' || typeof vb === 'string') return String(va).localeCompare(String(vb)) * sign
       return (va - vb) * sign
     })
-    return rs
+    // 别名运行（清单的 alias_of，例如 B3 的考试部分直接调用 B1）：成绩和对应运行一样，紧跟在它下面、不单独占名次
+    const present = new Set(rs.map((r) => r.run))
+    const isAlias = (r: (typeof rs)[number]) => !!r.display?.aliasOf && present.has(r.display.aliasOf) && !r.privileged && !partial(r)
+    const out = rs.filter((r) => !isAlias(r)).map((r) => ({ ...r, alias: false }))
+    for (const a of rs.filter(isAlias)) {
+      const i = out.findIndex((r) => r.run === a.display!.aliasOf)
+      out.splice(i + 1, 0, { ...a, alias: true })
+    }
+    return out
   }, [lb.data, stale, sort, dir, catalog, set])
 
   if (!set) {
@@ -118,7 +126,7 @@ export function Leaderboard() {
   const info = sets.data?.find((s) => s.set === set)
   const hasOracle = rows.some((r) => r.privileged && r.vs_oracle)
   const groups = GROUPS_BY_SET[set] ?? ['idol']
-  const labels = new Map(rows.filter((r) => !r.privileged).map((r) => [r.label, r.display?.name ?? r.label]))
+  const labels = new Map(rows.filter((r) => !r.privileged).map((r) => [r.label, r.display?.short ?? r.label]))
   let rank = 0
   // 算法家族：同家族（同一个算法的各版本 / 不同人跑的）合成一行，显示当前排序下最好的那个版本，左边按钮展开看全部子项
   type DisplayRow = (typeof rows)[number]
@@ -278,7 +286,7 @@ export function Leaderboard() {
             </thead>
             <tbody>
               {items.map(({ r, kind, fam, count }) => {
-                if (kind !== 'child' && !r.privileged && !partial(r)) rank++
+                if (kind !== 'child' && !r.privileged && !partial(r) && !r.alias) rank++
                 const open = fam ? openFam.has(fam) : false
                 const params = r.params ? Object.entries(r.params).filter(([, v]) => v != null && v !== '' && typeof v !== 'object').map(([k, v]) => `${k}=${v}`).join(' ') : ''
                 return (
@@ -291,6 +299,10 @@ export function Leaderboard() {
                     <td className="px-3 py-3 text-center">{kind === 'child' ? null : r.privileged ? <span className="text-[12px] whitespace-nowrap text-ink-3">分母</span> : partial(r) ? (
                       <Tip tip={`只跑了核心题单 ${r.core_problems} 题里的 ${r.problems} 题，成绩只在这些题上算，不和跑全的比名次。`}>
                         <span tabIndex={0} className="cursor-help text-[12px] whitespace-nowrap text-ink-3">未跑全</span>
+                      </Tip>
+                    ) : r.alias ? (
+                      <Tip tip={`和上一行「${r.display?.aliasShort}」是同一套出牌，成绩一样，不单独排名次。`}>
+                        <span tabIndex={0} className="cursor-help text-[12px] whitespace-nowrap text-ink-3">同上</span>
                       </Tip>
                     ) : <RankNum n={rank} />}</td>
                     <td className={cx('max-w-[320px] pr-3', kind === 'child' ? 'py-2 pl-3' : 'relative py-3 pl-3')}>
@@ -311,8 +323,8 @@ export function Leaderboard() {
                           {kind === 'family' ? (
                             <span className="truncate text-[14px] font-bold text-ink" title={`家族编号 ${fam}`}>{famName(fam!)}</span>
                           ) : (
-                            <Link to={`/runs/${r.run}`} className={cx('truncate hover:text-brand-ink', kind === 'child' ? 'text-[13px] font-semibold text-ink-2' : 'text-[14px] font-bold text-ink')}>
-                              {r.display?.name ?? (kind === 'child' ? verOf(r, fam!) : r.label)}
+                            <Link to={`/runs/${r.run}`} title={r.display?.name} className={cx('truncate hover:text-brand-ink', kind === 'child' ? 'text-[13px] font-semibold text-ink-2' : 'text-[14px] font-bold text-ink')}>
+                              {r.display?.short ?? (kind === 'child' ? verOf(r, fam!) : r.label)}
                             </Link>
                           )}
                           {kind === 'family' && me.data?.user && (
@@ -342,7 +354,13 @@ export function Leaderboard() {
                               <Badge tabIndex={0} variant="outline" className="whitespace-nowrap">固定机器</Badge>
                             </Tip>
                           )}
-                          {kind !== 'family' && r.display?.aliasOf && <Link className="text-xs text-brand-ink underline" to={`/runs/${encodeURIComponent(r.display.aliasOf)}`}>对应策略 / Canonical run</Link>}
+                          {kind !== 'family' && r.display?.aliasOf && (
+                            <Tip tip={<>考试部分直接调用「{r.display.aliasShort}」，成绩和它一样。点一下看那次运行。</>}>
+                              <Link to={`/runs/${encodeURIComponent(r.display.aliasOf)}`} onClick={(e) => e.stopPropagation()}>
+                                <Badge variant="outline" className="whitespace-nowrap">别名</Badge>
+                              </Link>
+                            </Tip>
+                          )}
                           {kind !== 'family' && (r.display || r.about) && <Help tip={<>{r.display?.about.summary ?? r.about?.summary}<span className="mt-1 block text-ink-3">点算法名看完整说明和实现链接。</span></>} />}
                         </span>
                         <div className="truncate text-[11.5px] text-ink-3">
@@ -450,7 +468,7 @@ function GroupMatrix({ rows, group, hasOracle, base, idol }: { rows: (Row & { di
           <tbody>
             {rows.filter((r) => !r.privileged).map((r) => (
               <tr key={r.run} className="border-t border-line">
-                <th scope="row" className="sticky left-0 bg-surface px-3 py-2 text-left font-medium whitespace-nowrap text-ink">{r.display?.name ?? r.label}</th>
+                <th scope="row" className="sticky left-0 bg-surface px-3 py-2 text-left font-medium whitespace-nowrap text-ink">{r.display?.short ?? r.label}</th>
                 {keys.map((k) => {
                   const g = r.groups?.[k]
                   const ratio = metric === 'mean' ? null : (g?.[metric as 'vs_oracle'] ?? null)

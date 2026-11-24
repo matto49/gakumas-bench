@@ -1,7 +1,7 @@
-import { runDisplay, type RunDisplayCatalog } from '../lib/runDisplay'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, GitCompareArrows } from 'lucide-react'
+import { runDisplay, type RunDisplayCatalog } from '../lib/runDisplay'
 import { BASE, type Card, type Episode, type Obs, type RunInfo, type Step } from '../lib/api'
 import { useApi } from '../lib/hooks'
 import { useCatalog, idolName, cardName } from '../lib/catalog'
@@ -79,7 +79,7 @@ export function Replay() {
   return (
     <div>
       <p className="mb-3 text-[12.5px] text-ink-3">
-        <Link to={`/sets/${e.set}`} className="hover:text-brand-ink">算法排行</Link> / <Link to={`/runs/${run}`} className="hover:text-brand-ink">{display?.name ?? runInfo.data?.label ?? run}</Link> / 复盘
+        <Link to={`/sets/${e.set}`} className="hover:text-brand-ink">算法排行</Link> / <Link to={`/runs/${run}`} className="hover:text-brand-ink">{display?.short ?? runInfo.data?.label ?? run}</Link> / 复盘
       </p>
       <header className="mb-5 overflow-hidden rounded-2xl border border-line bg-surface">
         <div className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5">
@@ -93,7 +93,7 @@ export function Replay() {
           <div className="flex items-center gap-3">
             {ratio != null && <Grade ratio={ratio} size={48} />}
             <div className="text-right">
-              <p className="text-[11.5px] text-ink-3">{display?.name ?? runInfo.data?.label ?? '终局'}{best ? ` · 上限 ${int(best)}` : ''}</p>
+              <p className="text-[11.5px] text-ink-3">{display?.short ?? runInfo.data?.label ?? '终局'}{best ? ` · 上限 ${int(best)}` : ''}</p>
               <p className="disp text-[32px] leading-none text-ink">{int(e.final.score)}</p>
             </div>
           </div>

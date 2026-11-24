@@ -24,5 +24,12 @@ export function runDisplay(catalog: RunDisplayCatalog | null, run?: { run: strin
     links.push({ title: '算法源码 / Source', url: profile.source_url })
   }
   const about: AlgoDoc = { ...run.about, source: run.about?.source ?? 'submitter', summary: profile.summary, detail: profile.detail, links }
-  return { name: profile.name, about, aliasOf }
+  const aliasName = aliasOf ? catalog.profiles[catalog.runs[aliasOf].profile]?.name : undefined
+  return { name: profile.name, short: shortName(profile.name), about, aliasOf, aliasShort: aliasName ? shortName(aliasName) : undefined }
+}
+
+/** 清单里的名字写成「中文 / English」：表格、面包屑这些窄的地方只显示「 / 」前面那段，完整名字放在详情页标题和悬停提示里。 */
+export function shortName(name: string) {
+  const i = name.indexOf(' / ')
+  return i > 0 ? name.slice(0, i).trim() : name
 }
