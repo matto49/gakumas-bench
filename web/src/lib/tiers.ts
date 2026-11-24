@@ -145,3 +145,13 @@ export function pairOf(n: BiName | undefined, lang: 'ja' | 'zh', fallback: strin
 export function splitIdol(full: string) {
   return full.includes('】') ? { name: full.slice(1, full.indexOf('】')), character: full.slice(full.indexOf('】') + 1) } : { name: full, character: '' }
 }
+
+/** 玩家评级（server/tiervotes.go）：GET api/tiers/<榜>/votes。每人每卡一票 S–D，平均分 S=5…D=1 */
+export type TierVoteSummary = { n: number; mean: number; dist: Partial<Record<Tier, number>> }
+export type TierVotes = { cards: Record<string, TierVoteSummary>; mine: Record<string, Tier> }
+/** 票数到这个数才给出「玩家评级」的档位，之前只写票数 */
+export const VOTE_MIN = 5
+/** 平均分折回档位：≥4.5 S、≥3.5 A、≥2.5 B、≥1.5 C，其余 D */
+export function voteTier(mean: number): Tier {
+  return mean >= 4.5 ? 'S' : mean >= 3.5 ? 'A' : mean >= 2.5 ? 'B' : mean >= 1.5 ? 'C' : 'D'
+}

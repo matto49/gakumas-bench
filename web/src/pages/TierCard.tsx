@@ -7,6 +7,7 @@ import { cx, ErrorState, Help, IdolThumb, Skeleton, Tip } from '../components/ui
 import { CardDetail, CardImage, Meta, RarityTag } from '../components/CardDetail'
 import { ItemDetail } from '../components/ItemDetail'
 import { useDetailPopup } from '../components/DetailPopups'
+import { TierVotePanel } from '../components/TierVote'
 import { CardScene, CustomPriority } from '../components/CustomStats'
 import { useApi } from '../lib/hooks'
 import type { GuideInsights } from '../lib/guides'
@@ -229,6 +230,8 @@ export function TierCardPage() {
           </div>
         </div>
       </section>
+
+      <TierVotePanel board={board.id} card={c.id} dataTier={c.tier} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel title="六维" sub="本小类最高 = 100">

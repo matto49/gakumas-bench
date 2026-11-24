@@ -146,6 +146,9 @@ func (app *App) routes(static, web string) http.Handler {
 	api.GET("/site/:name", staticJSON(static, "site", "name"))
 	// 角色强度榜：python -m gkbench.tierboard 导入（index.json 是目录，<id>.json 是一张榜）
 	api.GET("/tiers/:id", staticJSON(static, "tiers", "id"))
+	// 强度榜的玩家评级（tiervotes.go）：汇总谁都能看，投票要登录
+	open.GET("/tiers/:id/votes", h(app.handleTierVotes(static)))
+	auth.PUT("/tiers/:id/votes/:card", h(app.handleTierVote(static)))
 
 	// 登录
 	open.GET("/auth", h(app.handleAuthInfo))

@@ -5,6 +5,8 @@ import { useApi } from '../lib/hooks'
 import { cardName, idolName, useCatalog, useLang, useTerms } from '../lib/catalog'
 import { DEFAULT_BOARD, DIM_HELP, DIM_LABEL, mayCross, pairOf, splitIdol, tierLine, TIER_STYLE, type Dim, type Pair, type Tier, type TierBoard, type TierCard } from '../lib/tiers'
 import { cx, Empty, ErrorState, Help, IdolThumb, PageHeader, SectionTitle, Skeleton } from '../components/ui'
+import { useTierVotes, VoteChip } from '../components/TierVote'
+import type { TierVoteSummary } from '../lib/tiers'
 
 /** 强度榜：一张榜按 S～D 分档，每张卡点进单卡页（TierCardPage）。数据见 lib/tiers.ts */
 
@@ -80,7 +82,7 @@ function RankDot({ c }: { c: TierCard }) {
 }
 
 /** S、A 档：大卡，带六维条 */
-function BigCard({ c, board }: { c: TierCard; board: TierBoard }) {
+function BigCard({ c, board, vote }: { c: TierCard; board: TierBoard; vote?: TierVoteSummary }) {
   const label = useTierNames(board).idol(c)
   return (
     <Link
@@ -99,6 +101,7 @@ function BigCard({ c, board }: { c: TierCard; board: TierBoard }) {
           <span className="disp text-[30px] leading-none text-ink">{c.total.toFixed(1)}</span>
           <span className="text-[11.5px] text-ink-3">{mayCross(c) ? '可能跨档' : `区间 ${c.rank_interval[0]}–${c.rank_interval[1]}`}</span>
         </p>
+        <VoteChip s={vote} className="mt-1" />
       </div>
       <div className="hidden w-[44%] shrink-0 sm:block"><DimBars c={c} dims={board.dims} /></div>
     </Link>
@@ -106,7 +109,7 @@ function BigCard({ c, board }: { c: TierCard; board: TierBoard }) {
 }
 
 /** B 档以下：小格 */
-function SmallCard({ c, board }: { c: TierCard; board: TierBoard }) {
+function SmallCard({ c, board, vote }: { c: TierCard; board: TierBoard; vote?: TierVoteSummary }) {
   const label = useTierNames(board).idol(c)
   return (
     <Link
@@ -121,6 +124,7 @@ function SmallCard({ c, board }: { c: TierCard; board: TierBoard }) {
       <span className="disp mt-1.5 text-[20px] leading-none text-ink">{c.total.toFixed(1)}</span>
       <span className="mt-1 w-full truncate text-[11.5px] text-ink-2">{label.character}</span>
       <span className="w-full truncate text-[11px] text-ink-3 group-hover:text-brand-ink">{label.name}</span>
+      <VoteChip s={vote} className="mt-0.5" />
     </Link>
   )
 }
@@ -220,6 +224,7 @@ function TiersBoard({ board }: { board: TierBoard }) {
   const names = useTierNames(board)
   const klass = board.cards.length ? `${names.plan(board.cards[0])} · ${names.style(board.cards[0])}` : board.class
   const tiers = (['S', 'A', 'B', 'C', 'D'] as Tier[]).map((t) => ({ t, cards: board.cards.filter((c) => c.tier === t) })).filter((x) => x.cards.length)
+  const votes = useTierVotes(board.id).data?.cards
   return (
     <div className="space-y-8">
       <PageHeader
@@ -236,11 +241,11 @@ function TiersBoard({ board }: { board: TierBoard }) {
               <span className="text-[11.5px] text-ink-3">{cards.length} 张</span>
             </div>
             <div className={cx('min-w-0 flex-1', t === 'S' || t === 'A' ? 'grid gap-2 lg:grid-cols-3' : 'flex flex-wrap gap-1 rounded-xl border border-line p-2')}>
-              {cards.map((c) => (t === 'S' || t === 'A' ? <BigCard key={c.id} c={c} board={board} /> : <SmallCard key={c.id} c={c} board={board} />))}
+              {cards.map((c) => (t === 'S' || t === 'A' ? <BigCard key={c.id} c={c} board={board} vote={votes?.[c.id]} /> : <SmallCard key={c.id} c={c} board={board} vote={votes?.[c.id]} />))}
             </div>
           </section>
         ))}
-        <p className="text-[12px] text-ink-3">档位 = 六维总分 ÷ 第一名 · 黑底数字是名次 · 右上角空心圆点：换一批编成重算时可能跨档 · 只代表 {board.scenario}，其他模式不适用</p>
+        <p className="text-[12px] text-ink-3">档位 = 六维总分 ÷ 第一名 · 黑底数字是名次 · 右上角空心圆点：换一批编成重算时可能跨档 · 「玩家 A」是登录玩家投出的评级（点进单卡页投票，满 5 票才给档位）· 只代表 {board.scenario}，其他模式不适用</p>
       </div>
 
       <section>
