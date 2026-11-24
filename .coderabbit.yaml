@@ -1,0 +1,40 @@
+# CodeRabbit 设置（https://docs.coderabbit.ai/reference/configuration）
+language: zh-CN
+tone_instructions: "用简体中文，短句。先说用户会碰到的后果，再说改法。不确定的写「可能」，不要夸大严重程度。"
+
+reviews:
+  # quiet：只提最重要的问题（chill 是默认，assertive 更啰嗦）
+  profile: quiet
+  # 连续审了这么多次推送后自动暂停，免得一来一回停不下来（默认 5）
+  auto_review:
+    auto_pause_after_reviewed_commits: 3
+  tools:
+    # CI 的失败 GitHub 上已经能看到，不再转成评论
+    github-checks:
+      enabled: false
+  security_risk_instructions: |
+    初星攻略站（gakumas.wiki）是公开网站：Go 服务器直接面向公网，Python 考试引擎作为子进程跑在同一台机器上。
+    - 登录用户（GitHub 登录或密码，命令行用令牌）能上传成绩、建試験集合、传题；出牌助手 /assist 不用登录。上传的内容一律当不可信输入。
+    - 要守住的：别人的令牌和账号；带 template_seeds 的集合不能泄露种子和牌序；排行榜的成绩不能被伪造或改别人的；
+      引擎子进程不能被上传内容拖垮或执行任意代码；匿名接口要有频率和数量限制。
+    - 没有付费和个人隐私数据；运行结果、题目本来就是公开展示的。
+  path_instructions:
+    - path: "**/*"
+      instructions: |
+        评审口径：
+        - 优先报访客和提交者正常使用就会碰到的问题：页面报错或空白、数据显示错、成绩算错、上传失败、接口被滥用。
+        - 需要特殊环境才触发的边界情况最多标 Minor，一条评论说清楚就行，不要升级成 Major，也不要在后续推送里反复追问。
+          上面列的安全问题不算边界情况。
+        - 作者修了评论里描述的那个场景，就算这条已解决；剩下的新问题只有在影响用户时才另开评论。
+        - 作者回复说明是设计取舍、并在文档或界面里写明了的，接受并结束这条讨论。
+        - 不评论代码风格和 import 顺序。
+    - path: "web/**"
+      instructions: |
+        网页是给学マス玩家看的：界面文案用玩家的叫法，露出内部编号、英文字段名算问题。设计依据在 DESIGN.md、PRODUCT.md。
+
+knowledge_base:
+  code_guidelines:
+    filePatterns:
+      - "PRODUCT.md"
+      - "DESIGN.md"
+      - "docs/evaluation.md"
