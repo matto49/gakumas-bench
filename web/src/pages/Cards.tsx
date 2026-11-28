@@ -47,10 +47,11 @@ export function Cards() {
   // P 道具详情要列「哪些支援卡事件给它」，也用这份
   const sup = useApi<SupportCatalog>(tab === 'supports' || q.get('support') || q.get('item') ? 'api/supports' : null)
   const get = (k: string) => q.get(k) ?? ''
-  const update = (patch: Record<string, string>) => {
+  // flushSync：搜索框的值来自 URL，同步更新才不会打断输入法组字（默认走 startTransition，React 会把输入框值改回旧值）
+  const update = (patch: Record<string, string>, flushSync = false) => {
     const n = new URLSearchParams(q)
     for (const [k, v] of Object.entries(patch)) (v ? n.set(k, v) : n.delete(k))
-    setQ(n, { replace: true })
+    setQ(n, { replace: true, flushSync })
   }
   const text = get('q').trim().toLowerCase()
 
@@ -150,7 +151,7 @@ export function Cards() {
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="relative w-64 max-w-full">
           <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-3" aria-hidden />
-          <Input value={get('q')} onChange={(e) => update({ q: e.target.value })} placeholder={tab === 'idols' ? '搜名字、编号或固有卡 / P 道具' : tab === 'supports' ? '搜名字、技能或事件，如 SP レッスン' : tab === 'memories' ? '搜效果，如 体力回復' : '搜名字或效果，如 好印象'} aria-label="搜索" className="h-8 rounded-full pl-8" />
+          <Input value={get('q')} onChange={(e) => update({ q: e.target.value }, true)} placeholder={tab === 'idols' ? '搜名字、编号或固有卡 / P 道具' : tab === 'supports' ? '搜名字、技能或事件，如 SP レッスン' : tab === 'memories' ? '搜效果，如 体力回復' : '搜名字或效果，如 好印象'} aria-label="搜索" className="h-8 rounded-full pl-8" />
         </div>
         <Select label="培育计划" value={get('plan')} onChange={(v) => update({ plan: v })} options={tab === 'idols' ? planOpts.filter((o) => o.value !== 'COMMON') : planOpts} />
         <Select label="稀有度" value={get('rarity')} onChange={(v) => update({ rarity: v })} options={rarityOpts} />
